@@ -1,5 +1,5 @@
 // Bake a cretaceous world and write review images.
-//   bake [--seed N] [--n 2048] [--cell 4] [--out FILE] [--preview DIR] [--k KEY=VAL]...
+//   bake [--seed N] [--n 2048] [--cell 4] [--out FILE] [--preview DIR] [--set KEY=VAL] [--verbose]   (--verbose lists the bedrock shelves)
 //   bake --load FILE --preview DIR      previews of an already baked world (no bake)
 // Previews: shaded.png (materials + hillshade + water), height.png, rain.png,
 // flow.png, veg.png. Raylib is used only to encode PNGs.
@@ -94,6 +94,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--diffusion") && i + 1 < argc) p.diffusion = (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--land") && i + 1 < argc) p.land_fraction = (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--threads") && i + 1 < argc) p.threads = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--verbose")) p.verbose = 1;
         else if (!strcmp(argv[i], "--set") && i + 1 < argc) { if (terra_params_apply(&p, argv[++i]) < 0) { fprintf(stderr, "bad --set\n"); return 2; } }
         else { fprintf(stderr, "unknown arg %s\n", argv[i]); return 2; }
     }
@@ -109,6 +110,7 @@ int main(int argc, char** argv) {
     size_t N = (size_t)m.n * m.n; long land = 0, lake = 0, river = 0;
     for (size_t i = 0; i < N; i++) { land += m.height[i] > 0; lake += m.water_kind[i] == TERRA_WATER_LAKE; river += m.water_kind[i] == TERRA_WATER_RIVER; }
     fprintf(stderr, "land %.1f%%  lake %.2f%%  river %.2f%%\n", 100.0 * land / N, 100.0 * lake / N, 100.0 * river / N);
+    fprintf(stderr, "rock shoulders: %d (%.1f per km2 of land)\n", m.nshoulder, m.nshoulder / fmax(land * m.cell * m.cell / 1e6, 1e-6));
     if (out) { if (terra_save(&m, &p, out)) fprintf(stderr, "save failed\n"); else fprintf(stderr, "wrote %s\n", out); }
     if (prev) previews(&m, prev, pw);
     terra_free(&m); return 0;

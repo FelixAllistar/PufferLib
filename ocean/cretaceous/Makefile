@@ -13,7 +13,7 @@ VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c rend
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player balance ecoprobe rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe combatprobe fightprobe floraprobe animcheck net-test net-test-build encoder-test netbench netfuzz
+.PHONY: all bake player balance ecoprobe rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe combatprobe fightprobe floraprobe animcheck terrashade net-test net-test-build encoder-test netbench netfuzz
 all: bake player balance
 # Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
 balance: | $(BUILD)
@@ -57,6 +57,9 @@ fightprobe: | $(BUILD)
 # Animation check (tools/animcheck.c): foot slide, ground, loop seams, bone drift, joint flips and gait speeds per clip of .dino files (docs/testing.md).
 animcheck: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/animcheck.c render/dino_ik.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/animcheck
+# Headless terrain review images and the relief report (tools/terrashade.c): no window, GPU or raylib.
+terrashade: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/terrashade.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/terrashade
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): | $(BUILD)

@@ -421,12 +421,18 @@ static void level_tectonics(Level* L, const Tecto* t, int init_height) {
         size_t i = (size_t)z * n + x; L->U[i] = u; L->lith[i] = li; if (init_height) L->h[i] = b;
     }
 }
-// Strata: alternating hard and soft beds, tilted and warped.
+// Strata: alternating hard and soft beds, tilted and warped. A bed's place in the stack is its phase
+// strata_w / STRATA_P: each period of 55 m holds a soft bed and above it a hard one (phase 0.62-0.93 of
+// the period), whose strength strata_bed varies from bed to bed.
+#define STRATA_P 55.0f
+#define STRATA_CAP 0.93f   // the phase of a hard bed's top
+static inline float strata_w(float h, float x, float z, uint32_t s) { return h + 70.0f * gnoise(x * 0.0007f, z * 0.0007f, s + 50) + 0.012f * x - 0.007f * z; }
+static inline float strata_bed(float k, uint32_t s) { return 0.5f + 0.5f * gnoise(k * 1.37f, 0.5f, s + 51); }
 static inline float strata(float h, float x, float z, uint32_t s) {
-    float w = h + 70.0f * gnoise(x * 0.0007f, z * 0.0007f, s + 50) + 0.012f * x - 0.007f * z;
-    float ph = w / 55.0f; float fr = ph - floorf(ph);
+    float w = strata_w(h, x, z, s);
+    float ph = w / STRATA_P; float fr = ph - floorf(ph);
     float hard = sstep(0.55f, 0.7f, fr) * (1 - sstep(0.88f, 0.98f, fr));
-    float bed = 0.5f + 0.5f * gnoise(floorf(ph) * 1.37f, 0.5f, s + 51);
+    float bed = strata_bed(floorf(ph), s);
     return 0.65f + 0.9f * hard * bed;
 }
 
@@ -816,18 +822,319 @@ static void hydrology(TerraMap* m, const TerraParams* p, uint8_t* sea) {
     free(f); free(fe); free(rd); free(order); free(rec); free(seen);
 }
 
+// ---------------------------------------------------------------- highlands
+// More uplift under the main ranges (TerraParams.peaks): ground above HL_BASE is raised by `peaks`
+// times its height over HL_BASE, phased in over HL_RAMP m. It runs after the landscape evolution and
+// before the fine detail, the droplets and the talus, so the taller mountain sides are worked like
+// any other ground. Raised that way the upper mountain sides came out as walls 250 m tall over 56
+// degrees, so the raised ground is then held to the talus slopes of its rock (slope_cap as in the
+// evolution: about 39 degrees on ordinary rock, up to 51 on the hardest beds), fading in above
+// HL_BASE. Nothing under HL_BASE moves.
+#define HL_BASE 220.0f
+#define HL_RAMP 350.0f
+static void highlands(float* h, int n, float cell, float peaks, const float* hard) {
+    if (peaks <= 0) return;
+    size_t N = (size_t)n * n; float* h0 = fgrid(n); memcpy(h0, h, N * sizeof(float));
+    for (size_t i = 0; i < N; i++)
+        if (h[i] > HL_BASE) h[i] += peaks * (h[i] - HL_BASE) * sstep(HL_BASE, HL_BASE + HL_RAMP, h[i]);
+    float* c = fgrid(n); memcpy(c, h, N * sizeof(float));
+    slope_cap(c, n, cell, hard, 0.45f, 0.35f, 0.7f, 2.0f, 2);
+    for (size_t i = 0; i < N; i++) h[i] = lerpf(h[i], c[i], sstep(HL_BASE, HL_BASE + 60, h0[i]));
+    free(h0); free(c);
+}
+
+// ---------------------------------------------------------------- bedrock
+// Exposed bedrock as part of the land. Two things wear the strata (strata(): soft beds with a hard
+// bed above each) into shelves:
+// - Differential weathering. Where a hard bed crosses a mountain side, the soft bed above it wears
+//   back and leaves the hard bed's top as a bench, and the hard bed itself stands as a cliff band
+//   over the soft slope below. As a profile through one period of the stack, from one hard bed's top
+//   (phase 0) up to the next's (phase 1): a bench rising at a fifth of the hillside's slope, the soft
+//   slope, then the next hard bed's cliff, `ch` periods tall (8-33 m with the bed's strength), over
+//   the last 7% of the period. weather_drop is how far that profile lies under the hillside; it is
+//   never negative (weathering only takes away) and is zero at every hard bed's top, so the rims stay.
+//   On high mountain sides (crags, patchy, about half the flanks above 340 m) at half strength.
+// - Bedrock shelves: a few landmarks per mountain range (bedrock_sites). A flank worn back into the
+//   mountain: a scoop 60-300 m across whose floor is a bench rising gently into the mountain and whose
+//   inner wall is a bedrock face 8-40 m tall, its rim the top of a strong hard bed, dying out into the
+//   hillside at both ends (the spurs either side), with the weathered benches and cliff bands round it
+//   at full strength. The far side of the valley below rises again, so from the floor it is a valley.
+// The bake runs both after the droplets and the talus and before the hydrology, so water, the soil,
+// the surface and the plants all follow the new ground.
+static float weather_drop(float fp, float ch) {
+    const float b = 0.30f, t = 0.07f, eps = 0.2f;
+    float g;
+    if (fp < b) g = eps * fp;
+    else if (fp < 1 - t) g = eps * b + (fp - b) * ((1 - ch) - eps * b) / (1 - t - b);
+    else g = (1 - ch) + (fp - (1 - t)) * ch / t;
+    return fp - g;
+}
+// The weathering drop in metres at a point (before amplitude), for the hard bed whose top lies above.
+static float weather_at(float h, float x, float z, uint32_t s, float* bed) {
+    float q = strata_w(h, x, z, s) / STRATA_P - STRATA_CAP, k = floorf(q);
+    float st = strata_bed(k + 1, s);
+    if (bed) *bed = st;
+    return weather_drop(q - k, 0.15f + 0.45f * st) * STRATA_P;
+}
+
+typedef struct {
+    float x, z, ux, uz;   // the mouth of the scoop, and the unit direction uphill into the mountain
+    float half, depth;    // half its width along the contour, and how far uphill the face's foot lies in the middle (m)
+    float floor, face;    // the floor's height at the mouth, and the face's planned height in the middle (m)
+    uint32_t seed;
+} BedrockSite;
+#define BR_RISE 0.07f     // the floor rises 7% into the mountain, so it drains out of the mouth
+#define BR_FACE 3.3f      // the face's slope (73 degrees)
+// The cut surface of a scoop at a point: the floor, the face climbing from its foot (which curves round
+// to the mouth at the ends) and, past the mouth, a rise so that nothing downhill of it is ever cut.
+// The face is not one smooth sheet: along it, buttresses stand out and gullies cut back along the
+// joints (sharp creases of noise, every 15-30 m, a few metres deep). Its beds and blocks are finer than
+// the heightfield's 4 m samples and are drawn by the ground shader (shaders/terrain.fs, Bedrock).
+static float br_target(const BedrockSite* s, float x, float z, float* edge) {
+    float dx = x - s->x, dz = z - s->z, a = dx * -s->uz + dz * s->ux, b = dx * s->ux + dz * s->uz, t = a / s->half;
+    float wob = 0.08f * gnoise(a / 23.0f, 0.5f, s->seed) + 0.05f * gnoise(a / 9.0f, 3.5f, s->seed + 1);
+    float joint = 1 - fabsf(gnoise(a / 19.0f, 7.5f, s->seed + 2));   // 1 on a joint
+    float foot = s->depth * (1 - t * t) * (1 + wob) + 3.0f * (joint * joint * joint * joint) * (1 - t * t);
+    if (edge) *edge = b - foot;
+    return s->floor + BR_RISE * b + BR_FACE * fmaxf(0, b - foot) + 2.0f * fmaxf(0, -b - 4);
+}
+static float br_reach(const BedrockSite* s) { return 1.15f * fmaxf(s->half, s->depth) + s->face / BR_FACE + 25; }
+
+static float br_at(const float* g, int n, float cell, float x, float z) { return sample_bilinear(g, n, clampf(x / cell, 0, n - 1.001f), clampf(z / cell, 0, n - 1.001f)); }
+// Finds the bedrock shelves: candidates every 32 m on mountain and hill sides, each judged for its
+// rim (where a strong hard bed's top crosses the slope a sensible way uphill), the mountain above,
+// open ground and rising ground across the valley below; the best first, 650 m apart.
+static int bedrock_sites(const float* h, const float* hs, int n, float cell, uint32_t s, float amount, float* seadist, BedrockSite* out, int cap) {
+    float size = (n - 1) * cell; int k = imax(1, (int)lroundf(32.0f / cell)), nc = n / k, cnt = 0;
+    typedef struct { float score; BedrockSite site; } Cand;
+    Cand* cand = (Cand*)malloc(sizeof(Cand) * (size_t)nc * nc); int nca = 0;
+    for (int j = 2; j < nc - 2; j++) for (int i = 2; i < nc - 2; i++) {
+        float x = (i + 0.5f) * k * cell, z = (j + 0.5f) * k * cell;
+        if (x < 300 || z < 300 || x > size - 300 || z > size - 300) continue;
+        float h0 = br_at(hs, n, cell, x, z); if (h0 < 70) continue;
+        if (br_at(seadist, n, cell, x, z) < 400) continue;
+        float e = 12.0f, gx = (br_at(hs, n, cell, x + e, z) - br_at(hs, n, cell, x - e, z)) / (2 * e), gz = (br_at(hs, n, cell, x, z + e) - br_at(hs, n, cell, x, z - e)) / (2 * e);
+        float slope = sqrtf(gx * gx + gz * gz); if (slope < 0.32f || slope > 0.95f) continue;
+        float ux = gx / slope, uz = gz / slope;
+        // The mountain above: at least 50 m more within 300 m uphill.
+        float up = -1e9f; for (float d = 40; d <= 300; d += 20) up = fmaxf(up, br_at(hs, n, cell, x + d * ux, z + d * uz));
+        if (up - h0 < 50) continue;
+        // A straight or gently hollow flank, not a spur's nose: 50 m either way along the contour the
+        // ground stays within 15 m of the mouth.
+        int bad = 0;
+        for (int sg = -1; sg <= 1; sg += 2) bad |= fabsf(br_at(hs, n, cell, x + sg * 50 * uz, z - sg * 50 * ux) - h0) > 15;
+        if (bad) continue;
+        // The rim: walking uphill, the first place the hard bed's top crosses at a face of 8 m up to this
+        // site's own limit (12-40 m on mountains, 8-15 m on hills under 200 m) over a floor rising at BR_RISE.
+        uint32_t r = mix32(hash2i(i, j, s + 0xbed));
+        float r1 = (r & 0xffff) / 65535.0f, r2 = (r >> 16) / 65535.0f, r3 = (mix32(r) & 0xffff) / 65535.0f;
+        float hmax = h0 > 200 ? 12 + 28 * r3 : 9 + 6 * r3, D = -1, H = 0, bed = 0;
+        for (float d = 24; d <= 120; d += 4) {
+            float rx = x + d * ux, rz = z + d * uz, rh = br_at(h, n, cell, rx, rz), fh = h0 + BR_RISE * d, hh = rh - fh;
+            if (hh < 8) continue;
+            if (hh > hmax) break;
+            float q = strata_w(rh, rx, rz, s) / STRATA_P - STRATA_CAP, fq = q - floorf(q), st = strata_bed(floorf(q) + (fq > 0.5f), s);
+            if ((fq < 0.06f || fq > 0.97f) && st > 0.45f) { D = d; H = hh; bed = st; break; }
+        }
+        if (D < 0) continue;
+        // Open ground below and the valley's far side: down the fall line a floor at least 30 m lower
+        // within 400 m, then ground rising at least 15 m above that floor within 350 m beyond it.
+        float lo = h0, lod = 0;
+        for (float d = 20; d <= 400; d += 20) { float v = br_at(hs, n, cell, x - d * ux, z - d * uz); if (v < lo) { lo = v; lod = d; } }
+        if (h0 - lo < 30) continue;
+        float across = -1e9f; for (float d = lod + 40; d <= lod + 350; d += 25) across = fmaxf(across, br_at(hs, n, cell, x - d * ux, z - d * uz));
+        float valley = sstep(5.0f, 40.0f, across - lo);
+        float half = clampf(D * (1.3f + 1.2f * r1), 30, 150);
+        cand[nca++] = (Cand){0.45f * bed + 0.15f * H / hmax + 0.3f * valley + 0.2f * r2,
+                             {x, z, ux, uz, half, D, h0 - 0.5f, H, mix32(r ^ 0x51a7u)}};
+    }
+    // Best first (ties by place, so the order never depends on the sort), 650 m apart.
+    for (int a = 1; a < nca; a++) {
+        Cand c = cand[a]; int b = a - 1;
+        while (b >= 0 && (cand[b].score < c.score || (cand[b].score == c.score && (cand[b].site.z > c.site.z || (cand[b].site.z == c.site.z && cand[b].site.x > c.site.x))))) { cand[b + 1] = cand[b]; b--; }
+        cand[b + 1] = c;
+    }
+    // Mountains first (up to 3/4 of the shelves), then the smaller exposures on lower hills.
+    float gap = 650.0f / sqrtf(fmaxf(amount, 0.05f));
+    int mcap = (cap * 3 + 3) / 4;
+    for (int pass = 0; pass < 2; pass++)
+        for (int a = 0; a < nca && cnt < (pass ? cap : mcap); a++) {
+            if ((cand[a].site.floor + 0.5f > 200) == pass) continue;
+            int ok = 1;
+            for (int q = 0; q < cnt && ok; q++) ok = hypotf(out[q].x - cand[a].site.x, out[q].z - cand[a].site.z) >= gap;
+            if (ok) out[cnt++] = cand[a].site;
+        }
+    free(cand);
+    return cnt;
+}
+
+// Distance to the sea (m) at every sample, by two chamfer sweeps.
+static void sea_distance(const float* h, int n, float cell, float* d) {
+    uint8_t* sea = (uint8_t*)calloc((size_t)n * n, 1); ocean_mask(h, n, sea);
+    for (size_t i = 0; i < (size_t)n * n; i++) d[i] = sea[i] ? 0 : 1e9f;
+    const float a = cell, b = cell * 1.41421356f;
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        size_t i = (size_t)z * n + x; float v = d[i];
+        if (x > 0) v = fminf(v, d[i - 1] + a);
+        if (z > 0) { v = fminf(v, d[i - n] + a); if (x > 0) v = fminf(v, d[i - n - 1] + b); if (x < n - 1) v = fminf(v, d[i - n + 1] + b); }
+        d[i] = v;
+    }
+    for (int z = n - 1; z >= 0; z--) for (int x = n - 1; x >= 0; x--) {
+        size_t i = (size_t)z * n + x; float v = d[i];
+        if (x < n - 1) v = fminf(v, d[i + 1] + a);
+        if (z < n - 1) { v = fminf(v, d[i + n] + a); if (x < n - 1) v = fminf(v, d[i + n + 1] + b); if (x > 0) v = fminf(v, d[i + n - 1] + b); }
+        d[i] = v;
+    }
+    free(sea);
+}
+
+#define CRAG_LOW 320.0f   // crags on hard beds from about here up
+static void bedrock(TerraMap* m, const TerraParams* p, uint32_t s) {
+    if (p->bedrock <= 0) return;
+    int n = m->n; size_t N = (size_t)n * n; float cell = m->cell; float* h = m->height;
+    float* h0 = fgrid(n); memcpy(h0, h, N * sizeof(float));
+    float* hs = fgrid(n); memcpy(hs, h, N * sizeof(float)); box_blur(hs, n, imax(1, (int)lroundf(12.0f / cell)), 2);
+    float* sd = fgrid(n); sea_distance(h, n, cell, sd);
+    BedrockSite site[64]; int ns = bedrock_sites(h, hs, n, cell, s, p->bedrock, sd, site, (int)fminf(64, 14 * p->bedrock + 0.5f));
+    if (p->verbose) for (int q = 0; q < ns; q++) fprintf(stderr, "terra: bedrock shelf %d at (%.0f, %.0f), %.0f m up, face %.0f m, %.0f m across, its foot %.0f m in along (%+.2f, %+.2f)\n", q, site[q].x, site[q].z, site[q].floor, site[q].face, 2 * site[q].half, site[q].depth, site[q].ux, site[q].uz);
+    // The weathering amplitude: crags on high, moderately steep flanks in patches, and full strength
+    // round each shelf.
+    float* amp = fgrid(n);
+    #pragma omp parallel for schedule(static)
+    for (int z = 1; z < n - 1; z++) for (int x = 1; x < n - 1; x++) {
+        size_t i = (size_t)z * n + x; float wx = x * cell, wz = z * cell;
+        float gx = (hs[i + 1] - hs[i - 1]) / (2 * cell), gz = (hs[i + n] - hs[i - n]) / (2 * cell), slope = sqrtf(gx * gx + gz * gz);
+        float flank = sstep(0.28f, 0.5f, slope) * (1 - sstep(1.3f, 1.7f, slope));
+        float patch = sstep(-0.05f, 0.25f, fbm(wx / 320.0f, wz / 320.0f, s + 81, 3, 2, 0.5f));
+        float a = 0.5f * sstep(CRAG_LOW, CRAG_LOW + 60, h0[i]) * patch;
+        for (int q = 0; q < ns; q++) {
+            const BedrockSite* b = &site[q]; float dx = wx - b->x, dz = wz - b->z;
+            float al = (dx * -b->uz + dz * b->ux) / (1.7f * b->half), up = (dx * b->ux + dz * b->uz - 0.5f * b->depth) / (2.4f * b->depth + 60);
+            a = fmaxf(a, 1 - sstep(0.7f, 1.0f, sqrtf(al * al + up * up)));
+        }
+        amp[i] = a * flank;
+    }
+    #pragma omp parallel for schedule(static)
+    for (int z = 1; z < n - 1; z++) for (int x = 1; x < n - 1; x++) {
+        size_t i = (size_t)z * n + x; if (amp[i] <= 0 || h0[i] <= 2) continue;
+        // The bed phase is read on the ground smoothed over 12 m, so the cliff bands follow the mountain's
+        // contours instead of zigzagging up and down every rill.
+        float bed, d = weather_at(hs[i], x * cell, z * cell, s, &bed);
+        h[i] = h0[i] - amp[i] * sstep(0.25f, 0.65f, bed) * d;
+    }
+    // The scoops: the ground becomes the smooth minimum of itself and the cut, so the rim rolls over.
+    for (int q = 0; q < ns; q++) {
+        const BedrockSite* b = &site[q]; float R = br_reach(b);
+        int x0 = imax(1, (int)((b->x - R) / cell)), x1 = imin(n - 2, (int)((b->x + R) / cell) + 1);
+        int z0 = imax(1, (int)((b->z - R) / cell)), z1 = imin(n - 2, (int)((b->z + R) / cell) + 1);
+        for (int z = z0; z <= z1; z++) for (int x = x0; x <= x1; x++) {
+            size_t i = (size_t)z * n + x; float t = br_target(b, x * cell, z * cell, NULL);
+            float k = 1.2f, hh = h[i], w = fmaxf(k - fabsf(hh - t), 0) / k, v = fminf(hh, t) - w * w * k * 0.25f;
+            if (v < hh) h[i] = v;
+        }
+    }
+    // What weathering and the scoops took away was loose ground first.
+    for (size_t i = 0; i < N; i++) if (h[i] < h0[i]) m->soil[i] = fmaxf(0, m->soil[i] - (h0[i] - h[i]));
+    free(h0); free(hs); free(sd); free(amp);
+}
+
+// ---------------------------------------------------------------- regolith and wind
+// The loose ground over the bedrock (TerraMap.soil), after the hydrology:
+// - Regolith: weathered rock and soil, about 1.5 m on gentle ground, thinning on steep ground (none
+//   past about 50 degrees), on convex ground (ridges, spurs, rims) and high up (thin above 330 m),
+//   thinner over hard beds, gathering in hollows and on toe slopes; plus what the rivers, droplets
+//   and talus laid down.
+// - Wind (aeolian) erosion: deflation strips it where the prevailing wind (TerraParams.wind_angle)
+//   meets exposed ground. Exposure is how open the ground is upwind (the steepest rise of the terrain
+//   up to 400 m upwind: nothing higher upwind is fully open), more on windward faces and with height
+//   (the wind is stronger up high), less under plant cover (forest, which the tree line thins). What it
+//   takes rides the wind, a sweep downwind in order, and settles in the lee: where the ground is
+//   sheltered or falls away downwind, and on gentle ground. It is lost over the sea.
+// Water lowers the bedrock first (stream power, the droplets); the wind only moves loose ground.
+// Returns the exposure (0..1) per sample in expo for the surface pass (the tree line drops on exposed
+// windward ground).
+#define TREELINE 380.0f
+static void regolith(TerraMap* m, const TerraParams* p, const uint8_t* sea, const float* hard, float* expo) {
+    int n = m->n; size_t N = (size_t)n * n; float cell = m->cell; const float* h = m->height;
+    float wx = cosf(p->wind_angle), wz = sinf(p->wind_angle);
+    float* hb = fgrid(n); memcpy(hb, h, N * sizeof(float)); box_blur(hb, n, imax(1, (int)lroundf(8.0f / cell)), 2);
+    float* hc = fgrid(n); memcpy(hc, h, N * sizeof(float)); box_blur(hc, n, imax(1, (int)lroundf(30.0f / cell)), 2);
+    float* take = fgrid(n); float* lee = fgrid(n);
+    #pragma omp parallel for schedule(static)
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        size_t i = (size_t)z * n + x;
+        int xl = imax(x - 1, 0), xr = imin(x + 1, n - 1), zl = imax(z - 1, 0), zr = imin(z + 1, n - 1);
+        float gx = (hb[(size_t)z * n + xr] - hb[(size_t)z * n + xl]) / ((xr - xl) * cell), gz = (hb[(size_t)zr * n + x] - hb[(size_t)zl * n + x]) / ((zr - zl) * cell);
+        float slope = sqrtf(gx * gx + gz * gz), cv = hc[i] - h[i], hh = h[i];
+        float soil = 1.5f * (1 - sstep(0.6f, 1.25f, slope)) * clampf(1 + 0.25f * cv, 0.25f, 1.8f) * (1 - 0.8f * sstep(330.0f, 520.0f, hh)) * (1 - 0.3f * sstep(1.3f, 1.9f, hard[i]));
+        soil += fminf(m->soil[i], 3.0f);
+        if (sea[i] || hh <= 0) soil = fmaxf(soil, 1.0f);
+        m->soil[i] = soil;
+        // Shelter: the steepest rise upwind, out to 384 m.
+        float shel = -1;
+        for (float d = 12; d <= 384; d *= 2) {
+            float px = x - wx * d / cell, pz = z - wz * d / cell;
+            if (px < 0 || pz < 0 || px > n - 1 || pz > n - 1) break;
+            shel = fmaxf(shel, (sample_bilinear(hb, n, px, pz) - hb[i]) / d);
+        }
+        float open = 1 - sstep(-0.04f, 0.12f, shel), wind_face = sstep(0.0f, 0.35f, gx * wx + gz * wz);
+        float speed = 0.35f + 0.65f * sstep(60.0f, 480.0f, hh);
+        float e = clampf(open * (0.45f + 0.55f * wind_face) * speed, 0, 1);
+        expo[i] = sea[i] ? 0 : e;
+        float cover = (1 - sstep(TREELINE - 40, TREELINE + 60, hh)) * (1 - sstep(0.7f, 1.1f, slope)) * clampf(0.3f + 0.5f * m->rain[i] / p->rain, 0, 1);
+        take[i] = (sea[i] || hh <= 0) ? 0 : fminf(soil, 1.3f * e * e * (1 - 0.85f * cover));
+        lee[i] = (sea[i] || hh <= 0) ? -1 : (0.015f + 0.3f * fmaxf(sstep(0.02f, 0.15f, shel), sstep(0.0f, 0.3f, -(gx * wx + gz * wz)))) * (1 - sstep(0.6f, 1.0f, slope));
+    }
+    // The sweep downwind, in order of each sample's projection on the wind (a counting sort).
+    float pmin = 1e30f, pmax = -1e30f, corners[4] = {0, (n - 1) * wx, (n - 1) * wz, (n - 1) * (wx + wz)};
+    for (int c = 0; c < 4; c++) { pmin = fminf(pmin, corners[c]); pmax = fmaxf(pmax, corners[c]); }
+    int nb = (int)(pmax - pmin) + 2; int* cnt = (int*)calloc(nb + 1, sizeof(int)); int* ord = (int*)malloc(sizeof(int) * N);
+    for (size_t i = 0; i < N; i++) { int x = (int)(i % n), z = (int)(i / n); cnt[(int)(x * wx + z * wz - pmin) + 1]++; }
+    for (int c = 0; c < nb; c++) cnt[c + 1] += cnt[c];
+    for (size_t i = 0; i < N; i++) { int x = (int)(i % n), z = (int)(i / n); ord[cnt[(int)(x * wx + z * wz - pmin)]++] = (int)i; }
+    float* load = fgrid(n);
+    for (size_t k = 0; k < N; k++) {
+        int i = ord[k], x = i % n, z = i / n; float ux = x - wx, uz = z - wz;
+        float M = (ux < 0 || uz < 0 || ux > n - 1 || uz > n - 1) ? 0 : sample_bilinear(load, n, ux, uz) * 0.995f;
+        M += take[i]; m->soil[i] -= take[i];
+        if (lee[i] < 0) { load[i] = 0; continue; }
+        float dep = M * lee[i]; m->soil[i] += dep; load[i] = M - dep;
+    }
+    if (p->verbose) {
+        double moved = 0; long stripped = 0, land = 0, bare = 0;
+        for (size_t i = 0; i < N; i++) {
+            if (sea[i] || h[i] <= 0) continue;
+            land++; moved += take[i]; stripped += take[i] > 0.3f; bare += m->soil[i] < 0.05f;
+        }
+        fprintf(stderr, "terra: wind took %.2f million m3 of loose ground off %.1f%% of the land (over 0.3 m) and laid it in the lee; bare bedrock (under 5 cm of soil) on %.1f%% of the land\n",
+                moved * cell * cell / 1e6, 100.0 * stripped / (land ? land : 1), 100.0 * bare / (land ? land : 1));
+    }
+    free(cnt); free(ord); free(load); free(hb); free(hc); free(take); free(lee);
+}
+
 // ---------------------------------------------------------------- surface & vegetation
-static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const float* hard) {
+// expo: wind exposure 0..1 (regolith). The tree line lies about TREELINE m up, lower on exposed
+// windward ground: above it the forest gives way to scrub, then to thin ferns, scree and bare rock.
+// Near bedrock faces (face: steep ground within about 12 m) moss and ferns take the benches and ledges
+// and the trees stand back.
+static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const float* hard, const float* expo) {
     int n = m->n; size_t N = (size_t)n * n; float cell = m->cell; uint32_t s = mix32(p->seed + 999);
     // Distance-like wetness: blurred water masks.
-    float* wet = fgrid(n); float* coast = fgrid(n); float* curv = fgrid(n); float* hb = fgrid(n);
+    float* wet = fgrid(n); float* coast = fgrid(n); float* curv = fgrid(n); float* hb = fgrid(n); float* face = fgrid(n);
     for (size_t i = 0; i < N; i++) {
         wet[i] = (m->water_kind[i] == TERRA_WATER_RIVER || m->water_kind[i] == TERRA_WATER_LAKE) ? 1.0f : 0.0f;
         coast[i] = sea[i] ? 1.0f : 0.0f; hb[i] = m->height[i];
     }
+    #pragma omp parallel for schedule(static)
+    for (int z = 1; z < n - 1; z++) for (int x = 1; x < n - 1; x++) {
+        size_t i = (size_t)z * n + x;
+        float gx = (m->height[i + 1] - m->height[i - 1]) / (2 * cell), gz = (m->height[i + n] - m->height[i - n]) / (2 * cell);
+        face[i] = gx * gx + gz * gz > 1.3f * 1.3f && m->height[i] > 3 ? 1.0f : 0.0f;
+    }
     box_blur(wet, n, imax(1, (int)(24.0f / cell)), 3);
     box_blur(coast, n, imax(1, (int)(60.0f / cell)), 3);
     box_blur(hb, n, imax(1, (int)(30.0f / cell)), 2);
+    box_blur(face, n, imax(1, (int)lroundf(6.0f / cell)), 2);
     for (size_t i = 0; i < N; i++) curv[i] = hb[i] - m->height[i]; // >0 concave (valley)
     float rmax = 0; for (size_t i = 0; i < N; i++) rmax = fmaxf(rmax, m->rain[i]);
     #pragma omp parallel for schedule(dynamic, 16)
@@ -860,30 +1167,38 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         // weak strata term (a strong one paints continuous horizontal bands).
         float cv = clampf(curv[i] / 3.0f, -1, 1);   // >0 hollow, <0 ridge
         float n3 = fbm(wx / 14.0f, wz / 14.0f, s + 6, 2, 2, 0.5f);
-        float rockiness = sstep(1.15f, 1.75f, slope + 0.08f * (hd - 1) - 0.12f * cv + 0.18f * n3 + 0.12f * n2 - 0.15f * clampf(soil, 0, 2));
+        // And wherever the loose ground is gone (regolith: steep, convex, high, windward ground) the
+        // bedrock shows, on anything but flat ground (more of it above the tree line).
+        float tline = TREELINE + 30.0f * n1 - 70.0f * expo[i], alpine = sstep(tline - 50, tline + 40, h);
+        float nearface = clampf(face[i] * 2.5f, 0, 1);
+        float rockiness = sstep(1.15f, 1.75f, slope + 0.08f * (hd - 1) - 0.12f * cv + 0.18f * n3 + 0.12f * n2 - 0.15f * clampf(soil - 1.0f, 0, 2));
+        float bare = 1 - sstep(0.04f, 0.45f, soil + 0.1f * n3);
+        rockiness = fmaxf(rockiness, bare * sstep(0.3f, 0.7f, slope + 0.35f * alpine + 0.1f * n2) * (0.2f + 0.8f * sstep(280.0f, 420.0f, h)));
         w[TERRA_MAT_ROCK] = rockiness * 1.2f;
         // Scree collects in hollows below faces, not as bands across them.
-        w[TERRA_MAT_SCREE] = sstep(1.0f, 1.45f, slope + 0.15f * n3) * (1 - rockiness) * (0.6f + 0.6f * clampf(soil, 0, 1)) * (0.35f + 0.65f * sstep(-0.3f, 0.6f, cv)) + wavecut * 1.3f;
+        w[TERRA_MAT_SCREE] = sstep(1.0f, 1.45f, slope + 0.15f * n3) * (1 - rockiness) * (0.6f + 0.6f * clampf(soil, 0, 1)) * (0.35f + 0.65f * sstep(-0.3f, 0.6f, cv)) + wavecut * 1.3f
+                           + (1 - rockiness) * sstep(0.15f, 0.4f, slope) * (1 - sstep(0.3f, 1.0f, soil)) * (0.9f * alpine + 0.5f * nearface * sstep(-0.5f, 1.0f, cv));
         w[TERRA_MAT_SAND] = beach * 2.0f + (sea[i] ? 1.5f : 0) + sstep(0.6f, 0.9f, riparian) * sstep(0.0f, 0.3f, soil - 0.3f) * 0.6f;
         float open = (1 - rockiness) * (1 - clampf(beach, 0, 1));
         float flat = 1 - sstep(0.1f, 0.35f, slope);
-        float canopy = sstep(0.25f, 0.55f, moist + 0.25f * patch) * (1 - sstep(0.7f, 1.1f, slope)) * sstep(-2.0f, 6.0f, temp);
+        float canopy = sstep(0.25f, 0.55f, moist + 0.25f * patch) * (1 - sstep(0.7f, 1.1f, slope)) * sstep(-2.0f, 6.0f, temp) * (1 - alpine) * (1 - 0.6f * nearface);
         // Mud only in a narrow strip at the waterline; banks beyond are vegetated.
         float waterline = sstep(0.0f, -1.2f, h - (m->water[i] > TERRA_DRY ? m->water[i] : h - 10.0f));
         w[TERRA_MAT_MUD] = open * flat * (sstep(0.85f, 1.0f, riparian) * 0.5f + waterline * 1.4f + sstep(0.9f, 1.0f, moist) * 0.4f);
         w[TERRA_MAT_FOREST] = open * canopy * 1.1f;
         // Fern prairie is the default open ground (no grasses yet); bare soil only
         // where it is very dry or steep.
-        w[TERRA_MAT_FERN] = open * (0.5f + 0.5f * sstep(0.05f, 0.4f, moist)) * (1 - canopy * 0.35f) * (0.9f + 0.2f * n2) * (1 - sstep(1.05f, 1.5f, slope));
+        w[TERRA_MAT_FERN] = open * (0.5f + 0.5f * sstep(0.05f, 0.4f, moist)) * (1 - canopy * 0.35f) * (0.9f + 0.2f * n2) * (1 - sstep(1.05f, 1.5f, slope)) * (1 - 0.4f * alpine);
         // Bare soil where the landform strips it: dry ground, sharp convex
         // ridge crests and shoulders, and erosion gullies (channelled flow
         // without standing water). Edges are broken by fine noise, not blobs.
         float gully = sstep(0.3f, 0.55f, flowlog) * (1 - riparian) * sstep(0.12f, 0.4f, slope);
         float crest = sstep(0.6f, 1.4f, -cv + 0.4f * n3) * sstep(0.35f, 0.8f, slope);
-        w[TERRA_MAT_DIRT] = open * (0.03f + sstep(0.12f, 0.0f, moist) * 0.5f + 0.35f * crest + 0.35f * gully) * (0.75f + 0.5f * n3);
+        w[TERRA_MAT_DIRT] = open * (0.03f + sstep(0.12f, 0.0f, moist) * 0.5f + 0.35f * crest + 0.35f * gully + 0.1f * alpine) * (0.75f + 0.5f * n3);
         // Moss on damp, shaded hollows and around rock, not on every steep slope.
         w[TERRA_MAT_MOSS] = sstep(0.4f, 0.85f, moist) * sstep(0.2f, 0.6f, slope) * (0.4f + 0.6f * rockiness) * (0.6f + 0.8f * n3) * (0.5f + 0.5f * sstep(-0.2f, 0.6f, cv))
-                          + open * sstep(0.6f, 1.1f, slope) * (0.3f + 0.6f * moist) * sstep(0.0f, 0.8f, cv) * (0.8f + 0.4f * n3);
+                          + open * sstep(0.6f, 1.1f, slope) * (0.3f + 0.6f * moist) * sstep(0.0f, 0.8f, cv) * (0.8f + 0.4f * n3)
+                          + (1 - rockiness) * (nearface + 0.6f * alpine) * (1 - sstep(0.4f, 0.8f, slope)) * (0.5f + 0.5f * moist) * (0.8f + 0.4f * n3);
         float tot = 0; for (int k = 0; k < TERRA_MAT_COUNT; k++) { w[k] = fmaxf(w[k], 0); w[k] *= w[k]; tot += w[k]; }
         if (tot < 1e-6f) { w[TERRA_MAT_DIRT] = 1; tot = 1; }
         int acc = 0, big = 0;
@@ -898,22 +1213,314 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         // and angiosperm groves form a mosaic, cycads fill drier openings.
         // Forest covers everything that is not rock, beach or water; moisture
         // and patch noise only shift the mix between conifers and angiosperms.
-        float forest = grow * (0.6f + 0.4f * sstep(0.05f, 0.45f, moist)) * (1 - sstep(0.95f, 1.25f, slope));
+        float forest = grow * (0.6f + 0.4f * sstep(0.05f, 0.45f, moist)) * (1 - sstep(0.95f, 1.25f, slope)) * (1 - 0.85f * nearface);
         float conshare = clampf(0.55f + 0.5f * (clump - clump2) - 0.35f * riparian + 0.2f * sstep(0.3f, 0.7f, slope), 0.1f, 0.9f);
-        v[TERRA_VEG_CONIFER] = forest * conshare * sstep(0.0f, 8.0f, temp);
-        v[TERRA_VEG_BROADLEAF] = forest * (1 - conshare) * sstep(12.0f, 18.0f, temp);
-        v[TERRA_VEG_CYCAD] = grow * sstep(0.55f, 0.2f, moist) * sstep(16.0f, 22.0f, temp) * (0.3f + 0.4f * n2);
-        v[TERRA_VEG_FERN] = grow * (0.55f + 0.45f * sstep(0.1f, 0.5f, moist)) * (0.65f + 0.35f * n2);
-        v[TERRA_VEG_TREEFERN] = grow * sstep(0.7f, 0.95f, moist) * sstep(0.0f, 3.0f, curv[i]) * sstep(15.0f, 20.0f, temp);
+        // At the tree line conifers go highest, the broadleaf groves stop below them; scrub carries on
+        // a little higher as a low thicket, then thins out.
+        v[TERRA_VEG_CONIFER] = forest * conshare * sstep(0.0f, 8.0f, temp) * (1 - sstep(tline - 30, tline + 50, h));
+        v[TERRA_VEG_BROADLEAF] = forest * (1 - conshare) * sstep(12.0f, 18.0f, temp) * (1 - sstep(tline - 90, tline, h));
+        v[TERRA_VEG_CYCAD] = grow * sstep(0.55f, 0.2f, moist) * sstep(16.0f, 22.0f, temp) * (0.3f + 0.4f * n2) * (1 - alpine);
+        v[TERRA_VEG_FERN] = grow * (0.55f + 0.45f * sstep(0.1f, 0.5f, moist)) * (0.65f + 0.35f * n2) * (1 - 0.5f * alpine);
+        v[TERRA_VEG_TREEFERN] = grow * sstep(0.7f, 0.95f, moist) * sstep(0.0f, 3.0f, curv[i]) * sstep(15.0f, 20.0f, temp) * (1 - alpine) * (1 - nearface);
         v[TERRA_VEG_HORSETAIL] = (1 - sstep(0.1f, 0.3f, slope)) * sstep(0.4f, 0.9f, riparian) * (wetcell ? 0.3f : 1.0f);
         v[TERRA_VEG_PALM] = grow * sstep(0.2f, 0.6f, coast[i] * 2) * (1 - sstep(8.0f, 30.0f, h)) * sstep(20.0f, 24.0f, temp) * (0.3f + 0.7f * clump2);
-        v[TERRA_VEG_SHRUB] = grow * (0.25f + 0.4f * sstep(0.6f, 0.3f, moist)) * (0.5f + 0.5f * n2);
+        v[TERRA_VEG_SHRUB] = grow * (0.25f + 0.4f * sstep(0.6f, 0.3f, moist) + 0.35f * alpine) * (0.5f + 0.5f * n2) * (1 - sstep(tline + 60, tline + 170, h));
         if (sea[i] || h < 0.3f) for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = 0;
         for (int k = 0; k < TERRA_VEG_COUNT; k++) m->veg[i * TERRA_VEG_COUNT + k] = (uint8_t)(255 * clampf(v[k], 0, 1));
         m->hardness[i] = (uint8_t)(clampf(hd / 2.2f, 0, 1) * 255);
     }
     (void)rmax;
-    free(wet); free(coast); free(curv); free(hb);
+    free(wet); free(coast); free(curv); free(hb); free(face);
+}
+
+// ---------------------------------------------------------------- rock shoulders
+_Static_assert(sizeof(TerraShoulder) == 40, "tools/web_pack.py TERRA_SHOULDER_BYTES ships TerraShoulder as 40 bytes");
+// A rock shoulder is a short curved bite out of a hillside with a rock face in it (terra.h,
+// TerraShoulder). Sites come from the landform: the lower half of a valley side (6-90 m above the
+// valley floor within about 110 m, with gentle floor below it, so the bite opens onto open ground),
+// slopes of 0.3-0.75 that an animal walks round, straight sides rather than hollows (streams) or spur
+// noses (whose ends would fall away below the notch's floor), hard beds preferred (bedrock showing
+// through). Each site may get a partner on the valley's other side, a little up or down the valley,
+// so the bites are staggered rather than opposite. The heightfield is cut before hydrology, so water, the surface and the plants follow.
+// The rock comes first: the wall is planned as high as the rock pieces that stand in it reach
+// (render/props_place.c builds it from closed rocks up to SH_ROCK_MAX m tall, sized to the wall they
+// stand against), and the notch is cut only as deep and wide as that rock covers.
+float terra_shoulder_wall(const TerraShoulder* s, float t) {
+    float p1 = (float)(s->seed & 1023u) * (TPI / 1024), p2 = (float)((s->seed >> 10) & 1023u) * (TPI / 1024);
+    float wob = 1 + 0.10f * sinf(2.7f * t + p1) + 0.06f * sinf(5.9f * t + p2);
+    return s->depth * (1 - t * t) * (1 + 0.35f * s->lean * t) * wob;
+}
+float terra_shoulder_edge(const TerraShoulder* s, float x, float z, float* pa, float* pb) {
+    float dx = x - s->x, dz = z - s->z, b = dx * s->ux + dz * s->uz, a = dx * s->uz - dz * s->ux;
+    float t = a / s->half, e = 0.02f;
+    float g = (terra_shoulder_wall(s, t + e) - terra_shoulder_wall(s, t - e)) / (2 * e * s->half);
+    if (pa) *pa = a;
+    if (pb) *pb = b;
+    return (b - terra_shoulder_wall(s, t)) / sqrtf(1 + g * g);
+}
+float terra_shoulder_reach(const TerraShoulder* s) { return 1.7f * fmaxf(s->half, s->depth) + 14.0f; }
+void terra_shoulder_foot(const TerraShoulder* s, float t, float out[4]) {
+    float w = terra_shoulder_wall(s, t), e = 0.02f, g = (terra_shoulder_wall(s, t + e) - terra_shoulder_wall(s, t - e)) / (2 * e);
+    float vx = s->uz, vz = -s->ux;   // along the contour
+    out[0] = s->x + w * s->ux + t * s->half * vx; out[1] = s->z + w * s->uz + t * s->half * vz;
+    float nx = g * vx - s->half * s->ux, nz = g * vz - s->half * s->uz, l = sqrtf(nx * nx + nz * nz);
+    out[2] = nx / l; out[3] = nz / l;
+}
+float terra_shoulder_near(const TerraMap* m, float x, float z, float margin, int* which) {
+    float best = 1e9f; int bi = -1;
+    for (int k = 0; k < m->nshoulder; k++) {
+        const TerraShoulder* s = &m->shoulder[k]; float r = terra_shoulder_reach(s) + margin;
+        if (fabsf(x - s->x) > r || fabsf(z - s->z) > r) continue;
+        float e = terra_shoulder_edge(s, x, z, NULL, NULL);
+        if (e < best) { best = e; bi = k; }
+    }
+    if (which) *which = bi;
+    return best;
+}
+
+// The cut's parts (m): wall slope (about 72 degrees; the rock stands in front of it and covers it), the
+// low heap of scree at the wall's foot (its height and how far out it reaches), and the rounding of the
+// lip where the hill rolls over the top of the rock.
+static inline float sh_apron_h(const TerraShoulder* s) { return 0.25f + 0.04f * s->wall; }
+static inline float sh_apron_len(const TerraShoulder* s) { return 2.5f + 0.15f * s->wall; }
+#define SH_WALL_SLOPE 3.0f
+#define SH_ROCK_MAX 7.0f   // the tallest planned wall: the cut comes out a little taller (render/props_place.c SH_PIECE_MAX_H)
+static inline float sq_pos(float x) { x = x > 0 ? x : 0; return x * x; }
+// Smooth minimum (polynomial, blend width k): rounds the crease where two surfaces meet.
+static inline float smin(float a, float b, float k) { float h = fmaxf(k - fabsf(a - b), 0) / k; return fminf(a, b) - h * h * k * 0.25f; }
+// The cut surface at a point: the floor rising gently to the wall, the apron heaped at the wall's foot,
+// the wall, and past the mouth a rise again so that nothing beyond the bite (the valley's other side)
+// is ever cut. The terrain becomes the smooth minimum of itself and this, so the lip rolls over.
+static float sh_target(const TerraShoulder* s, float x, float z) {
+    float a, b, e = terra_shoulder_edge(s, x, z, &a, &b), L = sh_apron_len(s), A = sh_apron_h(s);
+    float apron = e < 0 ? A * sq_pos(1 + e / L) : A;
+    return s->floor + TERRA_SHOULDER_RISE * fmaxf(b, 0) + apron + SH_WALL_SLOPE * fmaxf(e, 0) + 0.8f * fmaxf(-b - 2, 0);
+}
+
+// Bilinear sample in metres of a full-resolution grid.
+static float sh_at(const float* g, int n, float cell, float x, float z) { return sample_bilinear(g, n, x / cell, z / cell); }
+
+// Judges a site at (x, z) and fills *s; returns its score (higher is better) or -1 if it does not fit.
+// hs: height blurred over 8 m (slope, direction); curv: blur over 30 m minus height (>0 hollow);
+// lo, hi: the lowest and highest ground within about 110 m; sea: the distance to the sea (m) (both on a
+// coarse grid of k cells).
+static float sh_judge(const float* h, const float* hs, const float* curv, const float* hard, const float* lo, const float* hi, const float* sea,
+                      int n, float cell, int k, float x, float z, uint32_t salt, TerraShoulder* s) {
+    float size = (n - 1) * cell;
+    if (x < 150 || z < 150 || x > size - 150 || z > size - 150) return -1;
+    float h0 = sh_at(h, n, cell, x, z); if (h0 < 30) return -1;
+    int nc = n / k; float gx0 = clampf(x / (k * cell), 0, nc - 1.001f), gz0 = clampf(z / (k * cell), 0, nc - 1.001f);
+    // Out of the beaches world.c lowers at load (land under 48 m within 350 m of the sea): a beach cut
+    // round a notch's foot would leave a bank where it stops.
+    if (sample_bilinear(sea, nc, gx0, gz0) < 450 && h0 < 70) return -1;
+    float low = sample_bilinear(lo, nc, gx0, gz0), high = sample_bilinear(hi, nc, gx0, gz0), rel = h0 - low;
+    if (rel < 6 || rel > 90) return -1;
+    float e = 2 * cell;
+    float gx = (sh_at(hs, n, cell, x + e, z) - sh_at(hs, n, cell, x - e, z)) / (2 * e), gz = (sh_at(hs, n, cell, x, z + e) - sh_at(hs, n, cell, x, z - e)) / (2 * e);
+    float slope = sqrtf(gx * gx + gz * gz); if (slope < 0.3f || slope > 0.75f) return -1;
+    float ux = gx / slope, uz = gz / slope, cv = sh_at(curv, n, cell, x, z);
+    if (cv > 1.5f) return -1;   // a hollow: a stream's way down
+    // A straight side, not a spur's nose: along the contour, 15 m either way, the ground stays within 3 m of
+    // the mouth, so the notch's ends die out into the hillside instead of falling away below its floor.
+    for (int sgn = -1; sgn <= 1; sgn += 2) if (fabsf(sh_at(hs, n, cell, x + sgn * 15 * uz, z - sgn * 15 * ux) - sh_at(hs, n, cell, x, z)) > 3) return -1;
+    // Open ground below: walking down the slope reaches gentle ground (a valley floor or a saddle)
+    // at least 5 m lower within 200 m, and the slope just below the mouth keeps falling.
+    if (sh_at(hs, n, cell, x - 30 * ux, z - 30 * uz) > h0 - 4) return -1;
+    int open = 0;
+    for (float d = 16; d <= 200 && !open; d += 8) {
+        float px = x - d * ux, pz = z - d * uz, ph = sh_at(hs, n, cell, px, pz);
+        float qx = (sh_at(hs, n, cell, px + e, pz) - sh_at(hs, n, cell, px - e, pz)) / (2 * e), qz = (sh_at(hs, n, cell, px, pz + e) - sh_at(hs, n, cell, px, pz - e)) / (2 * e);
+        if (qx * qx + qz * qz < 0.25f * 0.25f) open = ph < h0 - 5 ? 1 : -1;
+    }
+    if (open != 1) return -1;
+    uint32_t r = mix32(hash2i((int)(x * 4), (int)(z * 4), salt));
+    float r1 = (r & 0xffff) / 65535.0f, r2 = (r >> 16) / 65535.0f, r3 = (mix32(r) & 0xffff) / 65535.0f;
+    // The wall is as high as the rock that will stand in it (3-7 m planned, taller where the hill is). It comes
+    // out taller than the rise to its foot: past the foot the cut climbs at SH_WALL_SLOPE until it meets
+    // the hillside, which still rises at `slope`, so a wall planned W m high needs a rise of
+    // W (1 - slope / SH_WALL_SLOPE) to its foot.
+    float W = fminf(clampf(3.0f + 0.08f * (high - h0), 3.5f, 7) * (0.85f + 0.3f * r1), SH_ROCK_MAX), H = W * (1 - slope / SH_WALL_SLOPE);
+    if (high - h0 < W + 6) return -1;   // the hill rises well above the rock
+    float D = -1;   // the wall's foot: where the ground has risen H above the mouth
+    for (float b = 3; b <= 22; b += 1) if (sh_at(h, n, cell, x + b * ux, z + b * uz) - h0 >= H) { D = b; break; }
+    if (D < 0) return -1;
+    D = fmaxf(D, 5);
+    if (sh_at(curv, n, cell, x + D * ux, z + D * uz) > 2) return -1;
+    float hd = sh_at(hard, n, cell, x + D * ux, z + D * uz);
+    *s = (TerraShoulder){x, z, ux, uz, clampf(D * (1.1f + 0.4f * r2), 7, 18), D, h0 - 0.3f, W, 2 * r3 - 1, mix32(r ^ 0x5401u)};
+    return 0.45f * clampf((hd - 0.8f) / 1.0f, 0, 1) + 0.15f * (1 - fabsf(slope - 0.5f) / 0.25f) + 0.35f * r3;
+}
+
+// Lowest and highest point within rr coarse cells (k samples apart) of each coarse cell: separable sweeps.
+static void sh_minmax(const float* h, int n, int k, int rr, float* lo, float* hi) {
+    int nc = n / k; float* t0 = (float*)malloc(sizeof(float) * (size_t)nc * nc); float* t1 = (float*)malloc(sizeof(float) * (size_t)nc * nc);
+    #pragma omp parallel for schedule(static)
+    for (int j = 0; j < nc; j++) for (int i = 0; i < nc; i++) {
+        float a = 1e30f, b = -1e30f;
+        for (int d = -rr; d <= rr; d++) { int q = imin(imax(i + d, 0), nc - 1); float v = h[(size_t)(j * k) * n + q * k]; a = fminf(a, v); b = fmaxf(b, v); }
+        t0[(size_t)j * nc + i] = a; t1[(size_t)j * nc + i] = b;
+    }
+    #pragma omp parallel for schedule(static)
+    for (int j = 0; j < nc; j++) for (int i = 0; i < nc; i++) {
+        float a = 1e30f, b = -1e30f;
+        for (int d = -rr; d <= rr; d++) { int q = imin(imax(j + d, 0), nc - 1); a = fminf(a, t0[(size_t)q * nc + i]); b = fmaxf(b, t1[(size_t)q * nc + i]); }
+        lo[(size_t)j * nc + i] = a; hi[(size_t)j * nc + i] = b;
+    }
+    free(t0); free(t1);
+}
+
+typedef struct { float score; int idx; TerraShoulder s; } ShCand;
+static int sh_cmp(const void* pa, const void* pb) {
+    const ShCand* a = (const ShCand*)pa; const ShCand* b = (const ShCand*)pb;
+    return a->score > b->score ? -1 : a->score < b->score ? 1 : a->idx - b->idx;
+}
+static int sh_clear(const TerraShoulder* acc, int na, float x, float z, float gap) {
+    for (int k = 0; k < na; k++) if ((acc[k].x - x) * (acc[k].x - x) + (acc[k].z - z) * (acc[k].z - z) < gap * gap) return 0;
+    return 1;
+}
+
+// Finds the sites (m->shoulder) and cuts them into m->height (taking the soil off what is cut away).
+static void shoulders_cut(TerraMap* m, const TerraParams* p, const float* hard) {
+    m->shoulder = NULL; m->nshoulder = 0;
+    if (p->shoulders <= 0) return;
+    int n = m->n; size_t N = (size_t)n * n; float cell = m->cell; float* h = m->height;
+    float* hs = fgrid(n); float* curv = fgrid(n);
+    memcpy(hs, h, N * sizeof(float)); box_blur(hs, n, imax(1, (int)lroundf(8.0f / cell)), 2);
+    memcpy(curv, h, N * sizeof(float)); box_blur(curv, n, imax(1, (int)(30.0f / cell)), 2);
+    for (size_t i = 0; i < N; i++) curv[i] -= h[i];
+    int k = imax(1, (int)lroundf(16.0f / cell)), nc = n / k, rr = imax(1, (int)lroundf(110.0f / (k * cell)));
+    float* lo = (float*)malloc(sizeof(float) * (size_t)nc * nc); float* hi = (float*)malloc(sizeof(float) * (size_t)nc * nc);
+    sh_minmax(h, n, k, rr, lo, hi);
+    // Distance to the sea on the coarse grid: two chamfer sweeps from the sea's samples.
+    float* sea = (float*)malloc(sizeof(float) * (size_t)nc * nc); uint8_t* sm = (uint8_t*)malloc(N);
+    ocean_mask(h, n, sm);
+    for (int j = 0; j < nc; j++) for (int i = 0; i < nc; i++) sea[(size_t)j * nc + i] = sm[(size_t)(j * k) * n + i * k] ? 0 : 1e9f;
+    free(sm);
+    {
+        float a = k * cell, b = a * 1.41421356f;
+        for (int j = 0; j < nc; j++) for (int i = 0; i < nc; i++) {
+            float* v = &sea[(size_t)j * nc + i];
+            if (i > 0) *v = fminf(*v, v[-1] + a);
+            if (j > 0) { *v = fminf(*v, v[-nc] + a); if (i > 0) *v = fminf(*v, v[-nc - 1] + b); if (i < nc - 1) *v = fminf(*v, v[-nc + 1] + b); }
+        }
+        for (int j = nc - 1; j >= 0; j--) for (int i = nc - 1; i >= 0; i--) {
+            float* v = &sea[(size_t)j * nc + i];
+            if (i < nc - 1) *v = fminf(*v, v[1] + a);
+            if (j < nc - 1) { *v = fminf(*v, v[nc] + a); if (i < nc - 1) *v = fminf(*v, v[nc + 1] + b); if (i > 0) *v = fminf(*v, v[nc - 1] + b); }
+        }
+    }
+    // One candidate per coarse cell, jittered inside it; judged in parallel into fixed slots.
+    uint32_t salt = mix32(p->seed ^ 0x5401d3u);
+    ShCand* c = (ShCand*)malloc(sizeof(ShCand) * (size_t)nc * nc);
+    #pragma omp parallel for schedule(dynamic, 4)
+    for (int j = 0; j < nc; j++) for (int i = 0; i < nc; i++) {
+        uint32_t r = hash2i(i, j, salt);
+        float x = (i + (r & 0xffff) / 65536.0f) * k * cell, z = (j + (r >> 16) / 65536.0f) * k * cell;
+        ShCand* q = &c[(size_t)j * nc + i]; q->idx = j * nc + i;
+        q->score = sh_judge(h, hs, curv, hard, lo, hi, sea, n, cell, k, x, z, salt, &q->s);
+    }
+    int nv = 0;
+    for (int i = 0; i < nc * nc; i++) if (c[i].score >= 0.5f) c[nv++] = c[i];
+    qsort(c, nv, sizeof(ShCand), sh_cmp);
+    // Greedy by score, one site per gap; each may bring a partner across its valley, staggered
+    // 25-70 m along it, at least 60 m from every other site.
+    float gap = 380.0f / sqrtf(p->shoulders);
+    int cap = 64; TerraShoulder* acc = (TerraShoulder*)malloc(sizeof(TerraShoulder) * cap); int na = 0;
+    for (int q = 0; q < nv; q++) {
+        const TerraShoulder* s = &c[q].s;
+        if (!sh_clear(acc, na, s->x, s->z, gap)) continue;
+        if (na + 2 > cap) { cap *= 2; acc = (TerraShoulder*)realloc(acc, sizeof(TerraShoulder) * cap); }
+        acc[na++] = *s;
+        // Across: down to the floor, then on until the far side has risen 6 m and faces back.
+        float hmin = 1e30f, e = 2 * cell; int found = 0; float px = 0, pz = 0;
+        for (float d = 8; d <= 260 && !found; d += 6) {
+            float x = s->x - d * s->ux, z = s->z - d * s->uz, y = sh_at(hs, n, cell, x, z);
+            hmin = fminf(hmin, y);
+            float gx = (sh_at(hs, n, cell, x + e, z) - sh_at(hs, n, cell, x - e, z)) / (2 * e), gz = (sh_at(hs, n, cell, x, z + e) - sh_at(hs, n, cell, x, z - e)) / (2 * e);
+            float g = sqrtf(gx * gx + gz * gz);
+            if (y - hmin >= 6 && g > 0.2f && -(gx * s->ux + gz * s->uz) > 0.5f * g) { found = 1; px = x; pz = z; }
+        }
+        if (!found) continue;
+        uint32_t r = mix32(s->seed ^ 0x9a17u);
+        for (int tries = 0; tries < 4; tries++) {
+            float off = ((r >> tries) & 1 ? 1.0f : -1.0f) * (25 + 45 * ((mix32(r + tries) & 0xffff) / 65535.0f));
+            float x = px + off * s->uz, z = pz - off * s->ux;   // along the valley
+            TerraShoulder t;
+            for (float up = 0; up <= 24; up += 8) {   // and a little up the far slope
+                float xx = x - up * s->ux, zz = z - up * s->uz;
+                if (sh_judge(h, hs, curv, hard, lo, hi, sea, n, cell, k, xx, zz, salt ^ 0x77u, &t) >= 0 && t.ux * s->ux + t.uz * s->uz < -0.3f && sh_clear(acc, na, xx, zz, 60)) {
+                    acc[na++] = t; tries = 4; break;
+                }
+            }
+        }
+    }
+    free(c); free(lo); free(hi); free(sea); free(hs); free(curv);
+    // The cut: each site lowers the ground to the smooth minimum of the ground and its cut surface,
+    // fading out at its reach so its edge never shows.
+    for (int q = 0; q < na; q++) {
+        const TerraShoulder* s = &acc[q]; float R = terra_shoulder_reach(s), kb = 1.0f + 0.1f * s->wall;
+        int x0 = imax(0, (int)((s->x - R) / cell)), x1 = imin(n - 1, (int)((s->x + R) / cell) + 1);
+        int z0 = imax(0, (int)((s->z - R) / cell)), z1 = imin(n - 1, (int)((s->z + R) / cell) + 1);
+        for (int z = z0; z <= z1; z++) for (int x = x0; x <= x1; x++) {
+            float wx = x * cell, wz = z * cell, d = sqrtf((wx - s->x) * (wx - s->x) + (wz - s->z) * (wz - s->z));
+            if (d >= R) continue;
+            size_t i = (size_t)z * n + x; float h0 = h[i], hn = smin(h0, sh_target(s, wx, wz), kb);
+            if (hn >= h0) continue;
+            float cut = (h0 - hn) * (1 - sstep(R - 10, R, d));
+            h[i] = h0 - cut; m->soil[i] = fmaxf(0, m->soil[i] - cut);
+        }
+    }
+    m->shoulder = acc; m->nshoulder = na;
+}
+
+// Paints the cut after the surface pass so that from afar it reads as a rock outcrop on a green
+// hillside, not a bare scar: rock and moss on the wall (the rock pieces stand in front of it), moss and
+// fern over the lip (the hill rolls over the top of the rock), scree and moss only in a strip a couple of
+// metres wide at the wall's foot, and dark leaf litter, mud and moss on the floor, giving way to the
+// hillside's own ground within a few metres. No trees or scrub where the rock stands or just above it;
+// ferns crowd the floor and come back over the lip.
+static void shoulders_surface(TerraMap* m) {
+    int n = m->n; float cell = m->cell;
+    for (int q = 0; q < m->nshoulder; q++) {
+        const TerraShoulder* s = &m->shoulder[q]; float R = terra_shoulder_reach(s), L = sh_apron_len(s);
+        int x0 = imax(0, (int)((s->x - R) / cell)), x1 = imin(n - 1, (int)((s->x + R) / cell) + 1);
+        int z0 = imax(0, (int)((s->z - R) / cell)), z1 = imin(n - 1, (int)((s->z + R) / cell) + 1);
+        for (int z = z0; z <= z1; z++) for (int x = x0; x <= x1; x++) {
+            float wx = x * cell, wz = z * cell, d = sqrtf((wx - s->x) * (wx - s->x) + (wz - s->z) * (wz - s->z));
+            if (d >= R) continue;
+            size_t i = (size_t)z * n + x; float a, b, e = terra_shoulder_edge(s, wx, wz, &a, &b), t = fabsf(a) / s->half;
+            float side = 1 - sstep(0.95f, 1.25f, t), in = (1 - sstep(R - 10, R, d)) * sstep(-4.0f, -1.0f, b);
+            float hh = m->height[i] - (s->floor + TERRA_SHOULDER_RISE * fmaxf(b, 0));
+            float wall = sstep(-1.5f, -0.5f, e) * (1 - sstep(2.0f, 3.5f, e)) * sstep(0.6f, 1.6f, hh) * side * in;
+            float lip = sstep(2.0f, 3.5f, e) * (1 - sstep(5.0f, 8.0f, e)) * side * in;
+            float foot = sstep(-L - 1, -L + 0.5f, e) * (1 - sstep(-1.0f, -0.3f, e)) * side * in;
+            float floor = (1 - sstep(-1.5f, -0.5f, e)) * (1 - sstep(0.8f, 1.15f, t)) * sstep(-4.0f, -1.0f, b) * (1 - sstep(R - 10, R, d)) * (1 - foot);
+            float tgt[TERRA_MAT_COUNT] = {0}, wgt = 0;
+            if (wall > 0.01f) { tgt[TERRA_MAT_ROCK] += 0.55f * wall; tgt[TERRA_MAT_MOSS] += 0.45f * wall; wgt += wall; }
+            if (lip > 0.01f) { tgt[TERRA_MAT_MOSS] += 0.35f * lip; tgt[TERRA_MAT_FERN] += 0.65f * lip; wgt += lip; }
+            if (foot > 0.01f) { tgt[TERRA_MAT_SCREE] += 0.3f * foot; tgt[TERRA_MAT_MOSS] += 0.4f * foot; tgt[TERRA_MAT_FOREST] += 0.3f * foot; wgt += foot; }
+            if (floor > 0.01f) { tgt[TERRA_MAT_FOREST] += 0.45f * floor; tgt[TERRA_MAT_MUD] += 0.15f * floor; tgt[TERRA_MAT_MOSS] += 0.2f * floor; tgt[TERRA_MAT_FERN] += 0.2f * floor; wgt += floor; }
+            if (wgt > 0.01f) {
+                // The wall takes its paint whole; the rest only partly, so the hillside's ground shows through.
+                float blend = clampf(wgt, 0, 1) * (wall > 0.01f ? 1.0f : floor > foot ? 0.6f : 0.8f); uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; int tot = 0, big = 0;
+                for (int k = 0; k < TERRA_MAT_COUNT; k++) {
+                    int v = (int)(sp[k] + (255 * tgt[k] / wgt - sp[k]) * blend + 0.5f); sp[k] = (uint8_t)clampf((float)v, 0, 255); tot += sp[k]; if (sp[k] > sp[big]) big = k;
+                }
+                sp[big] = (uint8_t)clampf((float)(sp[big] + 255 - tot), 0, 255);
+            }
+            // Plants: the rock's footprint and a margin above it are clear of trees; ferns stay off the rock
+            // itself, crowd the floor and come back over the lip.
+            float clear = sstep(-L - 3, -L - 1, e) * (1 - sstep(6.0f, 9.0f, e)) * (1 - sstep(1.05f, 1.3f, t)) * in;
+            float bare = sstep(-2.0f, -1.0f, e) * (1 - sstep(2.5f, 4.0f, e)) * (1 - sstep(1.0f, 1.2f, t)) * in;
+            uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
+            static const int TREES[] = {TERRA_VEG_CONIFER, TERRA_VEG_BROADLEAF, TERRA_VEG_CYCAD, TERRA_VEG_TREEFERN, TERRA_VEG_PALM};
+            for (int k = 0; k < 5; k++) v[TREES[k]] = (uint8_t)(v[TREES[k]] * (1 - clear));
+            v[TERRA_VEG_SHRUB] = (uint8_t)(v[TERRA_VEG_SHRUB] * (1 - fmaxf(bare, 0.6f * clear)));
+            v[TERRA_VEG_HORSETAIL] = (uint8_t)(v[TERRA_VEG_HORSETAIL] * (1 - clear));
+            float fern = v[TERRA_VEG_FERN] / 255.0f * (1 - bare); fern = fmaxf(fern, 0.75f * fmaxf(floor, foot) * (1 - bare));
+            v[TERRA_VEG_FERN] = (uint8_t)(255 * clampf(fern, 0, 1));
+        }
+    }
 }
 
 // ---------------------------------------------------------------- public API
@@ -923,6 +1530,7 @@ TerraParams terra_default_params(uint32_t seed) {
     p.seed = seed; p.n = 2048; p.cell = 4.0f; p.plates = 9; p.land_fraction = 0.45f;
     p.uplift = 1.0e-3f; p.erodibility = 8.0e-5f; p.diffusion = 0.03f; p.evolve_years = 6.0e6f;
     p.droplets_per_cell_x100 = 35; p.wind_angle = 0.6f; p.rain = 1.4f; p.temperature = 24.0f;
+    p.shoulders = 0.0f; p.peaks = 0.5f; p.bedrock = 1.0f; p.ravine = TERRA_RAVINE_WIDE;
     p.threads = 0; p.verbose = 0;
     return p;
 }
@@ -942,13 +1550,16 @@ int terra_params_apply(TerraParams* p, const char* spec) {
         else if (!strcmp(key, "diffusion")) p->diffusion = (float)v; else if (!strcmp(key, "years")) p->evolve_years = (float)v;
         else if (!strcmp(key, "drops")) p->droplets_per_cell_x100 = (int)v; else if (!strcmp(key, "wind")) p->wind_angle = (float)v;
         else if (!strcmp(key, "rain")) p->rain = (float)v; else if (!strcmp(key, "temp")) p->temperature = (float)v;
+        else if (!strcmp(key, "shoulders")) p->shoulders = (float)v;
+        else if (!strcmp(key, "peaks")) p->peaks = (float)v; else if (!strcmp(key, "bedrock")) p->bedrock = (float)v;
+        else if (!strcmp(key, "ravine") && v >= TERRA_RAVINE_NONE && v <= TERRA_RAVINE_WIDE) p->ravine = (int)v;
         else return -1;
         applied++;
     }
     return applied;
 }
 uint64_t terra_params_hash(const TerraParams* p) {
-    TerraParams q = *p; q.threads = 0; q.verbose = 0;
+    TerraParams q = *p; q.threads = 0; q.verbose = 0; q.ravine = 0;   // ravines are cut at load, not baked
     const unsigned char* b = (const unsigned char*)&q; uint64_t h = 1469598103934665603ull ^ TERRA_VERSION;
     for (size_t i = 0; i < sizeof(q); i++) { h ^= b[i]; h *= 1099511628211ull; }
     return h;
@@ -962,7 +1573,7 @@ static int map_alloc(TerraMap* m, int n, float cell, uint32_t seed) {
 }
 void terra_free(TerraMap* m) {
     free(m->height); free(m->water); free(m->flow); free(m->rain); free(m->soil); free(m->temp);
-    free(m->water_kind); free(m->flow_dir); free(m->splat); free(m->veg); free(m->hardness); free(m->habitat);
+    free(m->water_kind); free(m->flow_dir); free(m->splat); free(m->veg); free(m->hardness); free(m->habitat); free(m->shoulder);
     memset(m, 0, sizeof(*m));
 }
 
@@ -993,8 +1604,8 @@ int terra_generate(const TerraParams* p, TerraMap* out, TerraProgress cb, void* 
     float* h = resample(L.h, L.n, n); memcpy(out->height, h, sizeof(float) * (size_t)n * n); free(h);
     float* rr = resample(L.rain, L.n, n); memcpy(out->rain, rr, sizeof(float) * (size_t)n * n); free(rr);
     level_free(&L);
-    // Hardness at full resolution for detail, droplets and talus.
-    size_t N = (size_t)n * n; float* hard = fgrid(n);
+    // Hardness at full resolution for detail, droplets and talus (and again on the final ground below).
+    size_t N = (size_t)n * n; float* hard = fgrid(n); float* lith = NULL;
     {
         Level F; memset(&F, 0, sizeof(F)); F.n = n; F.cell = p->cell; F.U = fgrid(n); F.lith = fgrid(n); F.h = out->height;
         level_tectonics(&F, &t, 0);
@@ -1002,8 +1613,9 @@ int terra_generate(const TerraParams* p, TerraMap* out, TerraProgress cb, void* 
         for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
             size_t i = (size_t)z * n + x; hard[i] = F.lith[i] * strata(out->height[i], x * p->cell, z * p->cell, s);
         }
-        free(F.U); free(F.lith);
+        free(F.U); lith = F.lith;
     }
+    highlands(out->height, n, p->cell, p->peaks, hard);
     if (cb) cb("detail", 0.68f, user);
     if (!getenv("TERRA_NO_DETAIL")) add_detail(out->height, n, p->cell, s, hard);
     if (cb) cb("hydraulic erosion", 0.72f, user);
@@ -1012,13 +1624,27 @@ int terra_generate(const TerraParams* p, TerraMap* out, TerraProgress cb, void* 
     if (cb) cb("thermal", 0.86f, user);
     if (!getenv("TERRA_NO_THERMAL")) thermal(out->height, out->soil, n, p->cell, hard, 24);
     if (!getenv("TERRA_NO_BEACH")) coastal_flats(out->height, n, p->cell, s);
+    if (cb) cb("bedrock", 0.88f, user);
+    bedrock(out, p, s);
+    if (cb) cb("rock shoulders", 0.89f, user);
+    shoulders_cut(out, p, hard);
+    // The rock each sample now shows: the bed at its final height (the shelves cut down into lower beds).
+    #pragma omp parallel for schedule(static)
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        size_t i = (size_t)z * n + x; hard[i] = lith[i] * strata(out->height[i], x * p->cell, z * p->cell, s);
+    }
+    free(lith);
     if (cb) cb("hydrology", 0.90f, user);
     uint8_t* sea = (uint8_t*)calloc(N, 1);
     for (size_t i = 0; i < N; i++) out->water[i] = TERRA_DRY;
     hydrology(out, p, sea);
+    if (cb) cb("regolith and wind", 0.94f, user);
+    float* expo = fgrid(n);
+    regolith(out, p, sea, hard, expo);
     if (cb) cb("surface", 0.96f, user);
-    surface(out, p, sea, hard);
-    free(sea); free(hard);
+    surface(out, p, sea, hard, expo);
+    shoulders_surface(out);
+    free(sea); free(hard); free(expo);
     if (terra_habitat(out)) return -3;
     if (cb) cb("done", 1, user);
     return 0;
@@ -1037,6 +1663,8 @@ int terra_save(const TerraMap* m, const TerraParams* p, const char* path) {
 #define W(name, sz) fwrite(m->name, sz, N, f);
     TERRA_FIELDS(W)
 #undef W
+    int32_t ns = m->nshoulder; fwrite(&ns, 4, 1, f);   // the rock shoulders follow the fields
+    if (ns > 0) fwrite(m->shoulder, sizeof(TerraShoulder), (size_t)ns, f);
     return fclose(f);
 }
 int terra_load(TerraMap* m, const TerraParams* p, const char* path) {
@@ -1056,6 +1684,9 @@ int terra_load(TerraMap* m, const TerraParams* p, const char* path) {
 #endif
     TERRA_FIELDS(R)
 #undef R
+    int32_t ns = 0; ok &= fread(&ns, 4, 1, f) == 1 && ns >= 0 && ns < (1 << 20);
+    if (ok && ns > 0) { m->shoulder = (TerraShoulder*)malloc(sizeof(TerraShoulder) * (size_t)ns); ok &= m->shoulder && fread(m->shoulder, sizeof(TerraShoulder), (size_t)ns, f) == (size_t)ns; }
+    if (ok) m->nshoulder = ns;
     fclose(f); if (!ok || terra_habitat(m)) { terra_free(m); return -3; }
     return 0;
 }

@@ -72,9 +72,10 @@ static void check_invariants(const CretSim* s, int* swim_streak, Counters* c, co
 #define DET_TICKS 5000
 static CretConfig det_config(void) {
     CretConfig c = t_config(32);
-    // Seed 5: 15 hits, 5 kills and swimming in the run. Seed 7 landed 2 hits in 523 attacks, so any change
-    // to the scattered terrain could tip its coverage check to none.
-    c.seed = 5; c.respawn_ticks = 30; c.hunger_seconds = 120; c.thirst_seconds = 90; c.growth_seconds = 300; c.weather = 1;
+    // Seed 10: 34 hits, 4 kills, 12 wounds and swimming in the run on the island with rock shoulders. Seed 7
+    // landed 2 hits in 523 attacks, and seed 5 (15 hits before, 8 by 5.0) 4 hits and no wound once the
+    // shoulders' bake moved the herds, so any change to the scattered terrain could tip its coverage check to none.
+    c.seed = 10; c.respawn_ticks = 30; c.hunger_seconds = 120; c.thirst_seconds = 90; c.growth_seconds = 300; c.weather = 1;
     return c;
 }
 static void det_inputs(CretSim* s, uint32_t* rng, CretInput* in) {
@@ -158,10 +159,11 @@ static uint64_t map_hash(const TerraMap* m) {
     size_t n = (size_t)m->n * m->n; uint64_t h = T_FNV0;
     h = t_fnv(h, m->height, n * 4); h = t_fnv(h, m->water, n * 4); h = t_fnv(h, m->flow, n * 4); h = t_fnv(h, m->soil, n * 4);
     h = t_fnv(h, m->water_kind, n); h = t_fnv(h, m->splat, n * TERRA_MAT_COUNT); h = t_fnv(h, m->veg, n * TERRA_VEG_COUNT);
+    h = t_fnv(h, &m->nshoulder, sizeof m->nshoulder); if (m->nshoulder) h = t_fnv(h, m->shoulder, sizeof(TerraShoulder) * m->nshoulder);
     return h;
 }
 static void test_bake_threads(void) {
-    TerraParams p = terra_default_params(3); p.n = 256; p.cell = 8;
+    TerraParams p = terra_default_params(1); p.n = 256; p.cell = 8; p.shoulders = 1;   // seed 1: this small island has rock shoulders to find and cut
     // 1 against 2 threads (CRET_TEST_BAKE_THREADS): enough to change every loop's split; more
     // threads stall at the bake's many barriers when the machine is oversubscribed.
     uint64_t h[2]; int threads[2] = {1, t_env_int("CRET_TEST_BAKE_THREADS", 2)};
@@ -171,6 +173,9 @@ static void test_bake_threads(void) {
         h[k] = map_hash(&m); terra_free(&m);
     }
     fprintf(stderr, "bake 256^2 on 1 and %d OpenMP threads: %016llx %016llx\n", threads[1], (unsigned long long)h[0], (unsigned long long)h[1]);
+    TerraMap m; p.threads = 1; terra_generate(&p, &m, NULL, NULL);
+    CHECK(m.nshoulder > 0, "the 256^2 island has no rock shoulders: the thread check does not cover them");
+    terra_free(&m);
     CHECK(h[0] == h[1], "the bake depends on the OpenMP thread count");
 }
 
@@ -186,6 +191,7 @@ static bool find_flat(const CretWorld* w, uint32_t* rng, float margin, float* x,
             ok = cret_height(w, qx, qz) > 3 && cret_water(w, qx, qz) < cret_height(w, qx, qz) - 0.5f && n[1] > 0.95f;
         }
         if (ok && prop_tor_at(px, pz) > 0) ok = false;   // not in a tor: its outcrops stand on flat ground too
+        if (ok && terra_shoulder_near(&w->map, px, pz, margin, NULL) < 1e8f) ok = false;   // nor a rock shoulder's floor: flat, but walled
         if (ok) {   // not on a beach: flat too, but with driftwood and coastal rocks the trunk check does not see
             int gx = (int)(px / w->map.cell + 0.5f), gz = (int)(pz / w->map.cell + 0.5f);
             if (gx >= 0 && gz >= 0 && gx < w->map.n && gz < w->map.n && w->map.splat[((size_t)gz * w->map.n + gx) * TERRA_MAT_COUNT + TERRA_MAT_SAND] > 60) ok = false;
@@ -333,11 +339,13 @@ static void test_mass(void) {
 
 // Holding a full turn: the turning circle (speed over yaw rate) widens with
 // speed, and the body's motion follows the heading (no sideways skid).
+static bool find_clear(CretSim* s, uint32_t* rng, float r, float* x, float* z);
 static float turn_radius(int species, bool sprint, float* skid) {
     CretSim* s = calloc(1, sizeof *s); solo(s, species); CretAgent* a = &s->agents[0];
     // Flat for 40 m round: the sprint runs about 30 m before the turn (with 6 m, a later change to the
-    // land put it on a 45-degree slope, where it slid).
-    uint32_t rng = 4; float x, z; CHECK(find_flat(s->world, &rng, 40, &x, &z), "no flat land in the test world");
+    // land put it on a 45-degree slope, where it slid). Clear of trees and props too: the rock shoulders'
+    // bake moved the spot to where a stegosaur ran into a trunk and was knocked sideways.
+    uint32_t rng = 4; float x, z; CHECK(find_clear(s, &rng, 40, &x, &z), "no flat land in the test world");
     place(s, 0, x, cret_height(s->world, x, z), z, 0);
     CretInput in = {.forward = sprint ? 1.0f : 0.25f, .sprint = sprint};
     for (int t = 0; t < 90; t++) cret_sim_step(s, &in);
@@ -501,6 +509,8 @@ static void test_props(void) {
         float n[3]; terra_normal(&w->map, sx, sz, n);
         if (cret_height(w, sx, sz) < 1 || cret_water(w, sx, sz) > cret_height(w, sx, sz) || n[1] < 0.85f) continue;
         cret_sim_respawn(s, 0); place(s, 0, sx, cret_height(w, sx, sz), sz, ang);
+        CretInput idle = {0}; cret_sim_step(s, &idle);   // streams the colliders round the start in
+        if (prop_overlap(s, 0, 0.0f)) continue;   // the start is inside another prop: the walk would begin sunk
         CretInput in = {.forward = 1}; int sunk = 0; float closest = 1e9f, deepest = 0, dy = 0;
         for (int t = 0; t < 150 && a->alive; t++) {
             cret_sim_step(s, &in);
@@ -840,11 +850,11 @@ static void test_prop_colliders(void) {
         CHECK(w->prop_vol[v] > 0, "%s: collider has no volume", c->name[v]);
         checked++;
     }
-    // Seating: rim points of every non-set-piece collider under the drawn ground.
+    // Seating: rim points of every non-set-piece collider under the drawn ground (the rock shoulders' rocks stand against their walls, some lodged up them: test_shoulders checks those).
     int seated = 0, floating = 0;
     for (int k = 0; k < w->nprops; k++) {
         const CretPropCollider* pc = &w->props[k]; int v = pc->variant;
-        if (pc->kind == PROP_COAST || pc->kind == PROP_CLIFF || !c->nbase[v]) continue;
+        if (pc->kind == PROP_COAST || pc->kind == PROP_CLIFF || !c->nbase[v] || (pc->key & 1023u) >= PROP_SHOULDER_CELL) continue;   // shoulder rocks: test_shoulders
         float worst = -1e9f; const float* q = pc->q;
         for (int r = 0; r < c->nbase[v]; r++) {
             float b[3] = {c->base[v][r][0] * pc->scale, c->base[v][r][1] * pc->scale, c->base[v][r][2] * pc->scale};
@@ -867,6 +877,104 @@ static void test_prop_colliders(void) {
     fprintf(stderr, "prop colliders: %d variants match their meshes; %d props seated, %d float; %d movable; %d tree trunks\n", checked, seated, floating, w->ndyn, trunks);
     CHECK(checked > 0, "no prop collider to check");
     CHECK(trunks > 0, "no tree trunks in the test world");
+    cret_sim_close(s); free(s);
+}
+
+// ------------------------------------------------------------------ rock shoulders
+// The test island's rock shoulders (terra.h TerraShoulder): found, spaced, really cut (a wall, a dry
+// floor), clear of trees where the rock stands, the wall covered by its rock (at least 80% of it from
+// each review view, no bare run over 1.5 m; render/props_place.c prop_shoulder_coverage) with no open
+// edge of any piece above the drawn ground, and no trap: an animal on a notch's floor walks out of its mouth.
+static void test_shoulders(void) {
+    // Rock shoulders are off by default (bedrock shelves replaced them); this island is baked with them on.
+    setenv("CRET_TERRA", "shoulders=1", 1);
+    CretSim* s = calloc(1, sizeof *s); solo(s, CRET_SP_STEGO); const CretWorld* w = s->world; const TerraMap* m = &w->map;
+    unsetenv("CRET_TERRA");
+    float land = 0; for (size_t i = 0; i < (size_t)m->n * m->n; i++) land += m->height[i] > 0;
+    land *= m->cell * m->cell / 1e6f;
+    fprintf(stderr, "rock shoulders: %d on %.2f km2 of land\n", m->nshoulder, land);
+    CHECK(m->nshoulder >= 2, "only %d rock shoulders on the test island", m->nshoulder);
+    CHECK(m->nshoulder <= 12 * land, "%d rock shoulders on %.2f km2 is more than a few a square kilometre", m->nshoulder, land);
+    int trees = 0, wet = 0, low = 0;
+    for (int q = 0; q < m->nshoulder; q++) {
+        const TerraShoulder* a = &m->shoulder[q];
+        for (int k = 0; k < q; k++) {   // 60 m apart at least (a site and its partner across the valley; others 300 m)
+            const TerraShoulder* b = &m->shoulder[k]; float d = hypotf(a->x - b->x, a->z - b->z);
+            CHECK(d >= 60, "rock shoulders %d and %d only %.0f m apart", k, q, d);
+        }
+        float f[4]; terra_shoulder_foot(a, 0, f);
+        float wall = cret_height(w, f[0] - 4 * f[2], f[1] - 4 * f[3]) - cret_height(w, f[0] + 3 * f[2], f[1] + 3 * f[3]);
+        low += wall < 3;
+        for (int k = 0; k < 16; k++) {   // the floor is dry
+            float t = -0.8f + 0.1f * k, ff[4]; terra_shoulder_foot(a, t, ff);
+            float x = ff[0] + 6 * ff[2], z = ff[1] + 6 * ff[3]; wet += cret_water(w, x, z) > cret_height(w, x, z) + 0.05f;
+        }
+        float tr[5 * 256]; float R = terra_shoulder_reach(a);
+        for (int tz = (int)floorf((a->z - R) / PROP_TILE); tz <= (int)floorf((a->z + R) / PROP_TILE); tz++)
+            for (int tx = (int)floorf((a->x - R) / PROP_TILE); tx <= (int)floorf((a->x + R) / PROP_TILE); tx++) {
+                int n = cret_tree_trunks(w, tx, tz, tr, 256);
+                for (int i = 0; i < n; i++) {
+                    float ta, e = terra_shoulder_edge(a, tr[5 * i], tr[5 * i + 2], &ta, NULL);
+                    trees += fabsf(ta) < a->half && e > -3 && e < 6;
+                }
+            }
+    }
+    CHECK(low == 0, "%d rock shoulders have under 3 m of wall in the middle", low);
+    CHECK(wet == 0, "%d points on rock shoulder floors are under water", wet);
+    CHECK(trees == 0, "%d tree trunks stand where a rock shoulder's rock is", trees);
+    // The rock: every shoulder piece among the colliders, its whole open edge under the drawn ground.
+    const PropCatalog* c = &w->prop_cat; int pieces = 0, shown = 0; float worst = -1e9f;
+    float* edge[PROP_MAX_VARIANTS] = {0}; int nedge[PROP_MAX_VARIANTS] = {0};
+    for (int k = 0; k < w->nprops; k++) {
+        const CretPropCollider* pc = &w->props[k]; int v = pc->variant;
+        if ((pc->key & 1023u) < PROP_SHOULDER_CELL) continue;
+        pieces++;
+        if (!edge[v]) {
+            char path[512]; snprintf(path, sizeof path, PROP_DIR "%s.prop", c->name[v]);
+            float* pos; int32_t* idx; int ni, nv = prop_read_lod(path, 0, &pos, &idx, &ni);
+            edge[v] = malloc(sizeof(float) * 3 * (nv + 1)); nedge[v] = prop_open_edge(pos, nv, idx, ni, edge[v], nv);
+            free(pos); free(idx);
+        }
+        float top = -1e9f; const float* q = pc->q;
+        for (int r = 0; r < nedge[v]; r++) {
+            float b[3] = {edge[v][3 * r] * pc->scale, edge[v][3 * r + 1] * pc->scale, edge[v][3 * r + 2] * pc->scale};
+            float tx = 2 * (q[1] * b[2] - q[2] * b[1]), ty = 2 * (q[2] * b[0] - q[0] * b[2]), tz = 2 * (q[0] * b[1] - q[1] * b[0]);
+            float o[3] = {b[0] + q[3] * tx + (q[1] * tz - q[2] * ty), b[1] + q[3] * ty + (q[2] * tx - q[0] * tz), b[2] + q[3] * tz + (q[0] * ty - q[1] * tx)};
+            top = fmaxf(top, pc->y + o[1] - cret_height(w, pc->x + o[0], pc->z + o[2]));
+        }
+        worst = fmaxf(worst, top); shown += top > 0.05f;
+        CHECK_CAPPED(top <= 0.05f, 5, "shoulder piece %d (%s, scale %.2f): its open edge stands %.2f m out of the ground", k, c->name[v], pc->scale, top);
+    }
+    for (int v = 0; v < PROP_MAX_VARIANTS; v++) free(edge[v]);
+    if (worst > -1e8f) fprintf(stderr, "  %d rock pieces in them; open edges: %d showing, highest %.2f m against the ground; %d trunks in the rock\n", pieces, shown, worst, trees);
+    else fprintf(stderr, "  %d rock pieces in them, all closed (no open edge); %d trunks in the rock\n", pieces, trees);
+    if (w->nprops) CHECK(pieces >= m->nshoulder, "only %d rock pieces in %d rock shoulders", pieces, m->nshoulder);
+    // The rock is the wall: from out in front of the mouth and from the hill beside it.
+    if (w->nprops) {
+        float lowest = 1, tallest = 0; double sum = 0;
+        for (int q = 0; q < m->nshoulder; q++) for (int side = 0; side < 2; side++) {
+            float eye[3], at[3], bare; prop_shoulder_view(m, &m->shoulder[q], side, eye, at);
+            float cv = prop_shoulder_coverage(c, m, q, eye, &bare);
+            sum += cv; lowest = fminf(lowest, cv); tallest = fmaxf(tallest, bare);
+            CHECK(cv >= 0.8f, "rock shoulder %d: its rock covers only %.0f%% of its wall from the %s", q, 100 * cv, side ? "side" : "mouth");
+            CHECK(bare <= 1.5f, "rock shoulder %d: %.1f m of bare wall shows in one place from the %s", q, bare, side ? "side" : "mouth");
+        }
+        fprintf(stderr, "  wall covered by rock: %.0f%% on average, lowest %.0f%%; tallest bare run %.1f m\n", 50 * sum / fmax(m->nshoulder, 1), 100 * lowest, tallest);
+    }
+    // No trap: from the middle of each floor, walking straight out of the mouth gets 15 m clear.
+    int stuck = 0;
+    for (int q = 0; q < m->nshoulder; q++) {
+        const TerraShoulder* a = &m->shoulder[q]; CretAgent* g = &s->agents[0];
+        float x = a->x + a->ux * a->depth * 0.4f, z = a->z + a->uz * a->depth * 0.4f;
+        cret_prop_stream_touch(&s->props, w, s->phys, x, z, 60, s->tick);
+        place(s, 0, x, cret_height(w, x, z) + 0.2f, z, atan2f(-a->uz, -a->ux));   // facing out (yaw 0 is +x)
+        CretInput in = {.forward = 1, .turn = 0};
+        for (int t = 0; t < (int)(8 / CRET_DT); t++) cret_sim_step(s, &in);
+        float d = hypotf(g->x - x, g->z - z);
+        stuck += d < 15;
+        CHECK(d >= 15, "rock shoulder %d: an animal on its floor walked out only %.1f m in 8 s", q, d);
+    }
+    fprintf(stderr, "  walking out of each notch's mouth: %d of %d held\n", stuck, m->nshoulder);
     cret_sim_close(s); free(s);
 }
 
@@ -1683,6 +1791,7 @@ int main(int argc, char** argv) {
     RUN_TEST(test_drinking());
     RUN_TEST(test_props());
     RUN_TEST(test_prop_colliders());
+    RUN_TEST(test_shoulders());
     RUN_TEST(test_pushing());
     RUN_TEST(test_crushing());
     RUN_TEST(test_dyn_determinism());

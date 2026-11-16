@@ -16,6 +16,7 @@
 //            lands within 40 s), like tools/catchprobe.c does for critters.
 //   make -C ocean/cretaceous ecoprobe && ./build/cretaceous/ecoprobe
 //   ./build/cretaceous/ecoprobe --only world --days 10 --seeds 2
+//   ./build/cretaceous/ecoprobe --only world --days 6 --trace   (a line for each death from thirst or starvation: what led to it)
 //   ./build/cretaceous/ecoprobe --only world --days 6 --fold   (far groups on, fargroup.h: the same numbers, plus the share folded)
 //   ./build/cretaceous/ecoprobe --quick --quiet --check ocean/cretaceous/tests/ecoprobe_budget.txt   (make test; the test world, 24 animals)
 //   ./build/cretaceous/ecoprobe --quick --write ocean/cretaceous/tests/ecoprobe_budget.txt   (after a deliberate change)
@@ -138,6 +139,75 @@ static float water_dist(const WaterField* f, float x, float z) {
     return f->d[gz * f->n + gx];
 }
 
+// ------------------------------------------------------------------ death trace
+// --trace: every death from thirst or starvation in the world part, one line each, with what led to it:
+// where it died, how far it had moved in its last 10 and 30 minutes (a small spread is an animal stuck),
+// its share of the last hour spent seeking water and its state then, minutes since it last drank, and
+// the way to the nearest water: straight-line distance, whether the world's walkable-ground field
+// (world.c water_far_build, which the bots follow) has a way at all and how long it is, and what stands
+// on the straight line: the steepest 2 m step and what it belongs to (a rock shoulder's wall, a ravine
+// bank, a load-time beach's back, or other ground).
+#define TR_SAMPLES 180   // one position every 10 s: half an hour
+typedef struct { float x[TR_SAMPLES], z[TR_SAMPLES]; int n, seek[360], hist[BOT_STATES]; int last_drink; } Trace;
+static bool g_trace;
+static void trace_tick(Trace* T, const CretAgent* a, int t) {
+    if (a->act == CRET_ACT_DRINK) T->last_drink = t;
+    if (t % (10 * CRET_TICK_HZ)) return;
+    int k = (t / (10 * CRET_TICK_HZ)) % TR_SAMPLES; T->x[k] = a->x; T->z[k] = a->z; if (T->n < TR_SAMPLES) T->n++;
+    int j = (t / (10 * CRET_TICK_HZ)) % 360; T->seek[j] = a->bot_state == BOT_SEEK_WATER || a->bot_state == BOT_DRINK ? 1 + a->bot_state : 1 + BOT_STATES + a->bot_state;
+}
+// Largest distance from the last position over the last `samples` samples (10 s each).
+static float trace_spread(const Trace* T, int t, int samples) {
+    int k0 = (t / (10 * CRET_TICK_HZ)) % TR_SAMPLES; float best = 0;
+    for (int s = 0; s < samples && s < T->n; s++) { int k = (k0 - s + TR_SAMPLES) % TR_SAMPLES; best = fmaxf(best, hypotf(T->x[k] - T->x[k0], T->z[k] - T->z[k0])); }
+    return best;
+}
+// What a steep step at (x, z) belongs to.
+static const char* trace_owner(const CretWorld* w, float x, float z) {
+    int k = -1; float e = terra_shoulder_near(&w->map, x, z, 0, &k);
+    if (k >= 0 && e > -8 && e < 10) return "shoulder";
+    if (cret_world_gorge(w, x, z) > 0.05f) return "ravine";
+    const TerraMap* m = &w->map; float h = cret_height(w, x, z);
+    for (float r = 40; r <= 340 && h < 60; r += 60) for (int q = 0; q < 8; q++) {
+        int ix = (int)((x + r * cosf(q * 0.785f)) / m->cell), iz = (int)((z + r * sinf(q * 0.785f)) / m->cell);
+        if (ix >= 0 && iz >= 0 && ix < m->n && iz < m->n && m->water_kind[(size_t)iz * m->n + ix] == TERRA_WATER_SEA) return "beach";
+    }
+    return "other";
+}
+static void trace_death(const CretSim* s, const WaterField* wf, const Trace* T, int i, int cause, int t, int day_ticks) {
+    const CretAgent* a = &s->agents[i]; const CretWorld* w = s->world;
+    // Nearest water cell of the coarse field (32 m), by a ring search.
+    float bx = 0, bz = 0, bd = 1e9f; int cx = (int)(a->x / wf->cell), cz = (int)(a->z / wf->cell);
+    for (int r = 0; r < wf->n && bd > (r - 1) * wf->cell; r++)
+        for (int dz = -r; dz <= r; dz++) for (int dx = -r; dx <= r; dx++) {
+            if (abs(dx) != r && abs(dz) != r) continue;
+            int qx = cx + dx, qz = cz + dz; if (qx < 0 || qz < 0 || qx >= wf->n || qz >= wf->n || wf->d[qz * wf->n + qx] > 0) continue;
+            float px = (qx + 0.5f) * wf->cell, pz = (qz + 0.5f) * wf->cell, d = hypotf(px - a->x, pz - a->z);
+            if (d < bd) { bd = d; bx = px; bz = pz; }
+        }
+    // The straight line: the steepest 2 m step and whose it is.
+    float steep = 0, sx = a->x, sz = a->z; int nst = (int)(bd / 2);
+    for (int k = 0; k < nst; k++) {
+        float f0 = (float)k / nst, f1 = (float)(k + 1) / nst;
+        float x0 = a->x + (bx - a->x) * f0, z0 = a->z + (bz - a->z) * f0, x1 = a->x + (bx - a->x) * f1, z1 = a->z + (bz - a->z) * f1;
+        float g = fabsf(cret_height(w, x1, z1) - cret_height(w, x0, z0)) / fmaxf(hypotf(x1 - x0, z1 - z0), 0.1f);
+        if (g > steep) { steep = g; sx = x0; sz = z0; }
+    }
+    // The walkable-ground field: its distance here (none: no way) and where its way down leads.
+    int n = w->water_n, gx = (int)(a->x / CRET_WATER_CELL), gz = (int)(a->z / CRET_WATER_CELL);
+    float way = gx >= 0 && gz >= 0 && gx < n && gz < n ? w->water_far[gz * n + gx] : 1e9f;
+    int seek = 0, hours = 0, hist[BOT_STATES] = {0};
+    for (int j = 0; j < 360; j++) if (T->seek[j]) { hours++; if (T->seek[j] <= BOT_STATES) { seek++; hist[T->seek[j] - 1]++; } else hist[T->seek[j] - 1 - BOT_STATES]++; }
+    int top = 0; for (int b = 0; b < BOT_STATES; b++) if (hist[b] > hist[top]) top = b;
+    int k = -1; float e = terra_shoulder_near(&w->map, a->x, a->z, 0, &k);
+    printf("TRACE %s %s day %.2f at %.0f %.0f h %.1f | moved 10min %.0f m 30min %.0f m | seek %.0f%% of last hour, mostly %s | drank %.0f min ago (water %.2f food %.2f) | water %.0f m at %.0f %.0f, field %s%.0f m | steepest %.2f at %.0f %.0f (%s) | here: shoulder %s%.0f m, ravine %.2f\n",
+           SHORT[a->species], cause == CRET_DEATH_THIRST ? "thirst" : "starved", (float)t / day_ticks, a->x, a->z, a->y,
+           trace_spread(T, t, 60), trace_spread(T, t, TR_SAMPLES), hours ? 100.0f * seek / hours : 0, CRET_BOT_STATE_NAMES[top],
+           T->last_drink ? (t - T->last_drink) / (60.0f * CRET_TICK_HZ) : -1.0f, a->water, a->food, bd, bx, bz,
+           way > 1e8f ? "no way " : "", way > 1e8f ? 0 : way, steep, sx, sz, steep > 1.0f ? trace_owner(w, sx, sz) : "none",
+           k >= 0 ? "" : "none ", k >= 0 ? e : 0, cret_world_gorge(w, a->x, a->z));
+}
+
 static void stats_add(CretStats* t, const CretStats* s) {
     for (int a = 0; a < CRET_SPECIES; a++) {
         for (int b = 0; b < CRET_SPECIES; b++) t->kills[a][b] += s->kills[a][b];
@@ -166,12 +236,22 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
         int day_ticks = (int)(c.day_seconds * CRET_TICK_HZ), hour = day_ticks / 24, ticks = (int)(days * day_ticks);
         Hunt hunt[CRET_MAX_AGENTS]; for (int i = 0; i < agents; i++) hunt[i] = (Hunt){.target = -1, .present = true};
         int ncell = wf.n * wf.n; uint8_t* seen = calloc((size_t)agents * ncell, 1);
+        Trace* tr = g_trace ? calloc(agents, sizeof(Trace)) : NULL;
         CretInput in[CRET_MAX_AGENTS];
         for (int t = 0; t < ticks; t++) {
             double a0 = now();
             for (int i = 0; i < agents; i++) in[i] = cret_bot_input(s, i);
             R->bots_s += now() - a0;
-            cret_sim_step(s, in); cret_pop_step(&P, s);
+            int before[CRET_SPECIES][CRET_DEATH_CAUSES]; if (tr) memcpy(before, s->stats.death_cause, sizeof before);
+            cret_sim_step(s, in);
+            if (tr) for (int i = 0; i < agents; i++) {
+                const CretAgent* a = &s->agents[i]; int sp = a->species;
+                if (!a->ev_died) { if (a->alive) trace_tick(&tr[i], a, t); continue; }
+                for (int c = CRET_DEATH_STARVED; c <= CRET_DEATH_THIRST; c++)
+                    if (s->stats.death_cause[sp][c] > before[sp][c]) { before[sp][c]++; trace_death(s, &wf, &tr[i], i, c, t, day_ticks); break; }
+                memset(&tr[i], 0, sizeof(Trace));
+            }
+            cret_pop_step(&P, s);
             bool day = s->time_of_day >= 0.25f && s->time_of_day < 0.75f;
             for (int i = 0; i < agents; i++) {
                 const CretAgent* a = &s->agents[i]; int sp = a->species;
@@ -239,7 +319,7 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
         R->ticks += ticks;
         R->far_folds += s->far.folds; R->far_unfolds += s->far.unfolds; R->far_hunts += s->far.hunts; R->far_kills += s->far.kills;
         stats_add(&R->st, &s->stats);
-        free(seen);
+        free(seen); free(tr);
         if (!quiet) { printf("  world seed %d: %d deaths\n", seed, s->stats.deaths[0] + s->stats.deaths[1] + s->stats.deaths[2] + s->stats.deaths[3] + s->stats.deaths[4] + s->stats.deaths[5]); fflush(stdout); }
         cret_sim_close(s);
     }
@@ -536,7 +616,8 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--quick")) quick = true;
         else if (!strcmp(argv[i], "--quiet")) quiet = true;
         else if (!strcmp(argv[i], "--fold")) g_fold = true;
-        else { fprintf(stderr, "usage: ecoprobe [--only world|person|stalk] [--seeds N] [--seed0 K] [--days D] [--agents N] [--sessions N] [--minutes M] [--trials N] [--quick] [--quiet] [--fold] [--check FILE] [--write FILE]\n"); return 2; }
+        else if (!strcmp(argv[i], "--trace")) g_trace = true;
+        else { fprintf(stderr, "usage: ecoprobe [--only world|person|stalk] [--seeds N] [--seed0 K] [--days D] [--agents N] [--sessions N] [--minutes M] [--trials N] [--quick] [--quiet] [--fold] [--trace] [--check FILE] [--write FILE]\n"); return 2; }
     }
     if (quiet && !freopen("/dev/null", "w", stdout)) return 1;   // the tables off: only the budget's verdict (stderr)
     if (quick) { seeds = 1; days = 2; sessions = 1; minutes = 5; trials = 4; agents = 24; g_world_n = 512; }   // what make test runs: the test world

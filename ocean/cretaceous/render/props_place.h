@@ -15,6 +15,7 @@ extern "C" {
 #define PROP_MAX_VARIANTS 64
 #define PROP_TILE 64.0f
 #define PROP_BASE_PTS 16    // rim points per variant that seating buries (prop_catalog_set_base)
+#define PROP_EXT_PTS 26     // support points of a scan (prop_catalog_set_shape): the farthest vertex in 26 directions
 #define PROP_DIR "ocean/cretaceous/assets/props/"
 
 enum {   // placement classes
@@ -41,6 +42,11 @@ typedef struct PropCatalog {
     // Seating: the outermost points of the mesh's bottom band (the open
     // bottom's rim) in 16 sectors, from LOD0 (prop_catalog_set_base).
     float base[PROP_MAX_VARIANTS][PROP_BASE_PTS][3]; int nbase[PROP_MAX_VARIANTS];
+    // Shape (prop_catalog_set_shape): LOD0 bounds, support points, and 1 if the mesh has no open edge
+    // (rock shoulders build their walls from closed rocks only, which may stand on any side).
+    float lo[PROP_MAX_VARIANTS][3], hi[PROP_MAX_VARIANTS][3];
+    float ext[PROP_MAX_VARIANTS][PROP_EXT_PTS][3];
+    uint8_t closed[PROP_MAX_VARIANTS];
 } PropCatalog;
 
 // Placement classes an asset name may be scattered as (returns the count).
@@ -55,6 +61,28 @@ int prop_read_lod(const char* path, int lod, float** pos, int32_t** idx, int* ni
 // Seating rim of variant v from its LOD0 positions (or the file's LOD0).
 void prop_catalog_set_base(PropCatalog* c, int v, const float* pos, int nv);
 bool prop_catalog_base_file(PropCatalog* c, int v, const char* path);
+// Bounds, support points and closedness of variant v from its LOD0 mesh (prop_catalog_base_file calls it).
+void prop_catalog_set_shape(PropCatalog* c, int v, const float* pos, int nv, const int32_t* idx, int ni);
+// Positions of every vertex on the open edge of a mesh (welded at 2 mm) into out (3 floats each, up to
+// cap); returns how many. The scans are open underneath, and the cliff and coast shells at the back too.
+int prop_open_edge(const float* pos, int nv, const int32_t* idx, int ni, float* out, int cap);
+// Rock shoulder pieces (terra.h TerraShoulder) are cells PROP_SHOULDER_CELL and up of their tile's keys.
+#define PROP_SHOULDER_CELL 768
+// Every rock shoulder's pieces, laid out once: shoulder k's are piece[start[k]] .. piece[start[k + 1] - 1].
+typedef struct PropShoulders { PropInstance* piece; int* start; } PropShoulders;
+// Lays out the pieces of every rock shoulder of m (all classes, on threads), for prop_scatter to read
+// through m->shoulder_props instead of laying each shoulder out again for every tile it reaches (the same
+// pieces either way). NULL if m has none. The caller sets m->shoulder_props and frees with prop_shoulders_free.
+PropShoulders* prop_shoulders_prepare(const PropCatalog* c, const TerraMap* m);
+void prop_shoulders_free(PropShoulders* s);
+// The two places a rock shoulder is reviewed from (capture's shoulder_N and shoulder_N_side, and the
+// coverage check): side 0 out in front of the mouth, 1 on the hillside beside the notch; eye and the
+// point looked at (the middle of the wall).
+void prop_shoulder_view(const TerraMap* m, const TerraShoulder* s, int side, float eye[3], float at[3]);
+// How much of shoulder k's wall its rock covers seen from eye: of the points of the wall (ground rising
+// into the hill steeper than 45 degrees, from its foot back to where the cut ends) the ground in front does not hide, the share a rock
+// piece hides (rays against the pieces' LOD1 meshes). *bare_max: the tallest run of bare wall in one column (m).
+float prop_shoulder_coverage(const PropCatalog* c, const TerraMap* m, int k, const float eye[3], float* bare_max);
 // Classes whose instances (of footprint radius r, m) are Box3D dynamic
 // bodies: boulders, large stones, logs and driftwood (sim.c, dynprops.c).
 bool prop_dynamic(int kind, float r);

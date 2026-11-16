@@ -96,9 +96,12 @@ static float density(const TerraMap* m, int kind, float x, float z, float slope,
     size_t i = cell_of(m, x, z);
     float rock = splat(m, i, TERRA_MAT_ROCK), scree = splat(m, i, TERRA_MAT_SCREE), moss = splat(m, i, TERRA_MAT_MOSS);
     float sand = splat(m, i, TERRA_MAT_SAND), mud = splat(m, i, TERRA_MAT_MUD), can = canopy_at(m, i);
+    // High up, rock ground is the bedrock of the mountain itself (terra.c bedrock): it draws as one mass,
+    // and loose rocks lie on the scree below it, not scattered over it.
+    float bed = 1 - 0.85f * sstep(100.0f, 220.0f, h);
     switch (kind) {
-    case PROP_BOULDER: return (0.09f + 0.6f * near_river(m, x, z, 7.0f) + 0.9f * scree + 0.5f * rock + 0.35f * moss + 0.08f * can) * (1 - sstep(1.1f, 1.5f, slope));
-    case PROP_OUTCROP: return (0.9f * rock + 0.4f * scree + 0.2f * moss + 0.1f) * sstep(0.35f, 0.8f, slope) * (1 - sstep(1.6f, 2.2f, slope));
+    case PROP_BOULDER: return (0.09f + 0.6f * near_river(m, x, z, 7.0f) + 0.9f * scree * (0.4f + 0.6f * bed) + 0.5f * rock * bed + 0.35f * moss + 0.08f * can) * (1 - sstep(1.1f, 1.5f, slope));
+    case PROP_OUTCROP: return (0.9f * rock * bed + 0.4f * scree + 0.2f * moss + 0.1f) * sstep(0.35f, 0.8f, slope) * (1 - sstep(1.6f, 2.2f, slope));
     case PROP_STONE: return (0.08f + 0.8f * near_river(m, x, z, 5.0f) + 1.1f * scree + 0.5f * rock + 0.4f * mud + 0.15f * sand) * (1 - sstep(1.2f, 1.6f, slope));
     // Dead wood gathers in old stands (render/flora.h flora_old, the same
     // patches that hold standing dead trees), about as much over the island.
@@ -107,7 +110,7 @@ static float density(const TerraMap* m, int kind, float x, float z, float slope,
     case PROP_ROOTS: return 0.3f * can * (1 - sstep(0.5f, 0.9f, slope));
     case PROP_DEBRIS: return 0.5f * can * (1 - sstep(0.6f, 1.0f, slope));
     case PROP_DRIFTWOOD: return (h < 3.5f && sand > 0.3f && near_sea(m, x, z, 25.0f)) ? 0.5f : 0.0f;
-    case PROP_CLIFF: return (1.1f * rock + 0.4f * scree + 0.35f * sstep(0.9f, 1.4f, slope)) * sstep(0.6f, 1.0f, slope) * (1 - sstep(2.2f, 3.0f, slope));
+    case PROP_CLIFF: return (1.1f * rock + 0.4f * scree + 0.35f * sstep(0.9f, 1.4f, slope)) * (1 - sstep(100.0f, 180.0f, h)) * sstep(0.6f, 1.0f, slope) * (1 - sstep(2.2f, 3.0f, slope));
     case PROP_COAST: return (h > -1.0f && h < 6.0f && (rock + scree + sand) > 0.2f && near_sea(m, x, z, 30.0f)) ? 0.7f : 0.0f;
     }
     return 0;
@@ -169,6 +172,7 @@ uint32_t prop_key(const TerraMap* m, int kind, int tx, int tz, int cell) {
     return ((uint32_t)(tz * T + tx) * PROP_KINDS + (uint32_t)kind) * 1024u + (uint32_t)cell;
 }
 
+static int shoulder_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int tz, PropInstance* out, int cap);
 // One candidate per lattice cell; deterministic per (tile, class).
 int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int tz, PropInstance* out, int cap) {
     const PropClass* C = &PROP_CLASS[kind];
@@ -190,12 +194,17 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         float d = density(m, kind, x, z, slope, h) * chance * (kind == PROP_BOULDER || kind == PROP_STONE ? 0.4f + 1.2f * clump : 1.0f);
         float tor = 0, slab = 0, in[3] = {0, 0, 0};
         if (pass && kind == PROP_CLIFF) {
-            slab = cret_gorge_wall_at(x, z, in);
+            slab = m->ravine == TERRA_RAVINE_STEPPED ? cret_gorge_wall_at(x, z, in) : 0;   // the wide ravines have no walls
             size_t si = cell_of(m, x, z);
             if (slab <= 0 || slope < 0.4f || splat(m, si, TERRA_MAT_ROCK) + splat(m, si, TERRA_MAT_SCREE) < 0.3f) continue;   // only where a wall was actually cut
             d = slab * 0.85f;
-        } else if (pass) { tor = slope < 1.6f ? tor_at(x, z) : 0; if (tor <= 0) continue; d = tor * 0.6f; }
+        } else if (pass) { tor = slope < 1.6f ? tor_at(x, z) : 0; if (tor <= 0) continue; d = tor * 0.6f * (1 - 0.85f * sstep(100.0f, 220.0f, h)); }   // no tors on the mountains' bedrock
         if (pr(&r) >= d) continue;
+        if (m->nshoulder && kind != PROP_DRIFTWOOD) {   // a rock shoulder's wall, its top and (for all but loose rock) its apron are its own
+            float e = terra_shoulder_near(m, x, z, C->r_hi, NULL);
+            bool loose = kind == PROP_BOULDER || kind == PROP_STONE || kind == PROP_DEBRIS;
+            if (e < 10 + C->r_hi && e > (loose ? -2.5f : -14.0f) - C->r_hi) continue;
+        }
         size_t ci = cell_of(m, x, z);
         float w = terra_water(m, x, z);
         bool wet = m->water_kind[ci] != TERRA_WATER_NONE && w > h + 0.05f;
@@ -255,7 +264,313 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
                                     prop_key(m, kind, tx, tz, pass * 512 + j * steps + i)};
     }
     }
+    if (m->nshoulder && kind == PROP_OUTCROP) cnt += shoulder_scatter(p, m, kind, tx, tz, out + cnt, cap - cnt);
     return cnt;
+}
+
+// ---------------------------------------------------------------- rock shoulders
+// The bake cut each shoulder's notch (terra.h TerraShoulder) only as high as its rock reaches; the rock
+// is laid out here from the notch alone, so the renderer and the colliders (world.c) place the same
+// pieces. The wall is built from closed rocks (the mossy rock scans, which have no open edge, so any side
+// may face out and nothing open can show from behind or above), scaled up, leaning back into the hill
+// and stood on whichever axis gives the shape a slot wants. Three passes: along the wall's foot, one
+// piece after another overlapping by half, each as tall as the wall where it stands and standing a metre
+// proud of the foot with its back sunk into the cut, so the rock is the wall; at each joint a rock lodged
+// high in the seam and often a lower one in front, so the face reads as one irregular outcrop; then
+// rocks lodged on whatever wall is still bare from the review views (sh_fill). All pieces are outcrop
+// class (static convex colliders, never pushed about). Up to SH_PIECES a shoulder.
+#define SH_PIECES 96
+#define SH_PIECE_MAX_H 10.0f   // the tallest piece (m); the bake plans no wall over terra.c SH_ROCK_MAX
+#define SH_SCALE_MAX 6.0f     // how far a scan is scaled up (its texture stretches with it)
+static void sh_rot(const float q[4], const float* p, float sc, float o[3]) { float b[3] = {p[0] * sc, p[1] * sc, p[2] * sc}; quat_rot(q, b, o); }
+// The wall where it rises from (x, z), looking back along -(nx, nz), within `reach` m of the foot: its
+// floor height (3 m out from the foot) and how high it rises: to the top of the last half metre that
+// climbs 0.45 m or more (slopes over 42 degrees; the lip rounds over above it). Where nothing does (the
+// ends of a notch), the rise over the first metre in.
+static void sh_wall_at(const TerraMap* m, float x, float z, float nx, float nz, float reach, float* base, float* height) {
+    float flo = seat_ground(m, m->surface, x + 3 * nx, z + 3 * nz), lip = seat_ground(m, m->surface, x - nx, z - nz);
+    for (float b = -3; b < reach; b += 0.5f) {
+        float y0 = seat_ground(m, m->surface, x - b * nx, z - b * nz), y1 = seat_ground(m, m->surface, x - (b + 0.5f) * nx, z - (b + 0.5f) * nz);
+        if (y1 - y0 >= 0.45f) lip = fmaxf(lip, y1);
+    }
+    *base = flo; *height = fmaxf(lip - flo, 0);
+}
+// Orientation o (0-5) of a closed rock in the wall's frame (+y up, +z out of the hill, x along it):
+// which of its axes stands up (y, z or x) and a quarter turn about it, then a lean back into the hill.
+static void sh_orient(int o, float spin, float lean, float q[4]) {
+    float qa[4], qs[4], ql[4], t[4];
+    if (o / 2 == 0) quat_axis(1, 0, 0, 0, qa); else if (o / 2 == 1) quat_axis(1, 0, 0, -PPI / 2, qa); else quat_axis(0, 0, 1, PPI / 2, qa);
+    quat_axis(0, 1, 0, spin + (o & 1) * PPI / 2, qs); quat_axis(1, 0, 0, -lean, ql);
+    quat_mul(qs, qa, t); quat_mul(ql, t, q);
+}
+// Bounds (unit scale) of variant v turned by q: lo[3], hi[3] from its support points.
+static void sh_bounds(const PropCatalog* p, int v, const float q[4], float lo[3], float hi[3]) {
+    for (int a = 0; a < 3; a++) { lo[a] = 1e30f; hi[a] = -1e30f; }
+    for (int k = 0; k < PROP_EXT_PTS; k++) { float o[3]; quat_rot(q, p->ext[v][k], o); for (int a = 0; a < 3; a++) { lo[a] = fminf(lo[a], o[a]); hi[a] = fmaxf(hi[a], o[a]); } }
+}
+// The scans a wall is built from: one of the two mossy rock sets (grey rock_moss_set_02, olive
+// rock_moss_set_01) per shoulder, so each wall reads as one bed of rock; the brown and orange boulders
+// stay loose on the ground.
+static const char* const SH_FAMILY[2] = {"rock_moss_set_02", "rock_moss_set_01"};
+// One rock standing at (x0, z0) on the wall's foot, facing out along (nx, nz): `want` m tall from 0.3 m
+// under the lowest ground beneath it (when seated) to `top`, ideally `wide` m wide and at most `wmax`,
+// standing `proud` m out of the foot. Every closed scan in every orientation is scored on how near its shape comes to
+// wide x want, its depth (deep enough to reach back into the cut) and how far it is scaled; a little
+// randomness keeps neighbours different. Returns its width along the wall, or 0.
+static float sh_rock(const PropCatalog* p, const TerraMap* m, PRng* r, const char* family, float x0, float z0, float nx, float nz, float top, float want, float wide, float wmax, float proud, bool seated, float moss, PropInstance* out) {
+    int bv = -1, bo = 0; float best = 1e30f, spin = prr(r, -0.25f, 0.25f) + (pr(r) < 0.5f ? PPI : 0), lean = prr(r, 0.12f, 0.3f);
+    static const int KINDS[2] = {PROP_BOULDER, PROP_OUTCROP};
+    for (int c = 0; c < 2; c++) for (int k = 0; k < p->kind_count[KINDS[c]]; k++) {
+        int v = p->kind_list[KINDS[c]][k]; if (!p->closed[v] || strncmp(p->name[v], family, strlen(family))) continue;
+        for (int o = 0; o < 6; o++) {
+            float q[4], lo[3], hi[3]; sh_orient(o, spin, lean, q); sh_bounds(p, v, q, lo, hi);
+            float h = hi[1] - lo[1], sc = want / fmaxf(h, 0.05f), w = (hi[0] - lo[0]) * sc, d = (hi[2] - lo[2]) * sc;
+            if (sc > SH_SCALE_MAX || w > wmax || h * sc > 1.3f * w) continue;   // no slender pieces stood on end: a wall, not standing stones
+            float score = fabsf(logf(w / wide)) + 0.6f * fmaxf(0.4f * want - d, 0) / want + 0.05f * sc + 0.35f * pr(r);
+            if (score < best) { best = score; bv = v; bo = o; }
+        }
+    }
+    if (bv < 0) return 0;
+    float q[4], lo[3], hi[3], yaw = atan2f(nx, nz), qy[4], qw[4]; sh_orient(bo, spin, lean, q); sh_bounds(p, bv, q, lo, hi);
+    quat_axis(0, 1, 0, yaw, qy); quat_mul(qy, q, qw);
+    float sc = want / (hi[1] - lo[1]), ax = nz, az = -nx;   // (ax, az): along the wall, right of the outward normal
+    // The frame origin that puts the rock's middle on the slot and its front `proud` m out of the foot.
+    float off = proud - hi[2] * sc, mid = -0.5f * (lo[0] + hi[0]) * sc;
+    float x = x0 + nx * off + ax * mid, z = z0 + nz * off + az * mid;
+    // Seated 0.3 m under the lowest ground beneath its support points, and no lower than its top allows;
+    // a rock lodged up the wall (not seated) just has its top at `top`.
+    float g = 1e30f, o[3];
+    for (int k = 0; k < PROP_EXT_PTS && seated; k++) { sh_rot(qw, p->ext[bv][k], sc, o); if (o[1] < lo[1] * sc + 0.5f * (hi[1] - lo[1]) * sc) g = fminf(g, seat_ground(m, m->surface, x + o[0], z + o[2])); }
+    float y = fminf(g - 0.3f, top - want) - lo[1] * sc;
+    *out = (PropInstance){x, y, z, sc, {qw[0], qw[1], qw[2], qw[3]}, moss, 0, (uint16_t)bv, PROP_OUTCROP, 0};
+    return (hi[0] - lo[0]) * sc;
+}
+// The review views (prop_shoulder_view); side -1 is the hillside on the other side of the notch.
+static void sh_view(const TerraMap* m, const TerraShoulder* s, int side, float eye[3], float at[3]) {
+    float f[4], flo, H; terra_shoulder_foot(s, 0, f); sh_wall_at(m, f[0], f[1], f[2], f[3], s->wall / 3 + 4, &flo, &H);
+    at[0] = f[0]; at[2] = f[1]; at[1] = flo + 0.5f * H;
+    float back = 1.5f * s->half + 12;
+    // Out in front: 5 m over the ground, and no lower than 3 m over the notch's floor, so the fall of the
+    // slope below the mouth does not hide it.
+    if (!side) { eye[0] = s->x - s->ux * back; eye[2] = s->z - s->uz * back; eye[1] = fmaxf(seat_ground(m, m->surface, eye[0], eye[2]) + 5.0f, s->floor + 3.0f); }
+    else {
+        float sx = s->x + side * s->uz * 1.4f * s->half - s->ux * 0.6f * s->half, sz = s->z - side * s->ux * 1.4f * s->half - s->uz * 0.6f * s->half;
+        eye[0] = sx; eye[2] = sz; eye[1] = fmaxf(seat_ground(m, m->surface, sx, sz) + 6.0f, s->floor + s->wall + 3.0f);
+    }
+}
+
+// The fill: the wall's bare patches as seen from out in front of the mouth and from the hillsides on
+// both sides (sh_view), each rock taken as the ellipsoid inside its bounds (cheap, a little smaller than
+// the rock). Wall points are those prop_shoulder_coverage measures, every 0.05 of the mouth across and
+// 0.25 m deep. While some stay bare, a rock is lodged on the barest one (the one with the most bare
+// points within 1.5 m), sized to the patch, its back set into the wall, standing a metre proud of it.
+typedef struct { float p[3], n[2]; uint8_t vis; } ShPt;
+static bool sh_hits(const PropCatalog* c, const PropInstance* in, const float o[3], const float d[3]) {
+    const float* lo = c->lo[in->variant]; const float* hi = c->hi[in->variant];
+    float iq[4] = {-in->q[0], -in->q[1], -in->q[2], in->q[3]}, a[3] = {o[0] - in->x, o[1] - in->y, o[2] - in->z}, ro[3], rd[3];
+    quat_rot(iq, a, ro); quat_rot(iq, d, rd);
+    float A = 0, B = 0, C = -1;
+    for (int k = 0; k < 3; k++) {
+        float mid = 0.5f * (lo[k] + hi[k]) * in->scale, ax = fmaxf(0.4f * (hi[k] - lo[k]) * in->scale, 0.05f);
+        float u = (ro[k] - mid) / ax, v = rd[k] / ax; A += v * v; B += 2 * u * v; C += u * u;
+    }
+    float disc = B * B - 4 * A * C; if (disc < 0) return false;
+    float t0 = (-B - sqrtf(disc)) / (2 * A), t1 = (-B + sqrtf(disc)) / (2 * A);
+    return t1 > 0 && t0 < 1;   // the segment o .. o + d passes through it
+}
+static int sh_fill(const PropCatalog* p, const TerraMap* m, const TerraShoulder* s, PRng* r, const char* fam, PropInstance* out, int cnt, int cap) {
+    enum { NP = 41 * 40 }; ShPt* pt = malloc(sizeof(ShPt) * NP); int np = 0; float eye[3][3], at[3], reach = s->wall / 3 + 4;
+    for (int v = 0; v < 3; v++) sh_view(m, s, v == 0 ? 0 : v == 1 ? 1 : -1, eye[v], at);
+    for (int i = 0; i <= 40; i++) {
+        float t = -1 + 0.05f * i, f[4]; terra_shoulder_foot(s, t, f); bool wall = false;
+        for (float b = -0.5f; b <= reach && np < NP; b += 0.25f) {
+            float x = f[0] - b * f[2], z = f[1] - b * f[3];
+            if (seat_ground(m, m->surface, x - 0.4f * f[2], z - 0.4f * f[3]) - seat_ground(m, m->surface, x + 0.4f * f[2], z + 0.4f * f[3]) <= 0.8f) { if (wall && b > 1) break; continue; }
+            wall = true;
+            ShPt* q = &pt[np]; q->p[0] = x; q->p[1] = seat_ground(m, m->surface, x, z); q->p[2] = z; q->n[0] = f[2]; q->n[1] = f[3]; q->vis = 0;
+            for (int v = 0; v < 3; v++) {   // not hidden by the ground in front
+                float d[3] = {x - eye[v][0], q->p[1] - eye[v][1], z - eye[v][2]}, L = sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]); bool hid = false;
+                for (float u = 0.5f; u < L - 0.6f && !hid; u += 0.5f) { float f2 = u / L; hid = eye[v][1] + d[1] * f2 < seat_ground(m, m->surface, eye[v][0] + d[0] * f2, eye[v][2] + d[2] * f2) - 0.02f; }
+                q->vis |= (uint8_t)(!hid << v);
+            }
+            np += q->vis != 0;
+        }
+    }
+    uint8_t* bare = malloc(np + 1); uint8_t* tried = calloc(np + 1, 1);
+    for (int it = 0; it < 24 && cnt < cap; it++) {
+        int nb = 0;
+        for (int k = 0; k < np; k++) {
+            bare[k] = 0;
+            for (int v = 0; v < 3 && !bare[k]; v++) {
+                if (!(pt[k].vis >> v & 1)) continue;
+                float d[3] = {pt[k].p[0] - eye[v][0], pt[k].p[1] - eye[v][1], pt[k].p[2] - eye[v][2]}; bool hit = false;
+                for (int i = 0; i < cnt && !hit; i++) hit = sh_hits(p, &out[i], eye[v], d);
+                bare[k] = !hit;
+            }
+            nb += bare[k];
+        }
+        if (nb < np / 80 + 2) break;   // what is left is a scatter of single points, not a patch
+        int best = -1, bn = 0;
+        for (int k = 0; k < np; k++) {
+            if (!bare[k] || tried[k]) continue;
+            int n = 0;
+            for (int j = 0; j < np; j++) n += bare[j] && fabsf(pt[j].p[0] - pt[k].p[0]) + fabsf(pt[j].p[1] - pt[k].p[1]) + fabsf(pt[j].p[2] - pt[k].p[2]) < 1.5f;
+            if (n > bn) { bn = n; best = k; }
+        }
+        if (best < 0) break;
+        tried[best] = 1;   // a rock put here that leaves it bare does not get another go
+        // The patch's height: the bare points close across it.
+        float y0 = 1e30f, y1 = -1e30f;
+        for (int j = 0; j < np; j++)
+            if (bare[j] && hypotf(pt[j].p[0] - pt[best].p[0], pt[j].p[2] - pt[best].p[2]) < 2.5f) { y0 = fminf(y0, pt[j].p[1]); y1 = fmaxf(y1, pt[j].p[1]); }
+        float want = clampf(1.4f * (y1 - y0) + 1.0f, 1.5f, 5.0f), top = fmaxf(y1, pt[best].p[1]) + 0.4f * want;
+        if (sh_rock(p, m, r, fam, pt[best].p[0], pt[best].p[2], pt[best].n[0], pt[best].n[1], top, want, want * prr(r, 1.0f, 1.4f), 6, prr(r, 0.8f, 1.3f), false, prr(r, 0.5f, 0.9f), &out[cnt]) > 0) cnt++;
+    }
+    free(bare); free(tried); free(pt);
+    return cnt;
+}
+static int shoulder_layout(const PropCatalog* p, const TerraMap* m, const TerraShoulder* s, PropInstance* out, int cap) {
+    int cnt = 0; PRng r = {hashu(s->seed ^ 0x5401u)}; const char* fam = SH_FAMILY[(s->seed >> 7) & 1];
+    // The wall: along its foot from one end to the other, wherever it stands over a metre, a rock as tall
+    // as the wall there (its top just over the lip, where the hill meets it), no wider than the wall's
+    // curve allows (the notch's sides bend toward the viewer, and a wide flat piece would stand out in
+    // front of them). `c` is where the rock so
+    // far stops covering the wall: each piece is centred half its wanted width past it, and the next one
+    // starts 55% of the way back into this one (the scans are rounded, so their ends cover little).
+    float e = 0.02f, joints[SH_PIECES]; int nj = 0;
+    for (float c = -1.0f + 0.05f * pr(&r); c < 1.0f && cnt < cap;) {
+        float arc0 = sqrtf(s->half * s->half + 4 * s->depth * s->depth * c * c), guess = clampf(0.9f * s->wall, 2.0f, 8.0f), t = c + 0.5f * guess / arc0;
+        float g = (terra_shoulder_wall(s, t + e) - terra_shoulder_wall(s, t - e)) / (2 * e), arc = sqrtf(s->half * s->half + g * g);
+        float f[4], flo, H; terra_shoulder_foot(s, t, f); sh_wall_at(m, f[0], f[1], f[2], f[3], s->wall / 3 + 4, &flo, &H);
+        if (H < 1.0f) { c += 1.0f / arc; continue; }
+        float want = fminf(H + 0.45f, SH_PIECE_MAX_H), wide = clampf(want * prr(&r, 0.8f, 1.2f), 2.0f, 9.0f);
+        t = c + 0.5f * wide / arc; terra_shoulder_foot(s, t, f); sh_wall_at(m, f[0], f[1], f[2], f[3], s->wall / 3 + 4, &flo, &H);
+        want = fminf(fmaxf(H, 1.0f) + 0.8f, SH_PIECE_MAX_H);
+        float g2 = (terra_shoulder_wall(s, t + e) - 2 * terra_shoulder_wall(s, t) + terra_shoulder_wall(s, t - e)) / (e * e * s->half * s->half);
+        float rc = powf(1 + g * g / (s->half * s->half), 1.5f) / fmaxf(fabsf(g2), 1e-4f);
+        float w = sh_rock(p, m, &r, fam, f[0], f[1], f[2], f[3], flo + H + 0.5f, want, wide, clampf(rc, 3, 12), prr(&r, 0.7f, 1.2f), true, prr(&r, 0.35f, 0.7f), &out[cnt]);
+        if (w <= 0) { c += 1.0f / arc; continue; }
+        cnt++; if (nj < SH_PIECES) joints[nj++] = t + 0.5f * w / arc;
+        c = t - 0.05f * w / arc;
+    }
+    // At each joint between two pieces, where their rounded ends leave a seam: a rock lodged high in it,
+    // its back set into the wall and its top at the lip, and most often a lower one standing in front, so
+    // the face reads as one irregular outcrop rather than a row and no seam shows the cut behind.
+    for (int k = 0; k + 1 < nj && cnt + 2 <= cap; k++) {
+        if (fabsf(joints[k]) > 0.95f) continue;
+        float f[4], flo, H; terra_shoulder_foot(s, joints[k], f); sh_wall_at(m, f[0], f[1], f[2], f[3], s->wall / 3 + 4, &flo, &H);
+        if (H < 2.0f) continue;
+        float want = H * prr(&r, 0.45f, 0.6f), top = flo + H + 0.5f, x = f[0], z = f[1];
+        for (float b = 0; b < s->wall / 3 + 4; b += 0.25f) {   // up the wall to where its middle will be
+            x = f[0] - b * f[2]; z = f[1] - b * f[3];
+            if (seat_ground(m, m->surface, x, z) >= top - 0.6f * want) break;
+        }
+        if (sh_rock(p, m, &r, fam, x, z, f[2], f[3], top, want, want * prr(&r, 1.0f, 1.5f), 6, prr(&r, 0.3f, 0.6f), false, prr(&r, 0.5f, 0.9f), &out[cnt]) > 0) cnt++;
+        if (pr(&r) < 0.35f) continue;
+        want = H * prr(&r, 0.5f, 0.8f);
+        if (sh_rock(p, m, &r, fam, f[0], f[1], f[2], f[3], flo + want, want, want * prr(&r, 0.8f, 1.3f), 6, prr(&r, 1.2f, 2.0f), true, prr(&r, 0.5f, 0.9f), &out[cnt]) > 0) cnt++;
+    }
+    return sh_fill(p, m, s, &r, fam, out, cnt, cap);
+}
+// The shoulder pieces of one class that stand in tile (tx, tz) (each piece belongs to the tile under it,
+// so the colliders stream in with the ground they stand on), keyed from PROP_SHOULDER_CELL up.
+static int shoulder_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int tz, PropInstance* out, int cap) {
+    float x0 = tx * PROP_TILE, z0 = tz * PROP_TILE, x1 = x0 + PROP_TILE, z1 = z0 + PROP_TILE; int cnt = 0, local = 0;
+    for (int k = 0; k < m->nshoulder && cnt < cap; k++) {
+        const TerraShoulder* s = &m->shoulder[k]; float R = terra_shoulder_reach(s);
+        if (s->x + R < x0 || s->x - R > x1 || s->z + R < z0 || s->z - R > z1) continue;
+        PropInstance own[SH_PIECES]; const PropInstance* buf = own; int n;
+        if (m->shoulder_props) { buf = m->shoulder_props->piece + m->shoulder_props->start[k]; n = m->shoulder_props->start[k + 1] - m->shoulder_props->start[k]; }
+        else n = shoulder_layout(p, m, s, own, SH_PIECES);
+        for (int i = 0; i < n && cnt < cap && local < 1024 - PROP_SHOULDER_CELL; i++) {
+            if (buf[i].kind != kind || buf[i].x < x0 || buf[i].x >= x1 || buf[i].z < z0 || buf[i].z >= z1) continue;
+            out[cnt] = buf[i]; out[cnt++].key = prop_key(m, kind, tx, tz, PROP_SHOULDER_CELL + local++);
+        }
+    }
+    return cnt;
+}
+
+PropShoulders* prop_shoulders_prepare(const PropCatalog* c, const TerraMap* m) {
+    if (!m->nshoulder) return NULL;
+    PropShoulders* ps = malloc(sizeof *ps); int n = m->nshoulder;
+    PropInstance* all = malloc(sizeof(PropInstance) * SH_PIECES * (size_t)n); int* cnt = calloc(n, sizeof(int));
+    ps->start = malloc(sizeof(int) * (n + 1));
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (int k = 0; k < n; k++) cnt[k] = shoulder_layout(c, m, &m->shoulder[k], all + (size_t)k * SH_PIECES, SH_PIECES);
+    int total = 0;
+    for (int k = 0; k < n; k++) { ps->start[k] = total; memmove(all + total, all + (size_t)k * SH_PIECES, sizeof(PropInstance) * cnt[k]); total += cnt[k]; }
+    ps->start[n] = total; ps->piece = realloc(all, sizeof(PropInstance) * (total ? total : 1));
+    free(cnt);
+    return ps;
+}
+void prop_shoulders_free(PropShoulders* ps) { if (ps) { free(ps->piece); free(ps->start); free(ps); } }
+
+void prop_shoulder_view(const TerraMap* m, const TerraShoulder* s, int side, float eye[3], float at[3]) { sh_view(m, s, side, eye, at); }
+
+// Möller-Trumbore: the ray o + t d hits triangle (a, b, c) at t in (0, tmax).
+static bool ray_tri(const float o[3], const float d[3], const float* a, const float* b, const float* c, float tmax) {
+    float e1[3] = {b[0] - a[0], b[1] - a[1], b[2] - a[2]}, e2[3] = {c[0] - a[0], c[1] - a[1], c[2] - a[2]};
+    float pv[3] = {d[1] * e2[2] - d[2] * e2[1], d[2] * e2[0] - d[0] * e2[2], d[0] * e2[1] - d[1] * e2[0]};
+    float det = e1[0] * pv[0] + e1[1] * pv[1] + e1[2] * pv[2]; if (fabsf(det) < 1e-12f) return false;
+    float inv = 1 / det, tv[3] = {o[0] - a[0], o[1] - a[1], o[2] - a[2]};
+    float u = (tv[0] * pv[0] + tv[1] * pv[1] + tv[2] * pv[2]) * inv; if (u < 0 || u > 1) return false;
+    float qv[3] = {tv[1] * e1[2] - tv[2] * e1[1], tv[2] * e1[0] - tv[0] * e1[2], tv[0] * e1[1] - tv[1] * e1[0]};
+    float v = (d[0] * qv[0] + d[1] * qv[1] + d[2] * qv[2]) * inv; if (v < 0 || u + v > 1) return false;
+    float t = (e2[0] * qv[0] + e2[1] * qv[1] + e2[2] * qv[2]) * inv;
+    return t > 1e-4f && t < tmax;
+}
+float prop_shoulder_coverage(const PropCatalog* c, const TerraMap* m, int k, const float eye[3], float* bare_max) {
+    const TerraShoulder* s = &m->shoulder[k];
+    PropInstance own[SH_PIECES]; const PropInstance* pc = own; int np;
+    if (m->shoulder_props) { pc = m->shoulder_props->piece + m->shoulder_props->start[k]; np = m->shoulder_props->start[k + 1] - m->shoulder_props->start[k]; }
+    else np = shoulder_layout(c, m, s, own, SH_PIECES);
+    // The pieces' LOD1 triangles in world space, and a bounding sphere each.
+    float* tri[SH_PIECES] = {0}; int ntri[SH_PIECES] = {0}; float sph[SH_PIECES][4];
+    for (int i = 0; i < np; i++) {
+        char path[512]; snprintf(path, sizeof path, PROP_DIR "%s.prop", c->name[pc[i].variant]);
+        float* pos; int32_t* idx; int ni, nv = prop_read_lod(path, 1, &pos, &idx, &ni);
+        tri[i] = malloc(sizeof(float) * 9 * (size_t)(ni / 3 + 1)); ntri[i] = ni / 3;
+        float lo[3] = {1e30f, 1e30f, 1e30f}, hi[3] = {-1e30f, -1e30f, -1e30f};
+        for (int j = 0; j < ni; j++) {
+            float o[3]; sh_rot(pc[i].q, pos + 3 * idx[j], pc[i].scale, o); o[0] += pc[i].x; o[1] += pc[i].y; o[2] += pc[i].z;
+            memcpy(tri[i] + 3 * j, o, 12); for (int a = 0; a < 3; a++) { lo[a] = fminf(lo[a], o[a]); hi[a] = fmaxf(hi[a], o[a]); }
+        }
+        for (int a = 0; a < 3; a++) sph[i][a] = 0.5f * (lo[a] + hi[a]);
+        sph[i][3] = 0.5f * sqrtf((hi[0] - lo[0]) * (hi[0] - lo[0]) + (hi[1] - lo[1]) * (hi[1] - lo[1]) + (hi[2] - lo[2]) * (hi[2] - lo[2]));
+        free(pos); free(idx); (void)nv;
+    }
+    // The wall: in columns across the notch, from its foot back to where the cut ends (the planned wall
+    // rising at 3:1, plus the rounding of the lip), the ground that rises into the hill steeper than 45 degrees.
+    int shown = 0, covered = 0; float worst = 0, reach = s->wall / 3 + 4;
+    for (float t = -1.0f; t <= 1.0f; t += 0.04f) {
+        float f[4]; terra_shoulder_foot(s, t, f); float run_lo = 1e30f, run_hi = -1e30f; bool wall_seen = false;
+        for (float b = -0.5f; b <= reach; b += 0.2f) {
+            float x = f[0] - b * f[2], z = f[1] - b * f[3], y = seat_ground(m, m->surface, x, z);
+            bool steep = seat_ground(m, m->surface, x - 0.4f * f[2], z - 0.4f * f[3]) - seat_ground(m, m->surface, x + 0.4f * f[2], z + 0.4f * f[3]) > 0.8f;
+            if (!steep) { if (wall_seen && b > 1) break; continue; }
+            wall_seen = true;
+            float d[3] = {x - eye[0], y - eye[1], z - eye[2]}, L = sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+            // Hidden by the ground in front: marched in 0.5 m steps, stopping short of the point.
+            bool hidden = false;
+            for (float u = 0.5f; u < L - 0.6f && !hidden; u += 0.5f) { float f2 = u / L; hidden = eye[1] + d[1] * f2 < seat_ground(m, m->surface, eye[0] + d[0] * f2, eye[2] + d[2] * f2) - 0.02f; }
+            if (hidden) continue;
+            bool rock = false;
+            for (int i = 0; i < np && !rock; i++) {
+                // The sphere first: the closest approach of the ray to its centre, within the segment.
+                float w[3] = {sph[i][0] - eye[0], sph[i][1] - eye[1], sph[i][2] - eye[2]}, tt = (w[0] * d[0] + w[1] * d[1] + w[2] * d[2]) / (L * L);
+                tt = clampf(tt, 0, 1); float cx = eye[0] + d[0] * tt - sph[i][0], cy = eye[1] + d[1] * tt - sph[i][1], cz = eye[2] + d[2] * tt - sph[i][2];
+                if (cx * cx + cy * cy + cz * cz > sph[i][3] * sph[i][3]) continue;
+                for (int j = 0; j < ntri[i] && !rock; j++) rock = ray_tri(eye, d, tri[i] + 9 * j, tri[i] + 9 * j + 3, tri[i] + 9 * j + 6, 1 - 0.05f / L);
+            }
+            shown++; covered += rock;
+            if (!rock) { run_lo = fminf(run_lo, y); run_hi = fmaxf(run_hi, y); }
+            else { if (run_hi > run_lo) worst = fmaxf(worst, run_hi - run_lo); run_lo = 1e30f; run_hi = -1e30f; }
+        }
+        if (run_hi > run_lo) worst = fmaxf(worst, run_hi - run_lo);
+    }
+    for (int i = 0; i < np; i++) free(tri[i]);
+    if (bare_max) *bare_max = worst;
+    return shown ? (float)covered / shown : 1;
 }
 
 float prop_canopy_at(const TerraMap* m, float x, float z) { return canopy_at(m, cell_of(m, x, z)); }
@@ -331,9 +646,68 @@ void prop_catalog_set_base(PropCatalog* c, int v, const float* pos, int nv) {
     c->nbase[v] = n;
 }
 
+// ---------------------------------------------------------------- open edges
+typedef struct { int32_t q[3]; int i; } WeldKey;
+static int weld_cmp(const void* pa, const void* pb) {
+    const WeldKey* a = (const WeldKey*)pa; const WeldKey* b = (const WeldKey*)pb;
+    for (int k = 0; k < 3; k++) if (a->q[k] != b->q[k]) return a->q[k] < b->q[k] ? -1 : 1;
+    return a->i - b->i;
+}
+static int u64_cmp(const void* pa, const void* pb) { uint64_t a = *(const uint64_t*)pa, b = *(const uint64_t*)pb; return a < b ? -1 : a > b; }
+int prop_open_edge(const float* pos, int nv, const int32_t* idx, int ni, float* out, int cap) {
+    if (nv <= 0 || ni < 3) return 0;
+    // Weld: the converter splits vertices along UV seams, which would read as open edges.
+    WeldKey* k = malloc(sizeof(WeldKey) * nv); int* id = malloc(sizeof(int) * nv); int* rep = malloc(sizeof(int) * nv);
+    uint64_t* e = malloc(sizeof(uint64_t) * ni); uint8_t* open = calloc(nv, 1);
+    if (!k || !id || !rep || !e || !open) { free(k); free(id); free(rep); free(e); free(open); return 0; }
+    for (int i = 0; i < nv; i++) { for (int a = 0; a < 3; a++) k[i].q[a] = (int32_t)lroundf(pos[3 * i + a] * 500.0f); k[i].i = i; }
+    qsort(k, nv, sizeof(WeldKey), weld_cmp);
+    int nw = 0;
+    for (int j = 0; j < nv; j++) {
+        if (j == 0 || memcmp(k[j].q, k[j - 1].q, sizeof k[j].q)) rep[nw++] = k[j].i;
+        id[k[j].i] = nw - 1;
+    }
+    int ne = 0;
+    for (int t = 0; t + 2 < ni; t += 3) for (int s = 0; s < 3; s++) {
+        uint32_t a = (uint32_t)id[idx[t + s]], b = (uint32_t)id[idx[t + (s + 1) % 3]];
+        if (a == b) continue;
+        e[ne++] = a < b ? (uint64_t)a << 32 | b : (uint64_t)b << 32 | a;
+    }
+    qsort(e, ne, sizeof(uint64_t), u64_cmp);
+    for (int j = 0; j < ne;) {   // an edge used by one triangle only is open
+        int r = j; while (r < ne && e[r] == e[j]) r++;
+        if (r - j == 1) { open[e[j] >> 32] = 1; open[e[j] & 0xffffffffu] = 1; }
+        j = r;
+    }
+    int n = 0;
+    for (int w = 0; w < nw && n < cap; w++) if (open[w]) { memcpy(out + 3 * n, pos + 3 * rep[w], 12); n++; }
+    free(k); free(id); free(rep); free(e); free(open);
+    return n;
+}
+
+// Bounds, the support points in 26 directions (the cube's faces, edges and corners: the farthest vertex
+// each way, which is what turning and seating a closed rock needs) and whether the scan is closed (no open
+// edge at all once its seams are welded; prop_open_edge).
+void prop_catalog_set_shape(PropCatalog* c, int v, const float* pos, int nv, const int32_t* idx, int ni) {
+    if (v < 0 || v >= c->nvar || nv <= 0) return;
+    float* lo = c->lo[v]; float* hi = c->hi[v];
+    for (int a = 0; a < 3; a++) { lo[a] = 1e30f; hi[a] = -1e30f; }
+    for (int i = 0; i < nv; i++) for (int a = 0; a < 3; a++) { lo[a] = fminf(lo[a], pos[3 * i + a]); hi[a] = fmaxf(hi[a], pos[3 * i + a]); }
+    int k = 0;
+    for (int dz = -1; dz <= 1; dz++) for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy && !dz) continue;
+        int bi = 0; float bd = -1e30f;
+        for (int i = 0; i < nv; i++) { float d = dx * pos[3 * i] + dy * pos[3 * i + 1] + dz * pos[3 * i + 2]; if (d > bd) { bd = d; bi = i; } }
+        memcpy(c->ext[v][k++], pos + 3 * bi, 12);
+    }
+    float* e = malloc(sizeof(float) * 3 * nv);
+    c->closed[v] = e && prop_open_edge(pos, nv, idx, ni, e, nv) == 0;
+    free(e);
+}
+
 bool prop_catalog_base_file(PropCatalog* c, int v, const char* path) {
     float* pos; int32_t* idx; int ni, nv = prop_read_lod(path, 0, &pos, &idx, &ni);
-    if (nv) prop_catalog_set_base(c, v, pos, nv);
+    if (nv) { prop_catalog_set_base(c, v, pos, nv); prop_catalog_set_shape(c, v, pos, nv, idx, ni); }
     free(pos); free(idx);
     return nv > 0;
 }

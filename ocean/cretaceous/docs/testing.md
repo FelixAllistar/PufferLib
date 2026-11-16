@@ -31,8 +31,9 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 
 ### `tests/test_sim.c`: determinism, invariants, physics, combat
 
-- **Bake across thread counts.** A 256² world baked on 1 and on 2 OpenMP threads (`CRET_TEST_BAKE_THREADS`) must hash the same, over height, water, flow, soil, materials and plants.
-- **Lockstep determinism.** Two sims with the same seed and inputs run for 5000 ticks with 32 agents. Every third agent acts at random and the rest are bots. Hunger and thirst are short, so animals starve, fight and respawn. The state hash must match on every tick.
+- **Bake across thread counts.** A 256² world baked on 1 and on 2 OpenMP threads (`CRET_TEST_BAKE_THREADS`) must hash the same, over height, water, flow, soil, materials, plants and the rock shoulders. Seed 1, whose small island has rock shoulders to find and cut (the check fails if it has none).
+- **Rock shoulders** (`test_shoulders`, README "Rock shoulders"). On the test island: 2 to 12 per square kilometre of land, 60 m apart at least; at least 3 m of wall in the middle of each; dry floors; no tree trunk where the rock stands; no open edge of any rock piece (each open vertex of the LOD0 mesh) above the drawn ground; the rock covers at least 80% of each wall from each review view (out in front of the mouth, and from the hill beside it), with no run of bare wall over 1.5 m in one place (`prop_shoulder_coverage`: rays to the wall against the pieces' meshes); and a stegosaur on each floor walks 15 m out of the mouth in 8 s.
+- **Lockstep determinism.** Two sims with the same seed (10) and inputs run for 5000 ticks with 32 agents. Every third agent acts at random and the rest are bots. Hunger and thirst are short, so animals starve, fight and respawn. The state hash must match on every tick.
   - The hash covers each agent's raw bytes except the Box3D ids, so new `CretAgent` fields are covered automatically (the wounds among them). It also covers the carcasses, the sim rng, the weather, the prop stream and the blood marks (which hunting bots follow, cret/wounds).
   - On a mismatch, the test names the first agent and field that diverged.
   - The same run is repeated alone afterwards, then as 4 copies on 4 threads at once (sims sharing one `CretWorld`, as trainer threads do). All must match the first run.
@@ -1039,6 +1040,134 @@ The ten more pachycephalosaur deaths with no attacker are thirst and starvation 
 Cost: the island's bots 0.0430 / 0.0539 / 0.0413 → 0.0500 / 0.0585 / 0.0520 ms a tick (the three seed sets); `bench`, three runs each: step_256 0.681-0.720 → 0.714-0.729 ms, bots_128 0.363-0.370 → 0.364-0.404 ms, the rest within 0.003 ms. The blood search is a distance check per mark before the full smell test, and only for hungry predators at decision time.
 
 What it does not do yet: a wound's slow bleed that kills long after the blow credits nobody (the reward's kill credit is unchanged); herbivores never notice blood (they have no hunting nose); critters do not wound; falls break bones but leave no wound.
+
+## Rock shoulders and ravines (cret/rock-shoulders)
+
+Measured in the 4-core cloud sandbox with the real props (`tools/fetch_props.sh`, Blender 4.2), clang for everything (see the compiler note below).
+
+Baseline: the unmodified 5.0 checkout (a5961f5) passes every line of `make test` (22 of 22; camprobe 258 violation frames, ecoprobe 146 of 146). Without the props, `test_sim` fails its two movable-prop checks there.
+
+On the branch, `make test` passes in full (all 22 lines; camprobe 280 violation frames, combatprobe ok, ecoprobe 146 of 146), with the re-baselined budgets below.
+
+With the branch's features switched off (`CRET_TERRA="ravine=1 shoulders=0"`) every probe gives the baseline's numbers exactly (ecoprobe 146 of 146 with the same values, camprobe 258 frames, combatprobe, test_quests, and the 3-seed island run below), so the code changes nothing but the terrain features themselves. On the final bake, which feature moves what:
+
+| probe | ravine=1 shoulders=0 | shoulders=0 (wide ravines) | ravine=1 (shoulders) | both (the default) |
+|---|---|---|---|---|
+| camprobe | 258 frames, ok | 235, ok | 246, ok | 280, `frame` 160 over 140 |
+| combatprobe | ok | stego<raptor3: no attack thrown | stego<raptor3 none, stego<fraptor3 65.7% landed | as with shoulders |
+| test_quests (before the fix below) | ok | first step 5 fails | first step 5 fails | first step 5 fails |
+
+Why they move. The shoulders cut the test island (5 shoulders on 1 km2 of land) and, through the hydrology that runs after the cut, nudge a few water courses on flats; the wide ravines reshape their lines at load. Spawning draws random points until one is on walkable ground, so any change to the land also shifts the sim's random stream, and with it every bot's choices. The probes pick their spots from the terrain: camprobe's "dense props" spot is now a shoulder's rock band (at 1224, 533; the animal's pivot leaves the picture on 62 of its 21684 frames, among rocks taller than it), and in combatprobe the three raptors staged against a young stegosaur (the same spot, 673, 853, in every configuration) now never choose to attack it: 0 blows thrown in 24 trials, as `pachy<raptor` throws none on 5.0.
+
+Traps this found, both fixed:
+- **The notch itself.** The quick ecoprobe's stegosaurs travelled more and covered less ground. A sampling harness (every 10 s, the quick probe's 24 animals for 2 game days) showed them held against a notch's wall while trying to move 11.5% of the time (raptors 6.3%), against 1.3% anywhere without shoulders: the curved wall is a dead end for feeling ahead. `bots.c` now sends a bot round the wall when its way crosses it (README, Rock shoulders). Held at shoulders: 2 samples of about 4800.
+- **A bank above a beach.** Four stegosaurs then starved together on one beach (1265, 463). A shoulder 82 m away had kept the beaches world.c lowers at load off its ground, and where the beach stopped it left a bank 20 m high; the herd walked in under it, ate the strip bare and never found the way out. The bake now keeps shoulders out of the beaches' reach (not within 450 m of the sea below 70 m) and the beaches have no mask. Held time after: raptors 0.6%, stegosaurs 3.1%, sauropeltas 6.6%, the rest under 1% (all but 2 samples away from any shoulder).
+
+The island with the first version of the shoulders (superseded: see the second pass below) (`ecoprobe --only world --days 6 --seeds 3`, 48 animals, the same seeds, wide ravines off to isolate the shoulders), without → with shoulders:
+- populations (mean alive): unchanged within 0.1 (raptor 13.0, stegosaur 9.6 → 9.5, tyrannosaur 2.3 → 2.4, pachycephalosaur 9.7, sauropelta 5.9 → 6.0, gallimimus 5.8);
+- deaths per animal-day: raptor 0.33 → 0.51 (killed by herbivores 0.24 → 0.45; stegosaurs defend 4 → 7% of the day), stegosaur 0.18 → 0.20, tyrannosaur 0.07 → 0.12, pachycephalosaur 0.11 → 0.14, sauropelta 0.14 → 0.08, gallimimus 0.21 → 0.26; starvation 0.00-0.05 a day for every species either way. The two earlier runs with shoulders (before the detour, and before the beach fix) gave raptor 0.35 and 0.45, so three seeds swing by about that much;
+- food eaten against burned: stegosaur 0.98 → 0.94, pachycephalosaur 1.01 → 1.03, sauropelta 0.98 → 1.03, gallimimus 1.10 → 1.04;
+- time budget: stegosaurs graze 37 → 26% of the day and travel 30 → 36%, on richer ground (grazed biomass 0.30 → 0.42) and further from water (123 → 141 m); the same shift showed in all three runs with shoulders (graze 28, 26, 26%). Sauropeltas graze 40 → 50%, gallimimus 54 → 62%. Why the stegosaurs graze less is open: they eat a little less than they burn over the 6 days (0.94) but none starve.
+
+Re-baselined (the change in the terrain explains each; numbers against 5.0's files):
+- `tests/camprobe_budget.txt`: `frame` 140 → 210 (the "dense" spot is now a shoulder's rock band). The other invariants are within budget and unchanged.
+- `tests/combatprobe_budget.txt`: `stego<raptor3` dropped (no blow thrown; `--write` leaves out such pairings, as `pachy<raptor` on 5.0), `stego<fraptor3` 74.0% landed / 651 ms → 65.7% / 647 ms. The other lines are within their budget and unchanged.
+- `tests/ecoprobe_budget.txt`: the 19 results that left their band take the new run's band (each +-50%, at least +-2); the other 127 are unchanged. Stored value → new: budget.stego.travel 26.41 → 44.06, budget.pachy.graze 20.66 → 48.06, budget.pachy.vigil 4.364 → 8.616, budget.pachy.travel 47.74 → 17.7, budget.pachy.defend 4.482 → 0.566, budget.galli.graze 35.25 → 62.8, budget.galli.travel 29.53 → 8.121, budget.galli.flee 12.63 → 0.025, hunt.raptor.success 50 → 18.18, hunt.raptor.abandoned 12.5 → 72.73, hunt.trex.success 11.11 → 4.545, deaths.raptor.predation_share 14.29 → 50, deaths.stego.predation_share 100 → 25, deaths.pachy.predation_share 0 → 100, deaths.pachy.starved_share 100 → 0, deaths.sauro.predation_share 0 → 25, deaths.galli.predation_share 100 → 0, person.raptor.encounters 12 → 4, person.trex.encounters 6 → 0. In the quick run's 24 animals over 2 days one herd decides a line (the same code built twice gave starvation in one run and thirst in the other on this island, which has no rivers); the island run above is the measure.
+- `tests/test_sim.c`: the determinism run's seed 5 → 10 (seed 5 kept determinism but its coverage fell to 4 hits and no wound; seed 10 gives 12 hits, 2 kills, 5 wounds); the turning test takes a spot clear of trees (`find_clear`): the new bake put its old flat spot next to a trunk, the stegosaur hit it in its sprint and skidded (0.43). The turning radii are those of 5.0 (7.6, 11.9, 7.3 m). `find_flat` skips shoulder floors (flat, but walled), as it skips tors and beaches.
+- `tests/test_quests.c`: the explore step's helper puts the animal 115-145 m from an unseen place instead of 100-130 m. The step asks for a place at least 100 m off; put at exactly 100 m, the animal drifted to 90 m before the step came round and got an ordinary quest. Passes on all four configurations above.
+
+Found on the way, not fixed (both older than this branch):
+- **A raptor sinks 0.44 m into a 1.55-scale boulder from above.** `test_props` walks a raptor into 24 sampled props; with one of this branch's intermediate prop lists a sampled index was the boulder at (1465, 1093) of the test island, and the raptor sank into it on 2 of 12 approach angles. The same boulder (index 2641) does the same on 5.0; its sampling stride just never picked it, nor does it with the final bake. It is in the sim's mover on movable props (their contact planes do not clip the velocity), not in the terrain.
+- **The world cache depends on the compiler.** The cache file is keyed by the bake parameters only, but a gcc build and a clang build bake slightly different islands (floating-point contraction): the gcc-built tools here put the highest summit at 632 m, the clang-built game and tests at 609 m, and different props. Whichever binary bakes first fills the cache for the others. Build every tool with clang (`make ... CC=clang`; the Makefile's `CC ?= clang` does not apply, as make defines `CC` itself), or add the compiler to the cache key.
+- **Coast pieces show their open undersides.** The coast and cliff set pieces of the island's own scatter are sunk by their centre, not seated on their rim, and some show black open undersides where the ground falls away. Seating them on their whole open edge (`prop_open_edge` in `render/props_place.c` finds it) would fix it and move every prop probe again.
+
+Review images: `docs/terrain/`, drawn by `tools/terrashade.c` without a GPU (`shoulder_*.jpg`, `ravine_*.jpg`, `island.jpg`), and frames of the real renderer (`capture_shoulder_*.jpg`): `capture` runs in the cloud sandbox under `xvfb-run` with Mesa llvmpipe, about a minute a shot at 960x540 (`xvfb-run -a -s '-screen 0 1280x720x24' build/cretaceous/cretaceous capture DIR --shot 'shoulder_*' --size 960 540`). With `tools/fetch_textures.py` (Pillow; run it with a Python whose Pillow imports) the sandbox has the real ground textures too.
+
+### Second pass: the rock is the wall, and the thirst traces
+
+The owner's review on a GPU with the real textures (not merged): every notch read as a pale quarry 40-80 m across with small boulders along its foot, and on the island thirst deaths rose for every species and tyrannosaurs starved. This pass rebuilt the shoulders rock first (README, Rock shoulders) and traced every thirst and starvation death.
+
+Coverage (`terrashade --coverage`; the island, seed 1, 2048^2): the rock covers 99% of each wall on average from the mouth and from the side (lowest 94% and 94%), with no run of bare wall over 1.5 m on 58 of the 60 shoulders (1.7 / 2.5 m at (5021, 5896), 1.6 m at (3478, 1998)). The four capture shots: shoulder_1 98% / 100%, shoulder_2 99% / 100%, shoulder_3 98% / 98%, shoulder_4 99% / 99%, tallest bare run 1.0 m. Test island: 2 shoulders, 99%, 0.3 m. Laying the rock out costs 0.07 s at load (4 threads). `make test` passes in full on the final code: camprobe 248 violation frames (within 5.0's own budget file again), combatprobe ok, ecoprobe 146 of 146, bench ok, the netbench replay matches.
+
+The death trace (`ecoprobe --trace`, docs/ecosystem.md section 11) on 6-day island runs, each config on the same seeds (K = 0..11 unless said), clang. Means over seeds, deaths per animal-day, with the range over seeds:
+
+| | A: ravine=1 shoulders=0 (5.0's terrain) | B: wide ravines only | C: shoulders only (6 seeds) | D: both, this pass (the default) |
+|---|---|---|---|---|
+| raptor thirst | 0.21 (0-1.29) | 0.04 (0-0.24) | 0.15 (0-0.72) | 0.04 (0-0.18) |
+| stegosaur thirst | 0.04 (0-0.17) | 0.01 (0-0.07) | 0.05 (0-0.17) | 0.02 (0-0.14) |
+| tyrannosaur thirst | 0.09 (0-0.40) | 0.01 (0-0.08) | 0.04 (0-0.11) | 0.04 (0-0.18) |
+| pachycephalosaur thirst | 0.02 (0-0.09) | 0.01 (0-0.03) | 0.02 (0-0.07) | 0.02 (0-0.07) |
+| sauropelta thirst | 0.03 (0-0.14) | 0.02 (0-0.14) | 0.02 (0-0.11) | 0.02 (0-0.11) |
+| gallimimus thirst | 0.00 (0-0.03) | 0.01 (0-0.03) | 0.01 (0-0.03) | 0.01 (0-0.06) |
+| raptor starved | 0.02 (0-0.05) | 0.02 (0-0.08) | 0.01 (0-0.03) | 0.01 (0-0.06) |
+| tyrannosaur starved | 0.02 (0-0.11) | 0.01 (0-0.08) | 0.02 (0-0.11) | 0.01 (0-0.09) |
+| pachycephalosaur starved | 0.01 (0-0.02) | 0.01 (0-0.10) | 0.02 (0-0.05) | 0.01 (0-0.05) |
+| sauropelta starved | 0.00 (0-0.03) | 0.00 (0-0.03) | 0.01 (0-0.06) | 0.01 (0-0.03) |
+| gallimimus starved | 0.00 (0-0.03) | 0.01 (0-0.03) | 0.01 (0-0.06) | 0.01 (0-0.03) |
+
+What the traces say:
+- **5.0's own thirst trap is the stepped gorges.** Of A's 252 thirst deaths, 123 died inside a stepped gorge (90 with a gorge wall the steepest step on the straight line to water) and 165 had not drunk since they spawned; 50 had no way to water over walkable ground at all. One seed alone (K = 3) lost raptors at 1.29 a day that way. The wide ravines remove it: B and D have no thirst death in a ravine.
+- **The first version's notches trapped animals.** In the runs on the previous version (before this pass), animals died against notch walls without moving: a sauropelta at (3431, 4543) moved 0 m in its last 30 minutes, three pachycephalosaurs at (3707, 4471) 0 m in their last 10, all a few metres from a 30 m deep notch's wall, with water 70-90 m away. With the smaller notches and the closed rock, D's traces have no animal held by a shoulder: 10 of its 76 thirst deaths were within 15 m of one; every one had moved 94-310 m in its last 10 minutes except a raptor guarding a kill or nest (8 m in 10 minutes, 679 m in 30), most never drank after spawning on high ground, and one group (three raptors and a stegosaur, guarding) died on one notch's floor at (5255, 5430) with water 60 m away, as guarding animals do anywhere. At those places the way to water over walkable ground is the same length with the shoulders off (`world.c` water field), so the shoulders do not lengthen it.
+- **Starvation is not the terrain features.** No starvation death in D was within 15 m of a shoulder or in a ravine. The cluster that remains is on the south coast's low plain (3400-3800, 1300; 0-4 m up), where grazers near the water there eat poor ground (about half the island's food) and do not leave it. With the stepped gorges, whose walls fence that stretch of coast off, it happens less (A: 3 of 23 starvation deaths there, B: 17 of 38, D: 7 of 26).
+
+The owner's measure (gcc, as the owner builds and as the Windows build is; 12 seeds each, the 5.0 checkout against this branch's final code; a gcc build bakes a slightly different island, so these are not the clang runs' worlds):
+
+| species | thirst 5.0 | thirst branch | starved 5.0 | starved branch |
+|---|---|---|---|---|
+| raptor | 0.16 (0-1.42) | 0.02 (0-0.06) | 0.01 (0-0.08) | 0.02 (0-0.08) |
+| stegosaur | 0.01 (0-0.03) | 0.01 (0-0.02) | 0.00 | 0.00 (0-0.03) |
+| tyrannosaur | 0.01 (0-0.08) | 0.01 (0-0.08) | 0.00 | 0.00 |
+| pachycephalosaur | 0.02 (0-0.18) | 0.01 (0-0.02) | 0.00 (0-0.02) | 0.02 (0-0.10) |
+| sauropelta | 0.04 (0-0.14) | 0.02 (0-0.09) | 0.01 (0-0.06) | 0.00 |
+| gallimimus | 0.00 (0-0.03) | 0.00 | 0.00 (0-0.03) | 0.02 (0-0.20) |
+
+Thirst is at or below 5.0 for every species; tyrannosaurs no longer starve. Every species' mean starvation is within 5.0's range over seeds; what still differs is one seed (K = 3) in which gallimimus (0.20) and pachycephalosaurs (0.10) starved on the south coastal plain above, for the reason given there. That is the herds' range on the island as 5.0 has it, reached more often once the stepped gorges stop fencing that coast, not a trap of the shoulders or the wide ravines; a fix belongs to the bots' foraging (leave ground that does not feed them) or to the coast's vegetation, not this branch.
+
+Moved in this pass (each by the terrain):
+- `tests/ecoprobe_budget.txt`: re-baselined. The test island now has 2 shoulders instead of 5 and the herds take other paths; 18 of 146 lines left their band. Stored band centre → new: budget.raptor.hunt 0.5 → 5.4, budget.trex.hunt 5.2 → 10.6, budget.pachy.travel 17.7 → 39.6, budget.sauro.rest 10.0 → 16.8, budget.sauro.flee 1.4 → 8.0, budget.galli.graze 62.8 → 20.4, budget.galli.travel 8.1 → 35.7, budget.galli.flee 0.0 → 22.3, hunt.raptor.success 18.2 → 35.7, hunt.trex.per_day 9.0 → 15.5, deaths.raptor.predation_share 50 → 22, deaths.raptor.starved_share 0 → 33, deaths.stego.predation_share 25 → 100, deaths.pachy.predation_share 100 → 0, deaths.sauro.predation_share 25 → 0, deaths.galli.predation_share 0 → 67, deaths.galli.starved_share 0 → 33, person.trex.encounters 0 → 4. The quick probe is 24 animals for 2 days, so one death moves a share by a third. With `CRET_TERRA="ravine=1 shoulders=0"` it passes 5.0's own budget file on all 146 lines.
+- `tests/camprobe_budget.txt`: back to 5.0's file (`frame` 210 → 140): the dense-props spot is no longer a shoulder's rock band.
+- `tests/combatprobe_budget.txt`: unchanged from the first pass (`stego<raptor3` still throws no blow on the wide ravines' test island).
+- `tests/test_sim.c`: `test_props` starts each walk only where the raptor is clear of every prop (after one tick, which streams the colliders in): the stride sample moved onto two starts inside a neighbouring prop, where the raptor began 0.44 m sunk (the same with the shoulders off). The generic seating check leaves the shoulder rocks to `test_shoulders` (some are lodged up the wall by design). `test_shoulders` asks for 2 shoulders on the test island instead of 3 (fewer, larger-spaced sites) and checks the coverage.
+
+
+## Bedrock (cret/bedrock)
+
+The owner's review of the rock shoulders: the scoop was right, the rock far too small; it should be the mountain's own bedrock, shelves 50-300 m long and faces 8-40 m tall, and the mountains bare above a tree line. README, Bedrock, has what the bake and the shader do; `docs/terrain/bedrock/README.md` the pictures.
+
+The ecosystem, traced, not tuned. `ecoprobe --only world --days 6 --seeds 1 --seed0 K --trace`, K = 0..11, gcc (as the owner builds), each config on its own island. Deaths per animal-day, mean over the 12 seeds (range over seeds). 5.0's column is the last report's gcc run of the 5.0 checkout.
+
+| | 5.0 | before: cret/rock-shoulders | bedrock, first full bake | final: bare rock from 280 m, bots go round steep ground to water |
+|---|---|---|---|---|
+| raptor thirst | 0.16 (0-1.42) | 0.02 (0.00-0.10) | 0.03 (0.00-0.08) | 0.02 (0.00-0.06) |
+| stegosaur thirst | 0.01 (0-0.03) | 0.00 (0.00-0.02) | 0.01 (0.00-0.04) | 0.00 (0.00-0.04) |
+| tyrannosaur thirst | 0.01 (0-0.08) | 0.01 (0.00-0.10) | 0.02 (0.00-0.20) | 0.02 (0.00-0.10) |
+| pachycephalosaur thirst | 0.02 (0-0.18) | 0.01 (0.00-0.03) | 0.02 (0.00-0.07) | 0.01 (0.00-0.04) |
+| sauropelta thirst | 0.04 (0-0.14) | 0.00 (0.00-0.03) | 0.01 (0.00-0.12) | 0.01 (0.00-0.09) |
+| gallimimus thirst | 0.00 (0-0.03) | 0.01 (0.00-0.06) | 0.00 (0.00-0.03) | 0.01 (0.00-0.03) |
+| raptor starved | 0.01 (0-0.08) | 0.02 (0.00-0.10) | 0.01 (0.00-0.06) | 0.02 (0.00-0.05) |
+| stegosaur starved | 0.00 (0-0) | 0.00 (0.00-0.00) | 0.01 (0.00-0.02) | 0.00 (0.00-0.02) |
+| tyrannosaur starved | 0.00 (0-0) | 0.00 (0.00-0.00) | 0.00 (0.00-0.00) | 0.00 (0.00-0.00) |
+| pachycephalosaur starved | 0.00 (0-0.02) | 0.01 (0.00-0.02) | 0.03 (0.00-0.16) | 0.01 (0.00-0.11) |
+| sauropelta starved | 0.01 (0-0.06) | 0.01 (0.00-0.03) | 0.01 (0.00-0.03) | 0.01 (0.00-0.03) |
+| gallimimus starved | 0.00 (0-0.03) | 0.01 (0.00-0.06) | 0.01 (0.00-0.03) | 0.02 (0.00-0.17) |
+
+Every species' mean is inside 5.0's range over seeds. Single seeds go past it: tyrannosaur thirst 0.10 and pachycephalosaur starvation 0.11 (5.0's highest seeds 0.08 and 0.02), gallimimus starvation 0.17 (0.03), all in seeds 3 and 11 below.
+
+What the traces found:
+- **Bare rock on the mid slopes starved a herd.** In the first full bake, seed 11's pachycephalosaurs starved grazing at 230-330 m round (4550-4720, 2660-2930), drinking every few minutes: bare rock had taken 17% of that ground and the ferns, cycads and broadleaf thinned. Bare rock now comes in from 280 m (fully from 420 m) and the crags from 320 m: at 200-320 m the plants match the old island (ferns 130 against 131, `terrashade --relief` by height).
+- **A shelf's scoop held animals that spawned in it.** Seed 11 then lost 12 animals of four species to thirst at shelf 0 (4800-4890, 2640-2760) in its first 1.6 days: all spawned there and never drank, with a walkable way to water of 283-309 m (the water field), but walked the straight line to the water they had found, 470 m north-west, into the face and the spur, and milled about (67-280 m moved in their last 10 minutes). Bots seeking water now take the water field's leg when the straight way crosses ground too steep to walk (`bots.c`, seek water): after it, 7 thirst deaths remain in that seed on that mountain, the early ones again animals spawned there that never drank, round a creek in a steep gully (4560-4590, 2590-2670) that the water field counts as water but the bots' own search does not find a shore to drink from. Open.
+- **The south coast's low plain**, as in the last report: seed 3's gallimimus (6) and pachycephalosaurs (6) starved on the plain and in the shallows (3170-3640, 1120-1330; 0-8 m up), close to water, mostly fleeing or grazing. The plants there are byte for byte the old island's; the herd's path got there by chance. The fix belongs to the bots' foraging (they look for grazing only within 140 m).
+- No death in the final run was an animal held in place (all moved over 15 m in their last 30 minutes); 3 of 67 died above 300 m.
+
+Walkability (`terrashade --relief`, the bots' water field on 64 m cells): walkable land with no walkable way to water 3.65% (3.22% before), above 300 m 0.34 km2 (0.30). `TERRASHADE_CUTOFF=1` lists the cells; the difference is cells on steep mountain sides moving in and out, not ground closed in by a shelf.
+
+`make test` (clang, real props and textures) passes in full. Moved, each by the terrain:
+- `tests/camprobe_budget.txt`: `los` 32 -> 163. The camera probe picks its gully spot from the landform; on the new test island it is a deeper gully at (684, 757) (was (1024, 1121)) whose walls hide a tyrannosaur from its camera (121 of the 123 frames there). The rest are within 5.0's budget.
+- `tests/ecoprobe_budget.txt`: 29 of 146 lines left their band and take the new run's band (the test island lost its 2 rock shoulders, its props and soil changed with the bake, and bots seeking water take the water field round steep ground; 24 animals for 2 days, so one herd moves a line): budget.raptor.hunt 5.4 -> 2.2, budget.stego.flee 0.3 -> 2.6, budget.stego.defend 1.1 -> 6.0, budget.pachy.graze 36 -> 12, budget.pachy.rest 14 -> 23, budget.pachy.flee 1.3 -> 11, budget.sauro.graze 31 -> 11, budget.sauro.vigil 7.5 -> 17, budget.sauro.travel 32 -> 49, budget.sauro.flee 8.0 -> 2.5, budget.sauro.defend 3.9 -> 0.8, budget.galli.graze 20 -> 38, budget.galli.vigil 5.1 -> 9.4, hunt.trex.per_day 15.5 -> 1.5, hunt.trex.success 3.2 -> 33, deaths.raptor.predation_share 22 -> 0, deaths.raptor.starved_share 33 -> 11, deaths.stego.predation_share 100 -> 0, deaths.pachy.starved_share 0 -> 11, deaths.sauro.predation_share 0 -> 20, deaths.sauro.starved_share 0 -> 40, deaths.galli.predation_share 67 -> 20, deaths.galli.starved_share 33 -> 0, range.galli.water_m 85 -> 152, person.raptor.encounters 6 -> 10, person.trex.encounters 4 -> 24, person.sauro.first_s 31 -> 0, person.galli.encounters 8 -> 0, stalk.0.charge 25 -> 75.
+- `tests/test_sim.c`: rock shoulders are off by default, so `test_shoulders` bakes its own test island with `shoulders=1` (worlds are now shared only between sims baked with the same parameters, `cret_world_acquire`), and the bake thread check bakes with them on.
+- `test_debug`'s check that a lone restored player gets a herd failed once on an intermediate bake (at the director's one try every herd near enough was fleeing) and passes on the final one.
+
+Baseline note: `make test` failed on a clean checkout of cret/rock-shoulders in this sandbox (camprobe `los` 84 against 32) because `tools/fetch_props.sh` fetched only 17 of the 23 prop models `assets/props/SOURCES.md` lists: the cliff, rock face and coast pieces were missing. It now fetches all 23; with them the baseline passed.
 
 ## Bugs found and fixed
 
