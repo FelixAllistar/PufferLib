@@ -26,6 +26,7 @@ typedef struct CretVeg {
     float lod_dist, tree_lod_dist;              // (the smaller tall kinds switch earlier: veg.c TREE_LOD)
     float kind_height[VEG_KINDS];               // mean mesh height of each kind's variants (tree_switch_scale)
     GLuint t_atlas;            // foliage/bark texture array (sRGB, alpha)
+    int look;                  // card look switches (veg_look.h: VEG_LOOK_ROUND, _CREASE, _EDGE), from the environment
     GLuint t_imp_albedo, t_imp_normal;  // impostor arrays: (kind,variant,view) layers
     int imp_layer[VEG_KINDS][VEG_VARIANTS];   // first layer, -1 if no impostor
     GLuint inst_vbo, quad_vao, quad_vbo, shadow_vbo[CSM_MAX];

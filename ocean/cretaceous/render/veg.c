@@ -14,8 +14,7 @@
 
 #define SHADER_DIR "ocean/cretaceous/shaders/"
 #define FOLIAGE_DIR "ocean/cretaceous/assets/foliage/"
-#define VPI 3.14159265f
-#define AT 512                 // foliage atlas layer size (painted at this size)
+#include "veg_layers.h"   // atlas layers and helpers, shared with the mesh generator
 // Small-memory knobs (the web page sets both on phones, whose 3D view is
 // about 600 pixels wide): CRET_VEG_ATLAS uploads the atlas from the mip of
 // that size down (256: a quarter of the memory), CRET_VEG_IMP renders the
@@ -26,38 +25,10 @@ static int veg_pow2_env(const char* name, int lo, int dflt) {
 }
 #define IMP veg_pow2_env("CRET_VEG_IMP", 64, 256)   // impostor view size
 
-static inline float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
-static inline float lerpf(float a, float b, float t) { return a + (b - a) * t; }
-static inline float sstep(float a, float b, float x) { float t = clampf((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
-static inline uint32_t hashu(uint32_t h) { h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return h; }
-typedef struct { uint32_t s; } VRng;
-static inline float vr(VRng* r) { r->s = hashu(r->s + 0x9e3779b9u); return (r->s >> 8) * (1.0f / 16777216.0f); }
-static inline float vrr(VRng* r, float a, float b) { return a + (b - a) * vr(r); }
-
 // ---------------------------------------------------------------- atlas painting
-// Layers 0..P_COUNT-1 have painted versions; the rest fall back to a painted
-// sibling (FALLBACK) when the photo sources in assets/foliage are missing.
-// Layers from L_CL_MAGN on are the skeleton generator's (veg_gen.h): leaf
-// clusters in 2x2 cells of 256 px (a twig's base at the bottom centre of its
-// cell), leaflets, segments and cords in columns, and two tiling surfaces.
-// They paint their own fallbacks (new_layer).
-enum { L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB, P_COUNT,
-       L_FERN2 = P_COUNT, L_TFERN, L_SPRAY, L_PODO, L_LEAF2, L_LEAF3, L_BARK_CON, L_BARK_PALM, L_BARK_FERN, L_GRASS, L_SEDGE, L_REED,
-       L_CL_MAGN, L_CL_LAUREL, L_CL_HEART, L_CL_PODO, L_CL_SPRAY, L_CL_SHRUB, L_CL_GINKGO, L_CL_PLANE, L_CL_BERRY,
-       L_CL_ROPE,                   // 2x2 leaf clusters (rope: araucaria scale-leaf branchlets)
-       L_LEAFLET, L_PSEG, L_ROPE,   // 8 columns: cycad pinnae, palm segments and leaflets, araucaria cords
-       L_FPINNA,                    // 4 columns: tree-fern pinnae
-       L_SCALES, L_HSTEM,           // tiling: araucaria scale-leaf rope, horsetail stem with node sheaths
-       L_GUNNERA, L_LILY,           // one leaf each: gunnera's lobed leaf, a lily pad (centre at the middle)
-       L_PETAL, L_FRUIT,            // 8 columns: petals and bracts; fruit, seed and cone skins (opaque)
-       L_FUNGUS, L_CLUB,            // 4 columns: bracket and mushroom surfaces; clubmoss sprays and moss
-       L_COUNT };
 static const int FALLBACK[L_COUNT] = {L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB,
                                       L_FERN, L_FERN, L_ARAU, L_ARAU, L_LEAF, L_LEAF, L_BARK, L_BARK, L_BARK, L_HORSE, L_HORSE, L_HORSE,
                                       L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF};
-static bool is_cluster_layer(int k) { return k >= L_CL_MAGN && k <= L_CL_ROPE; }
-static int layer_columns(int k) { return k == L_LEAFLET || k == L_PSEG || k == L_ROPE || k == L_PETAL || k == L_FRUIT ? 8 : k == L_FPINNA || k == L_FUNGUS || k == L_CLUB ? 4 : 0; }
-static bool is_bark_layer(int k) { return k == L_BARK || k == L_BARK_CON || k == L_BARK_PALM || k == L_BARK_FERN; }
 typedef struct { float r, g, b, a; } Px;
 typedef struct { Px* p; } Canvas;
 
@@ -1234,7 +1205,7 @@ void cret_veg_reload_shaders(CretVeg* v) {
     if (v->trample) cret_trample_reload(v->trample);
 }
 
-// Atlas cache key: the painting code (this file and veg.h; the build time
+// Atlas cache key: the painting code (this file, veg.h and veg_layers.h; the build time
 // when the source is not beside the binary), every foliage photo and the
 // layer size and count.
 static int cmp_cstr(const void* a, const void* b) { return strcmp(*(const char* const*)a, *(const char* const*)b); }
@@ -1242,7 +1213,7 @@ static uint64_t atlas_key(void) {
     uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "veg atlas v1");
     h = cret_hash_u64(cret_hash_u64(h, AT), L_COUNT);
     int up = veg_pow2_env("CRET_VEG_ATLAS", 64, AT); if (up < AT) h = cret_hash_u64(h, (uint64_t)up);   // the full size keeps its old key
-    uint64_t src = cret_hash_file(cret_hash_file(CRET_HASH_SEED, "ocean/cretaceous/render/veg.c"), "ocean/cretaceous/render/veg.h");
+    uint64_t src = cret_hash_file(cret_hash_file(cret_hash_file(CRET_HASH_SEED, "ocean/cretaceous/render/veg.c"), "ocean/cretaceous/render/veg.h"), "ocean/cretaceous/render/veg_layers.h");
     if (!FileExists("ocean/cretaceous/render/veg.c")) src = cret_hash_str(src, __DATE__ " " __TIME__);
     h = cret_hash_u64(h, src);
     char* names[512]; int n = 0; const char* dirs[2] = {FOLIAGE_DIR, FOLIAGE_DIR "sprites/"};
@@ -1314,7 +1285,11 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     CRET_LOAD_MARK("veg: atlas mips, upload and store");
     }
     // Meshes: every kind x variant, full and reduced, generated on the CPU in
-    // parallel (veg_gen.h), then uploaded.
+    // parallel (veg_gen.h), then uploaded, with the card look switches
+    // (veg_look.h) read from the environment.
+    v->look = veg_look_from_env(); veg_look_mesh = v->look;
+    if (v->look != VEG_LOOK_ALL) fprintf(stderr, "cretaceous: plant cards: round %s, crease %s, edge fade %s\n", v->look & VEG_LOOK_ROUND ? "on" : "off",
+                                         v->look & VEG_LOOK_CREASE ? "on" : "off", v->look & VEG_LOOK_EDGE ? "on" : "off");
     int tris = 0, nmb = VEG_KINDS * VEG_VARIANTS * 2;
     MB* mbs = calloc(nmb, sizeof(MB));
     #pragma omp parallel for schedule(dynamic, 1)
@@ -1859,7 +1834,7 @@ static void set_common(const GfxProgram* p, const VegFrameDesc* f, CretVeg* v) {
     gfx_bind_tex(p, "t_misc", 8, GL_TEXTURE_2D, f->t_misc);
     gfx_bind_tex(p, "t_biome", 10, GL_TEXTURE_2D, f->t_biome);
     gfx_set1f(p, "u_understory", 0.0f);
-    (void)v;
+    gfx_set1f(p, "u_edge_fade", (v->look & VEG_LOOK_EDGE) ? 1.0f : 0.0f);
 }
 
 // Ground cover instance: i_extra = (fade, 0, bend, height) for veg.vs.
@@ -2054,6 +2029,7 @@ void cret_veg_draw_depth(CretVeg* v, const VegFrameDesc* f) {
     gfx_setmat4(p, "u_viewproj", f->viewproj); gfx_set1f(p, "u_time", f->time); gfx_set1i(p, "u_bake", 0);
     gfx_set2f(p, "u_depth", f->depth_ab[0], f->depth_ab[1]);
     gfx_set3f(p, "u_cam", f->cam[0], f->cam[1], f->cam[2]);
+    gfx_set1f(p, "u_edge_fade", (v->look & VEG_LOOK_EDGE) ? 1.0f : 0.0f);
     gfx_bind_tex(p, "t_atlas", 0, GL_TEXTURE_2D_ARRAY, v->t_atlas);
     set_bend(v, p, f);
     // Trees, then ground cover: nearest first within each, so early-z helps.
