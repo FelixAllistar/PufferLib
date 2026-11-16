@@ -8,6 +8,7 @@
 //   terrashade --ravines DIR [--count 2]     ravines: stepped (ravine=1) against wide (ravine=2)
 //   terrashade --island FILE.jpg             the whole island, shoulders and summits marked
 //   terrashade --relief                      the island's relief: peaks, summits, hypsometric curve, rock and trees by height
+//                                            (TERRASHADE_CUTOFF=1 also lists each walkable 64 m cell with no walkable way to water)
 //   terrashade --faces                       the bedrock faces: steep ground 8 m or taller, the tallest first
 //   terrashade --coverage                    how much of each rock shoulder's wall its rock covers, from the review views
 //   terrashade --at X Z --size M --out FILE.jpg [--yaw RAD]   one place, top and oblique views
@@ -323,7 +324,7 @@ static void relief(const CretWorld* w) {
             float px = (x + 0.5f) * CRET_WATER_CELL, pz = (z + 0.5f) * CRET_WATER_CELL, nn[3], hh = cret_height(w, px, pz);
             if (hh <= 0.5f || cret_water(w, px, pz) > hh) continue;
             terra_normal(m, px, pz, nn); if (nn[1] <= 0.8f) continue;
-            walk++; if (w->water_far[z * wn + x] > 1e8f) { cut++; cut_hi += hh > 300; }
+            walk++; if (w->water_far[z * wn + x] > 1e8f) { cut++; cut_hi += hh > 300; if (getenv("TERRASHADE_CUTOFF")) printf("cutoff %.0f %.0f %.0f\n", px, pz, hh); }
         }
         float c2w = CRET_WATER_CELL * CRET_WATER_CELL / 1e6f;
         printf("walkable land %.2f km2, of it with no walkable way to water %.3f km2 (%.2f%%), %.3f km2 of that above 300 m\n", walk * c2w, cut * c2w, 100.0 * cut / fmax(walk, 1), cut_hi * c2w);

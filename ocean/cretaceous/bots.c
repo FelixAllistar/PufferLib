@@ -163,6 +163,12 @@ static int nearest_of(const CretSim* s, int i, int diet, float* dist) {
     *dist = sqrtf(bd); return best;
 }
 
+// Whether the straight way from (x0, z0) to (x1, z1) is walkable ground all along (every 8 m).
+static bool line_walkable(const CretWorld* w, float x0, float z0, float x1, float z1) {
+    int n = (int)(hypotf(x1 - x0, z1 - z0) / 8.0f);
+    for (int k = 1; k < n; k++) { float t = (float)k / n; if (!walkable(w, x0 + (x1 - x0) * t, z0 + (z1 - z0) * t)) return false; }
+    return true;
+}
 // Nearest water edge: rings of samples out to 700 m; goal_x/z is the dry
 // point just before the water, the water point is returned in wx, wz.
 static bool find_water(CretSim* s, CretAgent* a, float* wx, float* wz) {
@@ -582,6 +588,14 @@ static void bot_start(CretSim* s, int i, int act, int target) {
                 a->water_tick = -s->tick;
                 if (!cret_world_toward_water(s->world, a->x, a->z, 320.0f, &a->goal_x, &a->goal_z)) a->goal_x = a->goal_z = 0;
             }
+        }
+        // The straight way to the water it knows crosses ground too steep to walk (a cliff band, a bedrock
+        // face): it takes the leg the world's water field gives instead, which goes round over walkable
+        // ground, and looks again at its end. Walking the straight line, animals that spawned in a bedrock
+        // shelf's scoop milled about under its face until they died of thirst.
+        if (a->water_tick > 0 && !a->swimming && !line_walkable(s->world, a->x, a->z, a->goal_x, a->goal_z)) {
+            float gx, gz;
+            if (cret_world_toward_water(s->world, a->x, a->z, 320.0f, &gx, &gz)) { a->goal_x = gx; a->goal_z = gz; a->water_tick = -s->tick; }
         }
         break; }
     case BOT_WANDER: pick_goal(s, a, 30, CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE ? 160 : 70); a->bot_timer = 900; break;
