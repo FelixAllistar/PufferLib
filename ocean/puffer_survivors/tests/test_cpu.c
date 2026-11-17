@@ -55,6 +55,22 @@ int main(void) {
         assert(ini_cfg.wave_interval[PS_WAVE_TABLE_COUNT - 1] > 0);
     }
 
+    // The exported skill score: 300 mean kills over 9 mean HP lost is 300 / (1 + 9); no
+    // kills is 0 whatever the damage.
+    {
+        Log log = {0};
+        log.kills = 300.0f;
+        log.damage_taken = 9.0f;
+        Dict out = {0};
+        puf_log(&log, &out);
+        assert(dict_get(&out, "kills_per_hp") == 30.0f);
+        dict_clear(&out);
+        log.kills = 0.0f;
+        puf_log(&log, &out);
+        assert(dict_get(&out, "kills_per_hp") == 0.0f);
+        dict_clear(&out);
+    }
+
     // A time-limit success must have identical, configurable reward semantics
     // on CPU and CUDA. Keep all unrelated shaping disabled for this check.
     {

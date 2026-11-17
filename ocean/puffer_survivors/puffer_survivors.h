@@ -358,6 +358,9 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "xp", log->xp);
     dict_set(out, "damage_dealt", log->damage_dealt);
     dict_set(out, "damage_taken", log->damage_taken);
+    // Player skill that does not depend on the reward settings: mean kills over mean HP
+    // lost (plus one, so a no-damage game is finite). A policy that never fights scores 0.
+    dict_set(out, "kills_per_hp", log->kills / (1.0f + log->damage_taken));
     dict_set(out, "pickups", log->pickups);
     dict_set(out, "levelups", log->levelups);
     dict_set(out, "obstacle_hits", log->obstacle_hits);

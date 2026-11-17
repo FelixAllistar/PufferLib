@@ -184,6 +184,8 @@ int main(int argc, char** argv) {
             env.cfg.fun_lo[t], env.cfg.fun_hi[t], score[t] / n);
     }
     printf("fun (mean of the per-episode product of scores) %.3f\n", env.log.fun / n);
+    printf("kills per HP lost (mean kills / (1 + mean damage)) %.1f\n",
+        env.log.kills / (n + env.log.damage_taken));
     if (net) free_puffernet(net);
     free(g_policy_weights);
     return 0;

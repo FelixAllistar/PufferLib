@@ -37,7 +37,9 @@ make -C ocean/puffer_survivors viewer
 
 For numbers instead of a window, the headless probe plays a checkpoint on the CPU sim and
 prints episode lengths, per player level dash use, invulnerable time and damage taken, and
-the mean fun scorecard (the `fun_*` keys in the ini):
+the mean fun scorecard (the `fun_*` keys in the ini). It also prints kills per HP lost, the
+same value the trainer logs as `env/kills_per_hp`: mean kills over one plus mean damage taken,
+a measure of the player's skill that does not depend on the reward settings:
 
 ```bash
 make -C ocean/puffer_survivors probe
