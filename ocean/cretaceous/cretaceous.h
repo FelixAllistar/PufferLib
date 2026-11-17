@@ -5,6 +5,11 @@
 // (the last: none, attack, eat or drink, call, ability 1, 2, 3).
 #ifndef OCEAN_CRETACEOUS_H
 #define OCEAN_CRETACEOUS_H
+#ifdef CRET_LOCO
+// Locomotion mode (loco/, docs/locomotion/README.md): a physics ragdoll learns to
+// walk by imitating a clip. Built with NVCC_EXTRA=-DCRET_LOCO ./build.sh cretaceous.
+#include "loco/loco_binding.h"
+#else
 #include <stdlib.h>
 #include <stdio.h>
 #include "sim.h"
@@ -149,4 +154,5 @@ void puf_render(Env* env) { (void)env; }
 void puf_close(Env* env) {
     if (env->sim) { cret_sim_close(env->sim); free(env->sim); env->sim = NULL; }
 }
+#endif  // CRET_LOCO
 #endif
