@@ -183,10 +183,15 @@ static void ps_print_usage(const char* argv0) {
         "  %s play            human play\n"
         "  %s watch [latest|PATH.bin] [--deterministic]\n"
         "\n"
+        "Any mode takes --env.KEY=VALUE to change a game setting for this run.\n"
         "Run from the repo root. Watch reads policy settings from\n"
         "config/puffer_survivors.ini.\n",
         argv0, argv0, argv0);
 }
+
+// --env.KEY=VALUE arguments: game settings changed for this run without editing the ini.
+static char* g_env_overrides[64];
+static int g_env_override_count = 0;
 
 // Weight blob outlives the net layers (Linear weight ptrs alias into it).
 static Weights* g_policy_weights = NULL;
@@ -270,7 +275,7 @@ static void ps_apply_env_config(Env* env) {
     }
 
     Ini ini = {0};
-    puf_ini_load_env(&ini, PS_ENV_NAME, 0, NULL);
+    puf_ini_load_env(&ini, PS_ENV_NAME, g_env_override_count, g_env_overrides);
     Dict* env_kwargs = puf_ini_section(&ini, "env", 0);
     env->cfg = ps_config_from_kwargs(env_kwargs);
     env->show_hitboxes = (int)dict_get(env_kwargs, "show_hitboxes");
@@ -281,6 +286,17 @@ int main(int argc, char** argv) {
     int watch_mode = 0;
     int watch_deterministic = 0;
     const char* model_arg = NULL;
+
+    // Take the --env.KEY=VALUE arguments out of argv; the rest is parsed as before.
+    int kept = 1;
+    for (int i = 1; i < argc; i++) {
+        if (strncmp(argv[i], "--env.", 6) == 0) {
+            if (g_env_override_count < 64) g_env_overrides[g_env_override_count++] = argv[i];
+        } else {
+            argv[kept++] = argv[i];
+        }
+    }
+    argc = kept;
 
     if (argc >= 2) {
         if (strcmp(argv[1], "watch") == 0) {

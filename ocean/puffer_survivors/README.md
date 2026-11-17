@@ -33,7 +33,10 @@ make -C ocean/puffer_survivors viewer
 ./ocean/puffer_survivors/build/viewer watch latest
 ./ocean/puffer_survivors/build/viewer watch checkpoints/puffer_survivors/<run>/<step>.bin
 ./ocean/puffer_survivors/build/viewer watch latest --deterministic
+./ocean/puffer_survivors/build/viewer play --env.player_health=5 --env.enemy_hp_scale=0.2
 ```
+
+Any mode takes `--env.KEY=VALUE` to change a game setting for that run without editing the ini.
 
 For numbers instead of a window, the headless probe plays a checkpoint on the CPU sim and
 prints episode lengths, per player level dash use, invulnerable time and damage taken, and
