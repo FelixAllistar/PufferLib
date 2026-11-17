@@ -7,7 +7,7 @@
 #define OCEAN_CRETACEOUS_H
 #ifdef CRET_LOCO
 // Locomotion mode (loco/, docs/locomotion/README.md): a physics ragdoll learns to
-// walk by imitating a clip. Built with NVCC_EXTRA=-DCRET_LOCO ./build.sh cretaceous.
+// walk by imitating a clip. Built by loco/train.sh (-DCRET_LOCO through NVCC_EXTRA).
 #include "loco/loco_binding.h"
 #else
 #include <stdlib.h>
