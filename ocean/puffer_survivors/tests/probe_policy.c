@@ -171,16 +171,16 @@ int main(int argc, char** argv) {
     // Fun scorecard: per-episode means from the sim's own log.
     float n = env.log.n > 0 ? env.log.n : 1;
     const char* terms[PS_FUN_TERMS] = {"tension", "damage", "survival", "coverage",
-        "combo", "burst", "growth", "straight"};
+        "combo", "burst", "growth", "straight", "crowd"};
     float raw[PS_FUN_TERMS] = {env.log.raw_tension, env.log.raw_damage, env.log.raw_survival,
         env.log.raw_coverage, env.log.raw_combo, env.log.raw_burst, env.log.raw_growth,
-        env.log.raw_straight};
+        env.log.raw_straight, env.log.raw_crowd};
     float score[PS_FUN_TERMS] = {env.log.fun_tension, env.log.fun_damage, env.log.fun_survival,
         env.log.fun_coverage, env.log.fun_combo, env.log.fun_burst, env.log.fun_growth,
-        env.log.fun_straight};
+        env.log.fun_straight, env.log.fun_crowd};
     printf("\nscorecard (mean of %.0f episodes)\nterm          raw    band            score\n", env.log.n);
     for (int t = 0; t < PS_FUN_TERMS; t++) {
-        printf("%-9s %7.3f    [%.2f, %.2f]  %6.3f\n", terms[t], raw[t] / n,
+        printf("%-9s %8.3f    [%.2f, %.2f]  %6.3f\n", terms[t], raw[t] / n,
             env.cfg.fun_lo[t], env.cfg.fun_hi[t], score[t] / n);
     }
     printf("fun (mean of the per-episode product of scores) %.3f\n", env.log.fun / n);

@@ -163,13 +163,13 @@ struct Env {
     float episode_obstacle_hits;
     float episode_dashes;
     float episode_peak_enemies;
-    float episode_peak_projectiles;
     float episode_min_hp;
 
     // Fun scorecard state.
     float episode_combo_kills;
     float episode_burst_kills;
     float episode_coverage_sum;
+    float episode_enemy_sum;
     float episode_min_hp_frac;
     int window_kills;
     float window_kills_avg;

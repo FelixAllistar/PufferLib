@@ -120,7 +120,8 @@ enum {
     PS_FUN_BURST = 5,
     PS_FUN_GROWTH = 6,
     PS_FUN_STRAIGHT = 7,
-    PS_FUN_TERMS = 8,
+    PS_FUN_CROWD = 8,
+    PS_FUN_TERMS = 9,
 };
 
 typedef struct {

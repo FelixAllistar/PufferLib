@@ -265,7 +265,7 @@ int main(void) {
     assert(isfinite(env.log.fun) && env.log.fun >= 0.0f && env.log.fun <= env.log.n);
     float raws[PS_FUN_TERMS] = {env.log.raw_tension, env.log.raw_damage, env.log.raw_survival,
         env.log.raw_coverage, env.log.raw_combo, env.log.raw_burst, env.log.raw_growth,
-        env.log.raw_straight};
+        env.log.raw_straight, env.log.raw_crowd};
     for (int t = 0; t < PS_FUN_TERMS; t++) assert(isfinite(raws[t]));
     assert(env.log.raw_survival > 0.0f && env.log.raw_coverage > 0.0f);
 

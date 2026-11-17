@@ -948,7 +948,6 @@ PS_SIM_FN void ps_add_log(PSSim* sim, int env, int survived) {
     PS_LOG(sim, env).survived += (float)survived;
     PS_LOG(sim, env).n += 1.0f;
     PS_LOG(sim, env).peak_enemies += PS_P(sim, env, episode_peak_enemies);
-    PS_LOG(sim, env).peak_projectiles += PS_P(sim, env, episode_peak_projectiles);
     PS_LOG(sim, env).min_hp += PS_P(sim, env, episode_min_hp);
 
     float T = fmaxf(1.0f, (float)PS_P(sim, env, tick));
@@ -964,6 +963,7 @@ PS_SIM_FN void ps_add_log(PSSim* sim, int env, int survived) {
         / fmaxf(1.0f, (float)PS_P(sim, env, first_minute_kills)));
     raw[PS_FUN_STRAIGHT] = PS_P(sim, env, straight_sum)
         / fmaxf(1.0f, (float)PS_P(sim, env, straight_n));
+    raw[PS_FUN_CROWD] = PS_P(sim, env, episode_enemy_sum) / T;
     float score[PS_FUN_TERMS];
     float fun = 1.0f;
     for (int t = 0; t < PS_FUN_TERMS; t++) {
@@ -979,6 +979,7 @@ PS_SIM_FN void ps_add_log(PSSim* sim, int env, int survived) {
     PS_LOG(sim, env).fun_burst += score[PS_FUN_BURST];
     PS_LOG(sim, env).fun_growth += score[PS_FUN_GROWTH];
     PS_LOG(sim, env).fun_straight += score[PS_FUN_STRAIGHT];
+    PS_LOG(sim, env).fun_crowd += score[PS_FUN_CROWD];
 #ifndef PUFFER_GPU_ENV
     PS_LOG(sim, env).raw_tension += raw[PS_FUN_TENSION];
     PS_LOG(sim, env).raw_damage += raw[PS_FUN_DAMAGE];
@@ -988,6 +989,7 @@ PS_SIM_FN void ps_add_log(PSSim* sim, int env, int survived) {
     PS_LOG(sim, env).raw_burst += raw[PS_FUN_BURST];
     PS_LOG(sim, env).raw_growth += raw[PS_FUN_GROWTH];
     PS_LOG(sim, env).raw_straight += raw[PS_FUN_STRAIGHT];
+    PS_LOG(sim, env).raw_crowd += raw[PS_FUN_CROWD];
 #endif
     if (survived) {
         PS_LOG(sim, env).success += 1.0f;
@@ -1289,8 +1291,9 @@ PS_SIM_FN int ps_damage_enemy(PSSim* sim, int env, int eidx, float damage) {
     PS_P(sim, env, minute_kills)++;
     int source = PS_P(sim, env, damage_source);
     float frozen = PS_ENEMY(sim, env, eidx, slow);
-    if (frozen > 0.0f || PS_ENEMY(sim, env, eidx, pulled) > 0.0f
-            || source == PS_AREA_DETONATION || source == PS_AREA_SHATTER)
+    // A combo kill is one made by a chain reaction: an oil detonation or a shatter. Kills
+    // on slowed or pulled enemies do not count; they are most kills whatever the player does.
+    if (source == PS_AREA_DETONATION || source == PS_AREA_SHATTER)
         PS_P(sim, env, episode_combo_kills) += 1.0f;
     // A frozen enemy shatters, hurting its neighbours a few ticks later.
     if (frozen > 0.0f && sim->cfg.shatter_damage > 0.0f) {
@@ -1967,12 +1970,12 @@ PS_SIM_FN void ps_reset_core(PSSim* sim, int env, int clear_outputs) {
     PS_P(sim, env, episode_obstacle_hits) = 0.0f;
     PS_P(sim, env, episode_dashes) = 0.0f;
     PS_P(sim, env, episode_peak_enemies) = 0.0f;
-    PS_P(sim, env, episode_peak_projectiles) = 0.0f;
     PS_P(sim, env, episode_min_hp) = PS_P(sim, env, hp);
     PS_P(sim, env, damage_source) = -1;
     PS_P(sim, env, episode_combo_kills) = 0.0f;
     PS_P(sim, env, episode_burst_kills) = 0.0f;
     PS_P(sim, env, episode_coverage_sum) = 0.0f;
+    PS_P(sim, env, episode_enemy_sum) = 0.0f;
     PS_P(sim, env, episode_min_hp_frac) = 1.0f;
     PS_P(sim, env, window_kills) = 0;
     PS_P(sim, env, window_kills_avg) = 0.0f;
@@ -2006,6 +2009,9 @@ PS_SIM_FN void ps_update_fun_stats(PSSim* sim, int env, float step_len) {
     }
     float view = sim->cfg.fun_view_width * sim->cfg.fun_view_height;
     PS_P(sim, env, episode_coverage_sum) += view > 0.0f ? fminf(1.0f, cover / view) : 0.0f;
+
+    // Crowd: enemies alive, averaged over the game.
+    PS_P(sim, env, episode_enemy_sum) += (float)PS_P(sim, env, enemy_count);
 
     float hp_frac = PS_P(sim, env, hp) / PS_P(sim, env, max_hp);
     if (hp_frac < PS_P(sim, env, episode_min_hp_frac)) PS_P(sim, env, episode_min_hp_frac) = hp_frac;
@@ -2121,8 +2127,6 @@ PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
 
     if ((float)PS_P(sim, env, enemy_count) > PS_P(sim, env, episode_peak_enemies))
         PS_P(sim, env, episode_peak_enemies) = (float)PS_P(sim, env, enemy_count);
-    if ((float)PS_P(sim, env, projectile_count) > PS_P(sim, env, episode_peak_projectiles))
-        PS_P(sim, env, episode_peak_projectiles) = (float)PS_P(sim, env, projectile_count);
     if (PS_P(sim, env, hp) < PS_P(sim, env, episode_min_hp)) PS_P(sim, env, episode_min_hp) = PS_P(sim, env, hp);
     ps_update_fun_stats(sim, env, step_len);
 

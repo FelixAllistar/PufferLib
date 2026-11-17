@@ -121,7 +121,7 @@ struct PSCudaSim {
     float *episode_score, *episode_kills, *episode_xp;
     float *episode_damage_dealt, *episode_damage_taken, *episode_pickups;
     float *episode_levelups, *episode_obstacle_hits, *episode_dashes;
-    float *episode_peak_enemies, *episode_peak_projectiles, *episode_min_hp;
+    float *episode_peak_enemies, *episode_enemy_sum, *episode_min_hp;
 
     // Fun scorecard state.
     float *episode_combo_kills, *episode_burst_kills, *episode_coverage_sum, *episode_min_hp_frac;
@@ -203,7 +203,7 @@ static inline size_t ps_cuda_layout(PSCudaSim* sim) {
     PS_BLOB_FIELD(float, episode_damage_dealt, N); PS_BLOB_FIELD(float, episode_damage_taken, N);
     PS_BLOB_FIELD(float, episode_pickups, N); PS_BLOB_FIELD(float, episode_levelups, N);
     PS_BLOB_FIELD(float, episode_obstacle_hits, N); PS_BLOB_FIELD(float, episode_peak_enemies, N);
-    PS_BLOB_FIELD(float, episode_peak_projectiles, N); PS_BLOB_FIELD(float, episode_min_hp, N);
+    PS_BLOB_FIELD(float, episode_enemy_sum, N); PS_BLOB_FIELD(float, episode_min_hp, N);
     PS_BLOB_FIELD(float, nearest_enemy_d2, N); PS_BLOB_FIELD(float, episode_dashes, N);
     PS_BLOB_FIELD(float, episode_combo_kills, N); PS_BLOB_FIELD(float, episode_burst_kills, N);
     PS_BLOB_FIELD(float, episode_coverage_sum, N); PS_BLOB_FIELD(float, episode_min_hp_frac, N);

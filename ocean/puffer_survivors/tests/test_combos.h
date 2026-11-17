@@ -147,13 +147,14 @@ PS_SIM_FN void ps_test_combos(PSSim* sim, int env) {
         ps_damage_enemy(sim, env, e[0], 1000.0f);
         assert(!PS_ENEMY(sim, env, e[0], active));
         assert(PS_P(sim, env, area_count) == 1);
-        assert(PS_P(sim, env, episode_combo_kills) == 1.0f);
+        // The first kill was a direct hit; only the two the shatters make are combo kills.
+        assert(PS_P(sim, env, episode_combo_kills) == 0.0f);
         for (int t = 1; t <= 8; t++) {
             ps_update_areas(sim, env);
             assert(PS_ENEMY(sim, env, e[1], active) == (t < 4));
             assert(PS_ENEMY(sim, env, e[2], active) == (t < 8));
         }
-        assert(PS_P(sim, env, episode_combo_kills) == 3.0f);
+        assert(PS_P(sim, env, episode_combo_kills) == 2.0f);
         assert(PS_P(sim, env, damage_source) == -1);
     }
 

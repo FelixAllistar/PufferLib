@@ -269,7 +269,7 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     cfg.fun_view_height = (float)dict_get(kwargs, "fun_view_height");
     // Scorecard bands: fun_<term>_lo, fun_<term>_hi, fun_<term>_soft, in PS_FUN_* order.
     static const char* fun_terms[PS_FUN_TERMS] = {"tension", "damage", "survival",
-        "coverage", "combo", "burst", "growth", "straight"};
+        "coverage", "combo", "burst", "growth", "straight", "crowd"};
     for (int t = 0; t < PS_FUN_TERMS; t++) {
         char key[64];
         snprintf(key, sizeof(key), "fun_%s_lo", fun_terms[t]);
@@ -378,7 +378,6 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "death_75_100", log->death_75_100);
     dict_set(out, "success", log->success);
     dict_set(out, "peak_enemies", log->peak_enemies);
-    dict_set(out, "peak_projectiles", log->peak_projectiles);
     dict_set(out, "min_hp", log->min_hp);
     dict_set(out, "dashes", log->dashes);
     dict_set(out, "fun", log->fun);
@@ -390,6 +389,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "fun_burst", log->fun_burst);
     dict_set(out, "fun_growth", log->fun_growth);
     dict_set(out, "fun_straight", log->fun_straight);
+    dict_set(out, "fun_crowd", log->fun_crowd);
 #ifndef PUFFER_GPU_ENV
     dict_set(out, "raw_tension", log->raw_tension);
     dict_set(out, "raw_damage", log->raw_damage);
@@ -399,5 +399,6 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "raw_burst", log->raw_burst);
     dict_set(out, "raw_growth", log->raw_growth);
     dict_set(out, "raw_straight", log->raw_straight);
+    dict_set(out, "raw_crowd", log->raw_crowd);
 #endif
 }

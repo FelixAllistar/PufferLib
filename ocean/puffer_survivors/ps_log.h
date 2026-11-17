@@ -39,10 +39,9 @@ struct Log {
     float death_75_100;
     float success;
     float peak_enemies;
-    float peak_projectiles;
     float min_hp;
     float dashes;
-    // Fun scorecard: the product of the eight band scores, then each score.
+    // Fun scorecard: the product of the nine band scores, then each score.
     float fun;
     float fun_tension;
     float fun_damage;
@@ -52,6 +51,7 @@ struct Log {
     float fun_burst;
     float fun_growth;
     float fun_straight;
+    float fun_crowd;
 #ifndef PUFFER_GPU_ENV
     // The raw value behind each score. CPU builds only: see the size limit below.
     float raw_tension;
@@ -62,6 +62,7 @@ struct Log {
     float raw_burst;
     float raw_growth;
     float raw_straight;
+    float raw_crowd;
 #endif
 };
 
