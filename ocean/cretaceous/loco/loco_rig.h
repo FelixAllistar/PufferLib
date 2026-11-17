@@ -219,7 +219,18 @@ static void lm3_eigen(const double a_in[3][3], double val[3], double v[3][3]) {
 static int lf_cmp(const void* a, const void* b) { float x = *(const float*)a, y = *(const float*)b; return x < y ? -1 : x > y; }
 
 // ------------------------------------------------------------------ rig
-static bool loco_name_in(const char* low, const char* list) {
+// A rig's bone name without the exporter's node number: glTF exports such as
+// the licensed raptor's name bones "Spine_1_03" or "UpperLeg.R_060", and the
+// tables name them "Spine_1" and "UpperLeg.R". A trailing "_" and digits is
+// dropped, unless nothing would be left.
+static void loco_bone_base(const char* low, char* out, size_t n) {
+    snprintf(out, n, "%s", low);
+    size_t len = strlen(out), k = len;
+    while (k > 0 && out[k - 1] >= '0' && out[k - 1] <= '9') k--;
+    if (k < len && k > 1 && out[k - 1] == '_') out[k - 1] = 0;
+}
+static bool loco_name_in(const char* name, const char* list) {
+    char low[32]; loco_bone_base(name, low, sizeof low);
     char buf[256]; snprintf(buf, sizeof buf, "%s", list);
     for (char* p = buf; *p; p++) if (*p >= 'A' && *p <= 'Z') *p = (char)(*p + 32);
     for (char* tok = strtok(buf, ","); tok; tok = strtok(NULL, ",")) if (!strcmp(tok, low)) return true;
@@ -228,7 +239,7 @@ static bool loco_name_in(const char* low, const char* list) {
 static int loco_find_joint(const DinoFile* d, const char* name) {
     char low[32]; snprintf(low, sizeof low, "%s", name);
     for (char* p = low; *p; p++) if (*p >= 'A' && *p <= 'Z') *p = (char)(*p + 32);
-    for (int j = 0; j < d->njoint; j++) if (!strcmp(d->low[j], low)) return j;
+    for (int j = 0; j < d->njoint; j++) { char base[32]; loco_bone_base(d->low[j], base, sizeof base); if (!strcmp(base, low)) return j; }
     return -1;
 }
 // The table whose probe bone the rig has, or NULL.
@@ -357,6 +368,41 @@ static void loco_fit_joint(const DinoFile* d, LocoRig* rig, int bi, const int* c
     b->twist_lo = fmaxf(tlo - LOCO_LIMIT_MARGIN, -pi99); b->twist_hi = fminf(thi + LOCO_LIMIT_MARGIN, pi99);
     b->lo = fmaxf(alo - LOCO_LIMIT_MARGIN, -pi99); b->hi = fminf(ahi + LOCO_LIMIT_MARGIN, pi99);
     b->anchor_a = b3Sub(b->bind, pa->bind);
+}
+
+// Folds a uniform export scale out of the bind space. A glTF rig exported with
+// a scale on its armature (the licensed raptor's skin is in centimetres under
+// a 0.01 root) gives skinning matrices G * inv_bind that scale by that factor,
+// so shapes fitted to bind-space vertices come out 100 times too big and the
+// rotations read from those matrices are not pure rotations. With s the
+// skinning matrices' scale at the rest pose, the vertices become s times
+// larger and every inverse bind's linear part 1/s times: G * inv_bind then maps
+// the new bind space to model space with no scale, and skinning is unchanged.
+// Only joints that carry vertices count (the raptor's unskinned root has its
+// own scale and shapes nothing). Returns s (1 for a rig already in model
+// units); 0 when those joints' scales differ by more than 1%, which the
+// builder cannot represent.
+static float loco_unscale_bind(DinoFile* d) {
+    static float G[DF_MAX_JOINTS][12]; float local[DF_MAX_JOINTS * 8];
+    static bool skinned[DF_MAX_JOINTS];
+    memset(skinned, 0, sizeof skinned);
+    for (int i = 0; i < d->nvert; i++) for (int k = 0; k < 4; k++) if (d->vert[i].w[k]) skinned[d->vert[i].j[k]] = true;
+    for (int j = 0; j < d->njoint; j++) memcpy(local + j * 8, d->rest[j], sizeof d->rest[j]);
+    df_globals(d, local, G);
+    float lo = 1e30f, hi = 0;
+    for (int j = 0; j < d->njoint; j++) {
+        if (!skinned[j]) continue;
+        float m[12]; df_mul(G[j], d->inv_bind[j], m);
+        float det = m[0] * (m[5] * m[10] - m[6] * m[9]) - m[1] * (m[4] * m[10] - m[6] * m[8]) + m[2] * (m[4] * m[9] - m[5] * m[8]);
+        float sj = cbrtf(fabsf(det));
+        lo = fminf(lo, sj); hi = fmaxf(hi, sj);
+    }
+    if (hi <= 0 || hi > lo * 1.01f) return 0;
+    float sc = 0.5f * (lo + hi);
+    if (fabsf(sc - 1.0f) < 1e-3f) return 1.0f;
+    for (int i = 0; i < d->nvert; i++) for (int k = 0; k < 3; k++) d->vert[i].p[k] *= sc;
+    for (int j = 0; j < d->njoint; j++) for (int r = 0; r < 3; r++) for (int c = 0; c < 3; c++) d->inv_bind[j][r * 4 + c] /= sc;
+    return sc;
 }
 
 // Builds the rig from a .dino. clips: the clip indices whose range sets the

@@ -89,6 +89,7 @@ static bool loco_world_init(LocoWorld* w, const LocoConfig* cfg, unsigned int se
     if (cfg->sim_hz % cfg->policy_hz) { snprintf(err, errn, "sim_hz must be a multiple of policy_hz"); return false; }
     DinoFile* d = (DinoFile*)calloc(1, sizeof(DinoFile));
     if (!df_read(d, cfg->dino)) { snprintf(err, errn, "cannot read %.200s", cfg->dino); free(d); return false; }
+    if (loco_unscale_bind(d) == 0) { snprintf(err, errn, "%.200s: its joints' bind scales differ", cfg->dino); df_free(d); free(d); return false; }
     w->clip_index = loco_clip_index(d, cfg->clip);
     if (w->clip_index < 0 || !d->clip[w->clip_index].loop) { snprintf(err, errn, "%.200s has no looping clip %.31s", cfg->dino, cfg->clip); df_free(d); free(d); return false; }
     int clips[8], nc = loco_limit_clips(d, w->clip_index, clips);

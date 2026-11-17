@@ -33,6 +33,30 @@ on the stand-in. The solid shapes are the physics body; the blue wire figure
 is the clip's pose at the same moment. Notice how the body falls a second or
 so after each reset, which is what a policy has to learn to stop.
 
+## Measured on the real raptor (2026-11-16, Felix's machine)
+
+The cloud build never saw `raptor.dino`; on the real file two things broke
+and are fixed: its bones carry numbered suffixes (`Tail_1_074`), which the
+bone table now strips before matching, and its bind pose is in centimetres,
+which the builder now scales to metres from the skinned joints (test_loco
+checks the raptor comes out between 0.5 and 3 m tall).
+
+- **Body:** 23 bodies, 22 joints, 52 action dimensions, 302 kg (see the open
+  questions), 3.0 m long. Tail 46 kg in 5 segments (15%), 140 kg ahead of
+  the hips. Walk clip: 1.29 s cycle, 1.80 m/s, pelvis 0.92 m up.
+- **Stability:** passes at the default 4 substeps (pinned drift 1.7° mean,
+  12.6° worst joint, 1.4 cm separation; free stand 1.2 s; dropped 2.3 cm).
+  1 and 2 substeps fail. The worst-joint drift is about ten times the
+  stand-in's; 8 and 16 substeps do not shrink it, so it is the springs'
+  steady-state sag under the heavier body, not solver error.
+- **PD baseline (no learning):** falls after 0.92 s on average, tracking error
+  10.4° per joint and 51 cm at the end effectors, reward 0.26 per step. With
+  `--passive-tail`: same 0.92 s, but 8.4° and 35 cm, reward 0.35.
+- **Throughput:** 3,345 agent steps/s on one core (58 µs per ragdoll step),
+  half the 7,000 estimated below. At 4 threads (this machine) that is about
+  13,000 steps/s, so 300 M steps is about 6.5 hours; the CPU, not the GPU,
+  sets the pace.
+
 ## The research, briefly
 
 **DeepMimic** (Peng, Abbeel, Levine, van de Panne, SIGGRAPH 2018,
@@ -450,9 +474,12 @@ Not done here:
 
 ## Open questions for you
 
-1. Run `loco_play --all` on the real raptor.
-   - Do its 23 bodies build, and what mass does it come to?
-   - Does the default 4 substeps pass the stability checks?
+1. The real raptor comes to 302 kg against the game's 80 kg adult and a real
+   Deinonychus's 60-80 kg: its capsules and foot boxes are fatter than the
+   mesh (the feet are 0.30 m wide boxes of 18 kg each). Uniformly lighter
+   bodies move the same under frequency-tuned springs, so this matters only
+   once torque caps or shoves are absolute. Fix the shapes, or add a target
+   mass to scale to?
 2. Do you want the stage 2 discriminator in the trainer (a core change), or
    should stage 2 start with more tracking work (more clips, shoves, terrain)?
 3. Spring (uncapped, smoother) or capped motor (torque-limited, more

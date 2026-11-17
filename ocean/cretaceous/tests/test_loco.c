@@ -10,7 +10,7 @@
 // config/cretaceous_loco.ini parses with the trainer's ini code and every key
 // in its [env] is one the binding reads.
 // When the licensed raptor is installed (tools/fetch_dinos.sh) its rig must
-// build with the raptor table too.
+// build with the raptor table too, at metre scale (its bind pose is in cm).
 //   test_loco
 #include "test_util.h"
 #include "cretaceous.h"
@@ -287,6 +287,10 @@ static void test_raptor(void) {
     CHECK(w != NULL, "the raptor's rig builds");
     if (!w) return;
     CHECK(!strcmp(w->rig.table, "raptor") && w->rig.nbody >= 18, "raptor table, %d bodies", w->rig.nbody);
+    // The raptor's bind pose is in centimetres; the builder must bring it to
+    // metres, or the body is a hundred times too big.
+    CHECK(w->rig.height > 0.5f && w->rig.height < 3.0f && w->rig.total_mass > 20.0f && w->rig.total_mass < 1000.0f,
+          "raptor in metres: %.2f m tall, %.1f kg", w->rig.height, w->rig.total_mass);
     free_world(w);
 }
 
