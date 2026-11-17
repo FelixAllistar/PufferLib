@@ -312,7 +312,7 @@ is averaged over episodes that are mostly falling.
 On the GPU box, from the repository root:
 
 ```
-ocean/cretaceous/loco/train.sh                     # = build with NVCC_EXTRA=-DCRET_LOCO, then train
+ocean/cretaceous/loco/train.sh                     # = build in loco mode, then train
 ocean/cretaceous/loco/train.sh --print             # just show the two commands
 ocean/cretaceous/loco/train.sh train --train.total_timesteps=5e7 --env.passive_tail=1
 ```
@@ -323,9 +323,12 @@ How it fits the trainer without touching it:
   therefore a build flag passed through build.sh's own `NVCC_EXTRA`.
   `cretaceous.h` then includes `loco/loco_binding.h` instead of the game's
   binding.
-- The trainer always reads `config/cretaceous.ini`. The script turns every key
-  of `config/cretaceous_loco.ini` into `--section.key=value` overrides, and
-  your own arguments come last.
+- The trainer reads `config/<env name>.ini` and rejects any override whose
+  key that file lacks, and the env name is a build macro. The same
+  `NVCC_EXTRA` renames it to `cretaceous_loco`, so the trainer reads
+  `config/default.ini` then `config/cretaceous_loco.ini` (never the game's
+  `config/cretaceous.ini`) and logs its runs under that name. Your own
+  `--section.key=value` arguments work as usual.
 - The binary is `build/cretaceous/puffer_loco`, so it never clobbers the
   game's `./puffer`.
 - Keep `policy.cretaceous_net = 0`: the game's structured encoder only reads
@@ -339,8 +342,11 @@ The interface the policy sees:
   - Then pelvis height, phase (sin, cos) and target speed.
 - Action: 69 continuous heads.
   - Each joint's offset from the clip's pose: 3 per ball joint, 1 per hinge.
-  - Clamped to ±0.5 rad. A rig uses the first `ndof` of them and the rest are
-    ignored.
+  - `action_unit` (0.1) radians per unit, clamped to ±`action_scale` (0.5)
+    rad. The trainer starts every action's noise at std 1, so the unit sets
+    the starting exploration: 0.1 rad, near DeepMimic's fixed 0.05. (At 0.5
+    rad per unit, the first smoke run shook every joint by about 29°.)
+  - A rig uses the first `ndof` of them and the rest are ignored.
 
 Recommended settings (already in the ini):
 
@@ -349,7 +355,7 @@ Recommended settings (already in the ini):
 - Learning rate 3e-4, clip 0.2.
 - Horizon 64, minibatch 32768.
 - Entropy 0 (continuous actions carry their own learned std).
-- 512×2 hidden.
+- 1024×2 hidden (the house size for real runs; 256×2 for quick tests).
 - 4096 agents.
 - 3e8 steps.
 
@@ -368,10 +374,11 @@ If `episode_length` is still near 1 s after 5e7 steps, see below.
 
 Not done here:
 
-- The trainer was not built: there is no CUDA in this sandbox. The binding
-  compiles as C++ with g++ and clang++ against the trainer's headers, and the
-  test drives it through `puf_init/reset/step/log` exactly as the vec code
-  does, including the trainer's own ini parser on the config.
+- The trainer builds (2026-11-16, on Felix's machine) and trains: a smoke
+  run on the real raptor did two epochs with finite losses and the env's
+  logs. It ran at only about 1,000 steps/s. The GTX 1060 has 3 GB, which was
+  full with another job on it, and the 4 cores were shared. A real run needs
+  a box with many cores, because physics, not the GPU, sets the pace.
 - `loco/loco_policy.h` (the CPU runner behind `--policy` in loco_play and
   loco_view) follows the documented checkpoint layout. It is tested only on
   hand-made files. Compare it with `./puffer eval` on the first real

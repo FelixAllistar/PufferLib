@@ -13,7 +13,10 @@
 //   Action (LOCO_MAX_DOF floats, the unused tail of it ignored): per joint
 //     an offset added to the clip's pose at this instant (residual control):
 //     three for a ball joint (a rotation vector in the joint frame), one for
-//     a hinge. Clamped to [-1, 1] and scaled by action_scale radians.
+//     a hinge. Each output is action_unit radians per unit, clamped to
+//     +-action_scale radians. The trainer starts every action's noise at
+//     std 1, so action_unit sets the initial exploration (0.1 rad, near
+//     DeepMimic's fixed 0.05) while action_scale caps the offset.
 //   Reward: DeepMimic's imitation reward, a weighted sum of
 //     exp(-k * error) for the joint rotations, joint angular velocities, end
 //     effectors (feet, head, tail tip) and the centre of mass (its position,
@@ -34,7 +37,7 @@
 typedef struct LocoConfig {
     char dino[256], clip[32];
     int num_agents, policy_hz, sim_hz, substeps;
-    float episode_seconds, action_scale, lane;
+    float episode_seconds, action_scale, action_unit, lane;
     // Reward weights and scales (DeepMimic's: 0.65, 0.1, 0.15, 0.1; 2, 0.1, 40, 10).
     float w_pose, w_vel, w_ee, w_com, k_pose, k_vel, k_ee, k_com;
     LocoGains gains;
@@ -47,7 +50,7 @@ static LocoConfig loco_default_config(void) {
     snprintf(c.dino, sizeof c.dino, "ocean/cretaceous/assets/dinos/raptor.dino");
     snprintf(c.clip, sizeof c.clip, "walk");
     c.num_agents = 32; c.policy_hz = 30; c.sim_hz = 120; c.substeps = 4;
-    c.episode_seconds = 15.0f; c.action_scale = 0.5f; c.lane = 4.0f;
+    c.episode_seconds = 15.0f; c.action_scale = 0.5f; c.action_unit = 0.1f; c.lane = 4.0f;
     c.w_pose = 0.65f; c.w_vel = 0.1f; c.w_ee = 0.15f; c.w_com = 0.1f;
     c.k_pose = 2.0f; c.k_vel = 0.1f; c.k_ee = 40.0f; c.k_com = 10.0f;
     c.gains = loco_default_gains(); c.fall_height = 0.5f; c.weld_range = LOCO_MIN_RANGE;
@@ -131,17 +134,17 @@ static b3Quat loco_clamp_target(const LocoBody* B, b3Quat d) {
 
 // Target joint deviations: the clip at time t plus the action offsets, inside the joint limits.
 static void loco_targets(const LocoWorld* w, const b3Quat* rrot, const float* act, b3Quat* dev) {
-    const LocoRig* r = &w->rig; const float s = w->cfg.action_scale;
+    const LocoRig* r = &w->rig; const float s = w->cfg.action_scale, u = w->cfg.action_unit;
     for (int b = 1; b < r->nbody; b++) {
         const LocoBody* B = &r->body[b];
         if (w->cfg.gains.passive && loco_is_tail(B)) { dev[b] = b3Quat_identity; continue; }
         b3Quat ref = loco_joint_dev(B, rrot[B->parent], rrot[b]);
         if (!act) { dev[b] = loco_clamp_target(B, ref); continue; }
         const float* a = act + B->act0;
-        float a0 = fminf(fmaxf(a[0], -1.0f), 1.0f) * s;
+        float a0 = fminf(fmaxf(a[0] * u, -s), s);
         if (B->jtype == LJ_HINGE) dev[b] = loco_clamp_target(B, lq_mul(ref, lq_axis_angle(lv(0, 0, 1), a0)));
         else {
-            float a1 = fminf(fmaxf(a[1], -1.0f), 1.0f) * s, a2 = fminf(fmaxf(a[2], -1.0f), 1.0f) * s;
+            float a1 = fminf(fmaxf(a[1] * u, -s), s), a2 = fminf(fmaxf(a[2] * u, -s), s);
             dev[b] = loco_clamp_target(B, lq_mul(ref, lq_exp(lv(a0, a1, a2))));
         }
     }
@@ -288,7 +291,7 @@ static uint64_t loco_hash(const LocoWorld* w) {
 // string value or NULL.
 #define LOCO_KEYS(X) \
     X(num_agents, num_agents, int) X(policy_hz, policy_hz, int) X(sim_hz, sim_hz, int) X(substeps, substeps, int) \
-    X(episode_seconds, episode_seconds, float) X(action_scale, action_scale, float) X(lane, lane, float) \
+    X(episode_seconds, episode_seconds, float) X(action_scale, action_scale, float) X(action_unit, action_unit, float) X(lane, lane, float) \
     X(w_pose, reward_pose, float) X(w_vel, reward_vel, float) X(w_ee, reward_ee, float) X(w_com, reward_com, float) \
     X(k_pose, k_pose, float) X(k_vel, k_vel, float) X(k_ee, k_ee, float) X(k_com, k_com, float) \
     X(gains.leg, hertz_leg, float) X(gains.body, hertz_body, float) X(gains.tail, hertz_tail, float) \

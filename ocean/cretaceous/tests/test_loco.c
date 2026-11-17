@@ -7,8 +7,8 @@
 // it; same seed, same run; the CPU policy runner reads a checkpoint layout;
 // and the PufferLib binding (built here with CRET_LOCO, as the trainer is)
 // runs: observations finite and padded, rewards in [0, 1], terminals and logs;
-// config/cretaceous_loco.ini parses with the trainer's ini code and every key
-// in its [env] is one the binding reads.
+// config/cretaceous_loco.ini loads the way the trainer loads it, takes
+// command-line overrides, and every key in its [env] is one the binding reads.
 // When the licensed raptor is installed (tools/fetch_dinos.sh) its rig must
 // build with the raptor table too, at metre scale (its bind pose is in cm).
 //   test_loco
@@ -85,7 +85,7 @@ static void test_limits(void) {
     static float act[8][LOCO_MAX_DOF]; const float* ap[8]; uint32_t rng = 11; float worst = 0; long samples = 0, out = 0;
     for (int i = 0; i < 8; i++) ap[i] = act[i];
     for (int s = 0; s < 20 * 30; s++) {
-        for (int i = 0; i < 8; i++) for (int k = 0; k < LOCO_MAX_DOF; k++) act[i][k] = 2 * t_frand(&rng) - 1;
+        for (int i = 0; i < 8; i++) for (int k = 0; k < LOCO_MAX_DOF; k++) act[i][k] = (2 * t_frand(&rng) - 1) * w->cfg.action_scale / w->cfg.action_unit;
         loco_step(w, ap, NULL, NULL);
         for (int i = 0; i < 8; i++) {
             loco_doll_get(&w->phys, i, w->pos, w->rot, NULL, NULL);
@@ -268,14 +268,18 @@ static void test_config(void) {
     CHECK(p && dict_find(p, "cretaceous_net") && dict_get(p, "cretaceous_net") == 0, "the config keeps the default encoder");
     puf_ini_free(&own);
     Ini ini = {0};
-    puf_ini_load_file(&ini, "config/default.ini"); puf_ini_load_file(&ini, "config/cretaceous.ini"); puf_ini_load_file(&ini, "config/cretaceous_loco.ini");
-    puf_ini_apply_arg(&ini, "base", "--env.dino=" FIXTURE, 0);
+    // Exactly what the loco trainer loads (train.sh names its env cretaceous_loco):
+    // default.ini, this file, then command-line overrides, which must find every key.
+    char* argv[] = {("--env.dino=" FIXTURE), "--env.passive_tail=1", "--policy.hidden_size=256"};
+    puf_ini_load_env(&ini, "cretaceous_loco", 3, argv);
     Dict* env_kw = puf_ini_section(&ini, "env", 0);
     Env* env = (Env*)calloc(1, sizeof(Env)); env->rng = 3;
     puf_init(env, env_kw);
     CHECK(env->num_agents == (int)dict_get(env_kw, "num_agents") && env->w->cfg.substeps == (int)dict_get(env_kw, "substeps")
         && fabsf(env->w->cfg.w_pose - (float)dict_get(env_kw, "reward_pose")) < 1e-6f && !strcmp(env->w->cfg.clip, dict_get_str(env_kw, "clip")),
         "the binding takes the config's values");
+    CHECK(env->w->cfg.gains.passive && dict_get(puf_ini_section(&ini, "policy", 0), "hidden_size") == 256,
+        "command-line overrides reach the binding and the policy");
     puf_close(env); free(env); puf_ini_free(&ini);
 }
 

@@ -4,9 +4,10 @@
 # toolchain the trainer needs.
 #   ocean/cretaceous/loco/train.sh [train|eval] [--section.key=value ...]
 #   ocean/cretaceous/loco/train.sh --print [train|eval] [...]   only print the commands
-# The trainer always reads config/cretaceous.ini for this env, so every key of
-# config/cretaceous_loco.ini is passed as a --section.key=value override; the
-# script's own arguments come last and win.
+# The trainer reads config/<its env name>.ini, and its env name is a build
+# macro. Loco mode renames it to cretaceous_loco, so the trainer reads
+# config/default.ini then config/cretaceous_loco.ini (never the game's
+# config/cretaceous.ini) and logs runs under that name.
 set -e
 cd "$(dirname "$0")/../../.."
 PRINT=0
@@ -14,22 +15,15 @@ if [ "$1" = "--print" ]; then PRINT=1; shift; fi
 CMD=${1:-train}
 [ $# -gt 0 ] && shift
 BIN=build/cretaceous/puffer_loco
-# [section] key = value  ->  --section.key=value (comments and blank lines skipped).
-mapfile -t OVERRIDES < <(awk '
-    /^[[:space:]]*\[/ { sec = $0; gsub(/[][[:space:]]/, "", sec); next }
-    /^[[:space:]]*(#|;|$)/ { next }
-    {
-        line = $0; sub(/[[:space:]]*[#;].*$/, "", line)
-        eq = index(line, "="); if (!eq) next
-        key = substr(line, 1, eq - 1); val = substr(line, eq + 1)
-        gsub(/[[:space:]]/, "", key); gsub(/^[[:space:]]+|[[:space:]]+$/, "", val)
-        print "--" sec "." key "=" val
-    }' config/cretaceous_loco.ini)
+# build.sh splits NVCC_EXTRA on spaces without shell quoting, so the quotes
+# reach the compiler and the macro is the string "cretaceous_loco"; build.sh
+# passes NVCC_EXTRA after its own -DPUFFER_ENV_NAME, so the -U/-D pair wins.
+FLAGS='-DCRET_LOCO -UPUFFER_ENV_NAME -DPUFFER_ENV_NAME="cretaceous_loco"'
 if [ "$PRINT" = 1 ]; then
-    echo "NVCC_EXTRA=\"${NVCC_EXTRA:+$NVCC_EXTRA }-DCRET_LOCO\" ./build.sh cretaceous $BIN"
-    echo "$BIN $CMD ${OVERRIDES[*]} $*"
+    echo "NVCC_EXTRA='${NVCC_EXTRA:+$NVCC_EXTRA }$FLAGS' ./build.sh cretaceous $BIN"
+    echo "$BIN $CMD $*"
     exit 0
 fi
 mkdir -p build/cretaceous
-NVCC_EXTRA="${NVCC_EXTRA:+$NVCC_EXTRA }-DCRET_LOCO" ./build.sh cretaceous "$BIN"
-exec "$BIN" "$CMD" "${OVERRIDES[@]}" "$@"
+NVCC_EXTRA="${NVCC_EXTRA:+$NVCC_EXTRA }$FLAGS" ./build.sh cretaceous "$BIN"
+exec "$BIN" "$CMD" "$@"
