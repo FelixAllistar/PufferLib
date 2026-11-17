@@ -355,7 +355,8 @@ Recommended settings (already in the ini):
 - Learning rate 3e-4, clip 0.2.
 - Horizon 64, minibatch 32768.
 - Entropy 0 (continuous actions carry their own learned std).
-- 1024×2 hidden (the house size for real runs; 256×2 for quick tests).
+- 64×2 hidden, fixed (far smaller than DeepMimic's 1024 and 512; cheap to
+  run in the game later).
 - 4096 agents.
 - 3e8 steps.
 
@@ -458,11 +459,10 @@ Not done here:
      mover.
    - The server sim stays kinematic and deterministic, and the hashes do not
      change.
-   - Cost (estimate): the trainer's net at 512×2 (linear encoder, two MinGRU
-     layers, decoder) is about 1.8 M multiply-adds per animal per step, so
-     54 M/s per animal at 30 Hz. A dozen nearby animals come to about 0.65 G
-     multiply-adds per second: a millisecond or two per frame on one core with
-     SIMD. Add about 20-40 µs of physics per animal step.
+   - Cost (estimate): the trainer's net at 64×2 (linear encoder, two MinGRU
+     layers, decoder) is about 60 K multiply-adds per animal per step, so
+     1.8 M/s per animal at 30 Hz. A dozen nearby animals come to about 22 M
+     multiply-adds per second: well under a millisecond per frame. Add about 20-40 µs of physics per animal step.
    - Risk: the ragdoll drifts from the server's position. It has to be
      tethered, with a soft pull on the pelvis toward the mover; Embark
      mentions helper forces like this.
