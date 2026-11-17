@@ -452,6 +452,8 @@ static inline Color ps_area_color(int type, unsigned char alpha) {
         case PS_WEAPON_WHIRLPOOL: return (Color){61, 199, 255, alpha};
         case PS_WEAPON_INK: return (Color){66, 38, 115, alpha};
         case PS_WEAPON_SONAR: return (Color){143, 247, 255, alpha};
+        case PS_AREA_DETONATION: return (Color){255, 170, 90, alpha};
+        case PS_AREA_SHATTER: return (Color){200, 240, 255, alpha};
         default: return (Color){92, 175, 255, alpha};
     }
 }
@@ -531,14 +533,20 @@ static inline void ps_draw_area(PufferSurvivors* env, int i, float scale, int w,
         DrawCircleLines((int)p.x, (int)p.y, r * (0.75f + 0.12f * pulse), (Color){132, 94, 202, 170});
         DrawCircleLines((int)p.x, (int)p.y, r, (Color){35, 18, 56, 210});
 #endif
-    } else if (type == PS_WEAPON_WHIRLPOOL) {
-        float life = (float)env->areas.ttl[i] / env->cfg.whirlpool_ttl;
+    } else if (type == PS_WEAPON_WHIRLPOOL || type == PS_AREA_SHATTER) {
+        // A shatter uses the whirlpool burst, at full strength until it goes off.
+        float life = type == PS_AREA_SHATTER
+            ? ps_clampf((float)env->areas.ttl[i] / fmaxf(1.0f, (float)env->cfg.shatter_ttl), 0.0f, 1.0f)
+            : (float)env->areas.ttl[i] / env->cfg.whirlpool_ttl;
         DrawCircleV(p, r, (Color){37, 146, 188, (unsigned char)(30 * life)});
         DrawRing(p, r * 0.94f, r, 0, 360, 48, (Color){115, 232, 255, (unsigned char)(150 * life)});
         DrawRing(p, r * 0.38f, r * 0.46f, 20.0f + env->tick * 7.0f, 300.0f + env->tick * 7.0f, 36, (Color){98, 226, 255, (unsigned char)(180 * life)});
         DrawRing(p, r * 0.68f, r * 0.75f, 210.0f - env->tick * 5.0f, 520.0f - env->tick * 5.0f, 40, (Color){45, 171, 255, (unsigned char)(160 * life)});
-    } else if (type == PS_WEAPON_SONAR) {
-        float life = (float)env->areas.ttl[i] / env->cfg.sonar_ttl;
+    } else if (type == PS_WEAPON_SONAR || type == PS_AREA_DETONATION) {
+        // A detonation uses the sonar pulse, at full strength until it goes off.
+        float life = type == PS_AREA_DETONATION
+            ? ps_clampf((float)env->areas.ttl[i] / fmaxf(1.0f, (float)env->cfg.oil_detonate_ttl), 0.0f, 1.0f)
+            : (float)env->areas.ttl[i] / env->cfg.sonar_ttl;
         float wave = r * (1.0f - 0.75f * life);
         DrawRing(p, wave * 0.94f, wave, 0, 360, 64, (Color){165, 252, 255, (unsigned char)(220 * life)});
         DrawRing(p, r * 0.98f, r, 0, 360, 64, (Color){72, 198, 255, (unsigned char)(140 * life)});
@@ -593,12 +601,9 @@ static inline void ps_draw_projectile(PufferSurvivors* env, int i, float scale, 
 static inline void ps_draw_weapon_orbits(PufferSurvivors* env, float scale, int w, int h) {
     int level = env->weapon_level[PS_WEAPON_ORBIT];
     if (level <= 0) return;
-    int count = 1 + level / 2;
-    float orbit_r = (env->cfg.weapon_orbit_distance
-        + env->cfg.weapon_orbit_distance_per_level * (float)level)
-        * (1.0f + env->cfg.orbit_area_distance_bonus * env->area_bonus);
-    float hit_r = ps_geometry_weapon_radius(&env->cfg, PS_WEAPON_ORBIT, level)
-        * (1.0f + env->area_bonus);
+    int count = 0;
+    float orbit_r = 0.0f, hit_r = 0.0f;
+    ps_orbit_shape(env, 0, level, &count, &orbit_r, &hit_r);
     for (int i = 0; i < count; i++) {
         float a = env->orbit_phase + 2.0f * PI * ((float)i / (float)count);
         float x = env->px + cosf(a) * orbit_r;

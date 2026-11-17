@@ -20,6 +20,7 @@ typedef struct {
     float speed[PS_MAX_ENEMIES];
     float damage[PS_MAX_ENEMIES];
     float slow[PS_MAX_ENEMIES];
+    float pulled[PS_MAX_ENEMIES];
     uint8_t shape[PS_MAX_ENEMIES];
     int next[PS_MAX_ENEMIES];
     int dense[PS_MAX_ENEMIES];
@@ -108,11 +109,14 @@ struct Env {
     float weapon_cd[PS_WEAPON_COUNT];
     float weapon_active[PS_WEAPON_COUNT];
     int weapon_level[PS_WEAPON_COUNT];
+    int passive_level[PS_PASSIVE_COUNT];
     float orbit_phase;
     float frost_aim;
     float dash_cd;
     int dash_timer;
     int tick, invuln_timer;
+    // Area type dealing damage right now, -1 outside area ticks.
+    int damage_source;
 
     PSEnemyPool enemies;
     PSProjectilePool projectiles;
@@ -157,9 +161,23 @@ struct Env {
     float episode_pickups;
     float episode_levelups;
     float episode_obstacle_hits;
+    float episode_dashes;
     float episode_peak_enemies;
     float episode_peak_projectiles;
     float episode_min_hp;
+
+    // Fun scorecard state.
+    float episode_combo_kills;
+    float episode_burst_kills;
+    float episode_coverage_sum;
+    float episode_min_hp_frac;
+    int window_kills;
+    float window_kills_avg;
+    int minute_kills;
+    int first_minute_kills;
+    int last_minute_kills;
+    float straight_x, straight_y, straight_path, straight_sum;
+    int straight_n;
 };
 
 typedef Env PufferSurvivors;

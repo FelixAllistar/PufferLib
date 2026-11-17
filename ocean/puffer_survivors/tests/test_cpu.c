@@ -7,6 +7,7 @@
 #include "../puffer_survivors.h"
 #include "test_enemy_scans.h"
 #include "test_weapon_areas.h"
+#include "test_combos.h"
 
 static void assert_finite_observation(const float* obs) {
     for (int i = 0; i < PS_OBS_SIZE; i++) {
@@ -116,6 +117,7 @@ int main(void) {
     assert_finite_observation(observations);
     ps_test_enemy_scans(&env, 0);
     ps_test_weapon_areas(&env, 0);
+    ps_test_combos(&env, 0);
     assert(ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,
         4.0f, 0.0f, 0.0f, 4.65f, 4.65f, 0.5f));
     assert(!ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,
@@ -197,6 +199,16 @@ int main(void) {
     assert(env.dash_timer == env.cfg.dash_duration - 1);
     assert(fabsf(env.dash_cd - ps_dash_cooldown_total(&env, 0)) < 1e-5f);
     assert(env.invuln_timer > 0);
+    assert(env.episode_dashes == 1.0f);
+    // No player level or stack of Cooldown upgrades lets one dash run into the next.
+    assert(env.cfg.dash_cooldown_min > (float)env.cfg.dash_duration);
+    env.level = 40;
+    env.cooldown_mult = 0.01f;
+    assert(ps_dash_cooldown_total(&env, 0) == env.cfg.dash_cooldown_min);
+    env.cfg.dash_cooldown_per_level = -45.0f;
+    env.cooldown_mult = 1.0f;
+    assert(ps_dash_cooldown_total(&env, 0) == env.cfg.dash_cooldown_min);
+    env.cfg.dash_cooldown_per_level = 0.0f;
     env.cfg.obstacle_count = obstacle_count;
     c_reset(&env);
 
@@ -231,6 +243,15 @@ int main(void) {
             env.moving_obstacles.dense_pos, env.moving_obstacle_count,
             PS_MAX_MOVING_OBSTACLES);
     }
+
+    // The scorecard is logged for every finished episode and stays in range.
+    assert(env.log.n >= 1.0f);
+    assert(isfinite(env.log.fun) && env.log.fun >= 0.0f && env.log.fun <= env.log.n);
+    float raws[PS_FUN_TERMS] = {env.log.raw_tension, env.log.raw_damage, env.log.raw_survival,
+        env.log.raw_coverage, env.log.raw_combo, env.log.raw_burst, env.log.raw_growth,
+        env.log.raw_straight};
+    for (int t = 0; t < PS_FUN_TERMS; t++) assert(isfinite(raws[t]));
+    assert(env.log.raw_survival > 0.0f && env.log.raw_coverage > 0.0f);
 
     printf("cpu smoke ok: obs=%d enemies=%d projectiles=%d drops=%d areas=%d\n",
         PS_OBS_SIZE, env.enemy_count, env.projectile_count, env.drop_count, env.area_count);

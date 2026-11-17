@@ -1,0 +1,117 @@
+checkpoints/puffer_survivors/hurt02_20261116/0000000499908608.bin, 24 episodes, sampled
+max_steps 24000  dash cooldown 300 +0/level, floor 120  dash 12 ticks at 0.75  walk 0.18
+ep  0  len 24000  survived  level 69  kills 13859  dashes  36  damage  42  moving  55%  straight 0.15
+       level at 1200/2400/4800/9600: 4 7 15 32  first picks: 13 5 8 5 3 9 3 6 8 9  taken: 6 5 2 7 4 7 7 4 6 7 1 2 6 4
+ep  1  len 24000  survived  level 61  kills 13809  dashes  33  damage  20  moving  62%  straight 0.12
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 3 3 4 6 2 8 12 11 8 12  taken: 4 1 3 7 3 4 6 7 4 7 7 2 3 2
+ep  2  len 10129  died      level 23  kills  1356  dashes  18  damage  90  moving  59%  straight 0.51
+       level at 1200/2400/4800/9600: 3 6 11 22  first picks: 9 6 5 11 0 5 1 7 12 4  taken: 2 2 1 0 1 2 2 1 1 2 2 2 2 2
+ep  3  len 24000  survived  level 45  kills 12144  dashes  41  damage  71  moving  60%  straight 0.29
+       level at 1200/2400/4800/9600: 4 6 12 26  first picks: 6 0 5 6 5 7 0 11 13 8  taken: 6 1 2 3 1 6 4 3 3 3 1 5 1 5
+ep  4  len 24000  survived  level 53  kills 13850  dashes  30  damage  28  moving  57%  straight 0.15
+       level at 1200/2400/4800/9600: 4 8 16 32  first picks: 3 4 1 7 9 3 1 9 3 8  taken: 6 3 5 8 5 4 4 3 2 3 3 2 2 2
+ep  5  len  1661  died      level  4  kills    45  dashes   4  damage   8  moving  57%  straight 0.40
+       level at 1200/2400/4800/9600: 4 0 0 0  first picks: 5 7 0  taken: 1 0 0 0 0 1 0 1 0 0 0 0 0 0
+ep  6  len 24000  survived  level 62  kills 12929  dashes  44  damage  80  moving  60%  straight 0.25
+       level at 1200/2400/4800/9600: 3 7 12 28  first picks: 6 11 1 7 1 12 2 9 5 2  taken: 3 7 6 3 3 5 2 3 6 3 7 1 8 4
+ep  7  len 24000  survived  level 45  kills 13032  dashes  32  damage  37  moving  58%  straight 0.21
+       level at 1200/2400/4800/9600: 3 5 12 30  first picks: 10 7 5 12 12 10 10 3 2 12  taken: 3 1 1 3 1 4 5 2 2 1 7 4 8 2
+ep  8  len  1990  died      level  5  kills    74  dashes   5  damage  25  moving  56%  straight 0.31
+       level at 1200/2400/4800/9600: 4 0 0 0  first picks: 13 13 10 11  taken: 0 0 0 0 0 0 0 0 0 0 1 1 0 2
+ep  9  len 24000  survived  level 59  kills 11503  dashes  46  damage 120  moving  58%  straight 0.33
+       level at 1200/2400/4800/9600: 3 6 11 20  first picks: 11 11 0 9 11 9 12 1 8 12  taken: 4 5 7 4 3 2 1 2 4 7 4 6 5 4
+ep 10  len 24000  survived  level 64  kills 13999  dashes  52  damage  52  moving  62%  straight 0.17
+       level at 1200/2400/4800/9600: 3 7 15 31  first picks: 12 5 1 2 5 1 3 2 8 12  taken: 6 3 5 6 5 4 3 4 6 2 4 8 5 2
+ep 11  len 24000  survived  level 49  kills 13574  dashes  30  damage  27  moving  57%  straight 0.15
+       level at 1200/2400/4800/9600: 4 8 15 31  first picks: 0 11 0 3 9 3 12 0 13 3  taken: 4 1 5 6 3 0 3 3 4 3 2 5 7 2
+ep 12  len  2488  died      level  7  kills   104  dashes   5  damage  18  moving  55%  straight 0.45
+       level at 1200/2400/4800/9600: 3 6 0 0  first picks: 11 5 5 1 13 11  taken: 0 1 0 0 0 2 0 0 0 0 0 2 0 1
+ep 13  len 24000  survived  level 49  kills 13418  dashes  45  damage  61  moving  64%  straight 0.17
+       level at 1200/2400/4800/9600: 4 8 15 32  first picks: 6 2 6 0 4 3 7 1 11 3  taken: 6 4 1 4 6 0 3 4 2 2 2 8 3 3
+ep 14  len 24000  survived  level 52  kills 13558  dashes  41  damage  35  moving  60%  straight 0.19
+       level at 1200/2400/4800/9600: 3 7 15 31  first picks: 4 7 1 0 1 3 11 11 8 4  taken: 4 6 1 6 3 4 4 3 2 2 2 5 5 4
+ep 15  len  2108  died      level  6  kills    84  dashes   6  damage  10  moving  58%  straight 0.36
+       level at 1200/2400/4800/9600: 3 0 0 0  first picks: 4 5 12 6 12  taken: 0 0 0 0 1 1 1 0 0 0 0 0 2 0
+ep 16  len 24000  survived  level 60  kills 12761  dashes  41  damage  78  moving  59%  straight 0.23
+       level at 1200/2400/4800/9600: 4 7 12 28  first picks: 1 5 8 7 12 10 8 5 1 9  taken: 4 4 6 5 2 4 3 2 3 6 6 3 6 5
+ep 17  len 24000  survived  level 64  kills 13714  dashes  42  damage  34  moving  59%  straight 0.16
+       level at 1200/2400/4800/9600: 3 7 15 32  first picks: 11 8 11 3 13 2 4 3 11 2  taken: 4 4 8 5 3 3 2 3 5 3 7 5 7 4
+ep 18  len 24000  survived  level 58  kills 12744  dashes  25  damage  41  moving  55%  straight 0.14
+       level at 1200/2400/4800/9600: 3 7 15 31  first picks: 1 2 4 12 10 13 3 0 3 10  taken: 4 5 4 3 6 3 4 4 3 4 5 4 3 5
+ep 19  len 24000  survived  level 55  kills 12722  dashes  35  damage  75  moving  67%  straight 0.23
+       level at 1200/2400/4800/9600: 3 5 10 29  first picks: 12 8 7 12 11 9 1 10 0 3  taken: 3 4 1 6 4 3 5 6 1 5 2 4 6 4
+ep 20  len 24000  survived  level 73  kills 13927  dashes  35  damage  69  moving  59%  straight 0.16
+       level at 1200/2400/4800/9600: 3 6 13 31  first picks: 7 6 10 8 1 0 1 8 11 3  taken: 7 8 3 5 2 7 8 5 10 2 2 4 7 2
+ep 21  len  1581  died      level  5  kills    52  dashes   4  damage   7  moving  55%  straight 0.31
+       level at 1200/2400/4800/9600: 3 0 0 0  first picks: 5 1 1 6  taken: 0 2 0 0 0 1 1 0 0 0 0 0 0 0
+ep 22  len  1525  died      level  4  kills    44  dashes   3  damage   7  moving  53%  straight 0.36
+       level at 1200/2400/4800/9600: 4 0 0 0  first picks: 4 0 5  taken: 1 0 0 0 1 1 0 0 0 0 0 0 0 0
+ep 23  len 24000  survived  level 63  kills 12140  dashes  41  damage 101  moving  59%  straight 0.27
+       level at 1200/2400/4800/9600: 3 7 11 20  first picks: 4 12 9 5 6 4 4 13 8 4  taken: 3 5 1 3 8 3 4 3 9 4 3 6 8 2
+
+mean length 17895 of 24000 (75%), survived 17 of 24, mean level 43.1, mean kills 9393, mean dashes 28.9, mean damage 47.3, mean straightness 0.25
+
+level   ticks  dashing%  invuln%  dashes/1000t  damage/1000t
+    1   11116      3.5     5.6           2.9          0.99
+    2    8625      1.9    12.7           1.6          3.83
+    3    9849      2.2    16.7           1.8          3.96
+    4    9904      2.9    21.0           2.4          5.35
+    5    7954      2.4    20.2           2.0          5.66
+    6    6277      2.9    37.7           2.4         11.15
+    7    6364      1.7    24.5           1.4          6.91
+    8    6261      1.7    22.4           1.4          6.23
+    9    6857      1.2    17.6           1.0          5.25
+   10    7534      1.4    22.1           1.2          5.97
+   11    7544      1.1    13.8           0.9          5.43
+   12    6845      1.1    15.2           0.9          5.26
+   13    6704      0.7    13.0           0.6          5.82
+   14    6242      1.7    19.7           1.4          7.05
+   15    6295      1.5    17.0           1.3          7.47
+   16    5640      1.1    13.4           0.9          5.67
+   17    5569      1.1    11.0           0.9          3.77
+   18    5696      0.8     7.0           0.7          3.69
+   19    6452      0.7     6.5           0.6          2.79
+   20    5512      0.4    10.2           0.4          5.08
+   21    4952      0.2    10.7           0.2          5.25
+   22    4642      0.3    10.5           0.2          3.88
+   23    4742      0.5     7.9           0.4          4.01
+   24    4277      0.3    10.2           0.2          4.91
+   25    4236      0.6     8.0           0.5          5.43
+   26    4219      0.3     6.2           0.2          3.08
+   27    4260      0.3     3.7           0.2          1.41
+   28    4272      0.3     5.4           0.2          5.15
+   29    4504      0.0     3.5           0.0          1.11
+   30    5274      0.2     2.7           0.2          1.33
+   31    4872      0.2     1.6           0.2          0.82
+   32    4933      0.0     1.5           0.0          1.22
+   33    5503      0.0     0.7           0.0          0.36
+   34    5179      0.5     1.9           0.4          0.77
+   35    5352      0.0     1.3           0.0          0.75
+   36    6355      0.6     2.9           0.5          1.26
+   37    6221      0.6     1.5           0.5          0.64
+   38    6020      0.2     1.1           0.2          0.33
+   39    6482      1.1     1.8           0.9          0.15
+   40    6895      1.0     2.1           0.9          0.44
+   41    8229      1.1     2.8           1.0          1.09
+   42    8009      1.3     2.3           1.0          0.12
+   43    8368      1.0     2.4           0.8          0.72
+   44    9024      2.0     2.2           1.7          0.00
+   45    5769      1.5     2.2           1.2          0.17
+   46    6811      1.6     2.2           1.3          0.15
+   47    9383      2.9     5.5           2.5          1.39
+   48    9388      2.4     3.3           2.0          0.32
+   49    8599      3.1     6.3           2.6          1.98
+   50    6794      2.3     5.1           1.9          1.18
+   51    8625      2.1     5.2           1.7          1.51
+   52    8400      2.9     4.8           2.4          1.07
+   53    6734      3.0     6.0           2.5          1.49
+   54    7355      3.4     6.2           2.9          1.09
+   55    5787      3.1     5.0           2.6          0.69
+   56    7064      3.4     5.7           2.8          1.84
+   57    7345      3.9     6.8           3.3          1.63
+   58    7992      3.6     7.8           3.0          2.25
+   59    6588      4.6     7.7           3.8          1.82
+   60    6611      4.2     7.4           3.5          1.82
+   61    5599      4.5     6.6           3.8          0.71
+   62    4774      4.7     7.7           4.0          2.51
+   63   19780      4.8     6.1           4.0          0.51

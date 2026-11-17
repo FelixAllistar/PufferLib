@@ -89,8 +89,11 @@ static float read_move_action(int mask) {
     return 0.0f;
 }
 
-static int read_dash_held(void) {
-    return IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+// Shift dashes when the dash is ready. While it cools down the held movement keys
+// still apply: the dash action itself stands still when it cannot fire.
+static int read_dash_ready(Env* env) {
+    return (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+        && env->dash_timer <= 0 && env->dash_cd <= 0.0f;
 }
 
 static int read_upgrade_direct_pick(void) {
@@ -368,7 +371,7 @@ int main(int argc, char** argv) {
                 movement_lock_active = 0;
             }
             actions[0] = movement_lock_active ? 0.0f
-                : (read_dash_held() ? (float)PS_ACTION_DASH : read_move_action(movement_mask));
+                : (read_dash_ready(&env) ? (float)PS_ACTION_DASH : read_move_action(movement_mask));
 
             if (env.pending_upgrade) {
                 int picked = read_upgrade_input(&upgrade_selection);
@@ -387,7 +390,7 @@ int main(int argc, char** argv) {
                 movement_lock_active = movement_mask != 0;
                 movement_lock_mask = movement_mask;
                 actions[0] = movement_lock_active ? 0.0f
-                    : (read_dash_held() ? (float)PS_ACTION_DASH : read_move_action(movement_mask));
+                    : (read_dash_ready(&env) ? (float)PS_ACTION_DASH : read_move_action(movement_mask));
                 // Consume the upgrade immediately instead of waiting for the
                 // next accumulator boundary.
                 sim_accumulator = PS_FAST_SIM_DT;

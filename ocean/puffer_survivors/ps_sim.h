@@ -197,7 +197,9 @@ PS_SIM_FN float ps_dash_cooldown_total(PSSim* sim, int env) {
     float cd = sim->cfg.dash_cooldown
         + sim->cfg.dash_cooldown_per_level
             * (float)(PS_P(sim, env, level) - 1);
-    return fmaxf(1.0f, cd * PS_P(sim, env, cooldown_mult));
+    // The floor keeps one dash from running into the next. A dash is faster than
+    // walking and invulnerable, so chained dashes would be both all the time.
+    return fmaxf(fmaxf(1.0f, sim->cfg.dash_cooldown_min), cd * PS_P(sim, env, cooldown_mult));
 }
 
 PS_SIM_FN float ps_weapon_damage(PSSim* sim, int env, int weapon, int level, int first_level_zero) {
@@ -211,9 +213,32 @@ PS_SIM_FN float ps_weapon_damage(PSSim* sim, int env, int weapon, int level, int
 PS_SIM_FN int ps_upgrade_available(PSSim* sim, int env, int type) {
     (void)env;
     if (type < PS_WEAPON_COUNT) {
-        return PS_W(sim, env, type, weapon_level) < sim->cfg.weapon_max_level;
+        return type >= 0 && PS_W(sim, env, type, weapon_level) < sim->cfg.weapon_max_level;
     }
-    return type >= 0 && type < PS_UPGRADE_COUNT;
+    if (type >= PS_UPGRADE_COUNT) return 0;
+    return PS_W(sim, env, type - PS_WEAPON_COUNT, passive_level)
+        < sim->cfg.upgrade_passive_max_level;
+}
+
+// Fun scorecard band: 1 inside [lo, hi], falling off as a Gaussian of the distance outside.
+PS_SIM_FN float ps_fun_band(float x, float lo, float hi, float soft) {
+    if (x >= lo && x <= hi) return 1.0f;
+    if (soft <= 0.0f) return 0.0f;
+    float d = x < lo ? lo - x : x - hi;
+    float z = d / soft;
+    return expf(-z * z);
+}
+
+// Orbit pearl count, ring distance and hit radius at a weapon level.
+PS_SIM_FN void ps_orbit_shape(PSSim* sim, int env, int level,
+        int* count, float* orbit_r, float* hit_r) {
+    (void)env;
+    *count = 1 + level / 2;
+    *orbit_r = (sim->cfg.weapon_orbit_distance
+        + sim->cfg.weapon_orbit_distance_per_level * (float)level)
+        * (1.0f + sim->cfg.orbit_area_distance_bonus * PS_P(sim, env, area_bonus));
+    *hit_r = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_ORBIT, level)
+        * (1.0f + PS_P(sim, env, area_bonus));
 }
 
 PS_SIM_FN int ps_wave_minimum(PSSim* sim, int env) {
@@ -821,8 +846,21 @@ PS_SIM_FN void ps_verify_counts(PSSim* sim, int env) {
 
 PS_SIM_FN void ps_offer_upgrades(PSSim* sim, int env) {
     if (PS_P(sim, env, pending_upgrade)) return;
+    int available = 0;
+    for (int t = 0; t < PS_UPGRADE_COUNT; t++) available += ps_upgrade_available(sim, env, t);
+    if (available == 0) {
+        // Everything is maxed: a level-up heals instead of offering cards.
+        PS_P(sim, env, hp) = fminf(PS_P(sim, env, max_hp), PS_P(sim, env, hp) + sim->cfg.health_heal);
+        PS_P(sim, env, queued_upgrades) = 0;
+        return;
+    }
     PS_P(sim, env, pending_upgrade) = 1;
     for (int i = 0; i < PS_UPGRADE_SLOTS; i++) {
+        // Fewer types than slots: repeat the distinct ones.
+        if (i >= available) {
+            PS_W(sim, env, i, offered) = PS_W(sim, env, i - available, offered);
+            continue;
+        }
         int offer = -1;
         for (;;) {
             int candidate = (int)(ps_rand_u32(sim, env) % PS_UPGRADE_COUNT);
@@ -849,7 +887,7 @@ PS_SIM_FN void ps_apply_upgrade_effect(PSSim* sim, int env, int upgrade) {
         case PS_UPGRADE_SPIKES:
             if (PS_W(sim, env, upgrade, weapon_level) < sim->cfg.weapon_max_level)
                 PS_W(sim, env, upgrade, weapon_level)++;
-            break;
+            return;
         case PS_UPGRADE_SPEED: PS_P(sim, env, speed_bonus) += sim->cfg.upgrade_speed_bonus; break;
         case PS_UPGRADE_MAGNET: PS_P(sim, env, magnet_bonus) += sim->cfg.upgrade_magnet_bonus; break;
         case PS_UPGRADE_HEALTH:
@@ -860,7 +898,9 @@ PS_SIM_FN void ps_apply_upgrade_effect(PSSim* sim, int env, int upgrade) {
         case PS_UPGRADE_COOLDOWN: PS_P(sim, env, cooldown_mult) *= sim->cfg.upgrade_cooldown_multiplier; break;
         case PS_UPGRADE_AREA: PS_P(sim, env, area_bonus) += sim->cfg.upgrade_area_bonus; break;
         case PS_UPGRADE_PIERCE: PS_P(sim, env, pierce_bonus) += 1; break;
+        default: return;
     }
+    PS_W(sim, env, upgrade - PS_WEAPON_COUNT, passive_level)++;
 }
 
 PS_SIM_FN void ps_apply_upgrade(PSSim* sim, int env, int choice) {
@@ -895,6 +935,7 @@ PS_SIM_FN void ps_add_log(PSSim* sim, int env, int survived) {
     PS_LOG(sim, env).pickups += PS_P(sim, env, episode_pickups);
     PS_LOG(sim, env).levelups += PS_P(sim, env, episode_levelups);
     PS_LOG(sim, env).obstacle_hits += PS_P(sim, env, episode_obstacle_hits);
+    PS_LOG(sim, env).dashes += PS_P(sim, env, episode_dashes);
     PS_LOG(sim, env).enemies_alive += (float)PS_P(sim, env, enemy_count);
     PS_LOG(sim, env).projectiles_alive += (float)PS_P(sim, env, projectile_count);
     PS_LOG(sim, env).drops_alive += (float)PS_P(sim, env, drop_count);
@@ -909,6 +950,45 @@ PS_SIM_FN void ps_add_log(PSSim* sim, int env, int survived) {
     PS_LOG(sim, env).peak_enemies += PS_P(sim, env, episode_peak_enemies);
     PS_LOG(sim, env).peak_projectiles += PS_P(sim, env, episode_peak_projectiles);
     PS_LOG(sim, env).min_hp += PS_P(sim, env, episode_min_hp);
+
+    float T = fmaxf(1.0f, (float)PS_P(sim, env, tick));
+    float K = fmaxf(1.0f, PS_P(sim, env, episode_kills));
+    float raw[PS_FUN_TERMS];
+    raw[PS_FUN_TENSION] = survived ? PS_P(sim, env, episode_min_hp_frac) : 0.0f;
+    raw[PS_FUN_DAMAGE] = PS_P(sim, env, episode_damage_taken) / (T / 3600.0f);
+    raw[PS_FUN_SURVIVAL] = T / (float)sim->cfg.max_steps;
+    raw[PS_FUN_COVERAGE] = PS_P(sim, env, episode_coverage_sum) / T;
+    raw[PS_FUN_COMBO] = PS_P(sim, env, episode_combo_kills) / K;
+    raw[PS_FUN_BURST] = PS_P(sim, env, episode_burst_kills) / K;
+    raw[PS_FUN_GROWTH] = log2f(fmaxf(1.0f, (float)PS_P(sim, env, last_minute_kills))
+        / fmaxf(1.0f, (float)PS_P(sim, env, first_minute_kills)));
+    raw[PS_FUN_STRAIGHT] = PS_P(sim, env, straight_sum)
+        / fmaxf(1.0f, (float)PS_P(sim, env, straight_n));
+    float score[PS_FUN_TERMS];
+    float fun = 1.0f;
+    for (int t = 0; t < PS_FUN_TERMS; t++) {
+        score[t] = ps_fun_band(raw[t], sim->cfg.fun_lo[t], sim->cfg.fun_hi[t], sim->cfg.fun_soft[t]);
+        fun *= score[t];
+    }
+    PS_LOG(sim, env).fun += fun;
+    PS_LOG(sim, env).fun_tension += score[PS_FUN_TENSION];
+    PS_LOG(sim, env).fun_damage += score[PS_FUN_DAMAGE];
+    PS_LOG(sim, env).fun_survival += score[PS_FUN_SURVIVAL];
+    PS_LOG(sim, env).fun_coverage += score[PS_FUN_COVERAGE];
+    PS_LOG(sim, env).fun_combo += score[PS_FUN_COMBO];
+    PS_LOG(sim, env).fun_burst += score[PS_FUN_BURST];
+    PS_LOG(sim, env).fun_growth += score[PS_FUN_GROWTH];
+    PS_LOG(sim, env).fun_straight += score[PS_FUN_STRAIGHT];
+#ifndef PUFFER_GPU_ENV
+    PS_LOG(sim, env).raw_tension += raw[PS_FUN_TENSION];
+    PS_LOG(sim, env).raw_damage += raw[PS_FUN_DAMAGE];
+    PS_LOG(sim, env).raw_survival += raw[PS_FUN_SURVIVAL];
+    PS_LOG(sim, env).raw_coverage += raw[PS_FUN_COVERAGE];
+    PS_LOG(sim, env).raw_combo += raw[PS_FUN_COMBO];
+    PS_LOG(sim, env).raw_burst += raw[PS_FUN_BURST];
+    PS_LOG(sim, env).raw_growth += raw[PS_FUN_GROWTH];
+    PS_LOG(sim, env).raw_straight += raw[PS_FUN_STRAIGHT];
+#endif
     if (survived) {
         PS_LOG(sim, env).success += 1.0f;
     } else {
@@ -981,7 +1061,12 @@ PS_SIM_FN PSEnemyDef ps_enemy_stats(PSSim* sim, int env, int* kind_out,
         + sim->cfg.enemy_hp_progress_scale * progress * sim->cfg.spawn_ramp;
     float speed_growth_wave = (float)(wave < sim->cfg.enemy_speed_growth_wave_cap
         ? wave : sim->cfg.enemy_speed_growth_wave_cap);
-    float speed_growth = 1.0f + sim->cfg.enemy_speed_growth_per_wave * speed_growth_wave;
+    // Past the cap, enemies keep speeding up at the late rate: a player who has not built
+    // up can no longer outwalk them, one who has can still kill them.
+    float late_waves = (float)(wave > sim->cfg.enemy_speed_growth_wave_cap
+        ? wave - sim->cfg.enemy_speed_growth_wave_cap : 0);
+    float speed_growth = 1.0f + sim->cfg.enemy_speed_growth_per_wave * speed_growth_wave
+        + sim->cfg.enemy_speed_late_growth_per_wave * late_waves;
     stats.hp *= hp_growth * sim->cfg.enemy_hp_scale;
     stats.speed_mult *= sim->cfg.enemy_speed * speed_growth;
     stats.damage *= sim->cfg.enemy_damage_scale;
@@ -1080,6 +1165,7 @@ PS_SIM_FN int ps_spawn_enemy(PSSim* sim, int env) {
     PS_ENEMY(sim, env, slot, speed) = stats.speed_mult;
     PS_ENEMY(sim, env, slot, damage) = stats.damage;
     PS_ENEMY(sim, env, slot, slow) = 0.0f;
+    PS_ENEMY(sim, env, slot, pulled) = 0.0f;
     PS_ENEMY(sim, env, slot, active) = 1;
     ps_dense_add(sim, env, PS_ENEMY_DENSE(sim, env), PS_ENEMY_DENSE_POS(sim, env), &PS_P(sim, env, enemy_count), slot);
     return slot + 1;
@@ -1120,7 +1206,9 @@ PS_SIM_FN void ps_spawn_projectile(PSSim* sim, int env, int type, float sx, floa
     ps_dense_add(sim, env, PS_PROJECTILE_DENSE(sim, env), PS_PROJECTILE_DENSE_POS(sim, env), &PS_P(sim, env, projectile_count), i);
 }
 
-PS_SIM_FN void ps_spawn_area(PSSim* sim, int env, int type, float x, float y, float radius, float damage, int ttl, int tick_rate) {
+// The first damage tick comes first_tick_delay area updates after the spawn (0 and 1: the next one).
+PS_SIM_FN void ps_spawn_area_delayed(PSSim* sim, int env, int type, float x, float y,
+        float radius, float damage, int ttl, int tick_rate, int first_tick_delay) {
     if (PS_P(sim, env, area_count) >= sim->cfg.area_cap) return;
 
     int i = ps_find_free_slot(sim, env, PS_AREA_ACTIVE(sim, env), PS_AREA_STORAGE_CAP, &PS_P(sim, env, next_area_slot));
@@ -1133,10 +1221,14 @@ PS_SIM_FN void ps_spawn_area(PSSim* sim, int env, int type, float x, float y, fl
     PS_AREA(sim, env, i, damage) = damage;
     PS_AREA(sim, env, i, ttl) = ttl;
     PS_AREA(sim, env, i, tick_rate) = tick_rate;
-    PS_AREA(sim, env, i, tick_timer) = 0;
+    PS_AREA(sim, env, i, tick_timer) = first_tick_delay;
     PS_AREA(sim, env, i, active) = 1;
     if (type == PS_WEAPON_INK) PS_P(sim, env, active_ink_count)++;
     ps_dense_add(sim, env, PS_AREA_DENSE(sim, env), PS_AREA_DENSE_POS(sim, env), &PS_P(sim, env, area_count), i);
+}
+
+PS_SIM_FN void ps_spawn_area(PSSim* sim, int env, int type, float x, float y, float radius, float damage, int ttl, int tick_rate) {
+    ps_spawn_area_delayed(sim, env, type, x, y, radius, damage, ttl, tick_rate, 0);
 }
 
 PS_SIM_FN void ps_rebuild_grid(PSSim* sim, int env) {
@@ -1170,6 +1262,10 @@ PS_SIM_FN int ps_grid_needed(PSSim* sim, int env) {
         if (PS_W(sim, env, weapon, weapon_level) > 0 && PS_W(sim, env, weapon, weapon_cd) <= 1.0f)
             return 1;
     }
+    // Detonations and shatters damage through the grid too.
+    for (int k = 0; k < PS_P(sim, env, area_count); k++) {
+        if (PS_AREA(sim, env, PS_AREA(sim, env, k, dense), damage) > 0.0f) return 1;
+    }
     return 0;
 }
 
@@ -1189,6 +1285,20 @@ PS_SIM_FN int ps_damage_enemy(PSSim* sim, int env, int eidx, float damage) {
     PS_P(sim, env, episode_kills) += 1.0f;
     PS_P(sim, env, episode_score) += boss ? sim->cfg.kill_score_boss
         : (elite ? sim->cfg.kill_score_elite : sim->cfg.kill_score_default);
+    PS_P(sim, env, window_kills)++;
+    PS_P(sim, env, minute_kills)++;
+    int source = PS_P(sim, env, damage_source);
+    float frozen = PS_ENEMY(sim, env, eidx, slow);
+    if (frozen > 0.0f || PS_ENEMY(sim, env, eidx, pulled) > 0.0f
+            || source == PS_AREA_DETONATION || source == PS_AREA_SHATTER)
+        PS_P(sim, env, episode_combo_kills) += 1.0f;
+    // A frozen enemy shatters, hurting its neighbours a few ticks later.
+    if (frozen > 0.0f && sim->cfg.shatter_damage > 0.0f) {
+        ps_spawn_area_delayed(sim, env, PS_AREA_SHATTER,
+            PS_ENEMY(sim, env, eidx, x), PS_ENEMY(sim, env, eidx, y), sim->cfg.shatter_radius,
+            sim->cfg.shatter_damage * (1.0f + PS_P(sim, env, damage_bonus)),
+            sim->cfg.shatter_delay + sim->cfg.shatter_ttl, 9999, sim->cfg.shatter_delay);
+    }
     ps_spawn_drop(sim, env, PS_ENEMY(sim, env, eidx, x), PS_ENEMY(sim, env, eidx, y),
         boss ? sim->cfg.drop_value_boss
         : (elite ? sim->cfg.drop_value_elite : sim->cfg.drop_value_default), 0);
@@ -1253,6 +1363,7 @@ PS_SIM_FN void ps_update_enemies(PSSim* sim, int env) {
     float player_y = PS_P(sim, env, py);
     float player_radius = sim->cfg.player_radius;
     float frost_slow = sim->cfg.frost_slow;
+    float frost_boss_slow = sim->cfg.frost_boss_slow;
     int stride = sim->cfg.enemy_obstacle_stride;
     PS_P(sim, env, nearest_enemy) = -1;
     PS_P(sim, env, nearest_enemy_d2) = 1e30f;
@@ -1271,10 +1382,13 @@ PS_SIM_FN void ps_update_enemies(PSSim* sim, int env) {
 #endif
         float spd = PS_ENEMY(sim, env, i, speed);
         float slow = PS_ENEMY(sim, env, i, slow);
-        spd *= 1.0f - frost_slow * (slow > 0.0f);
+        int big = (PS_ENEMY(sim, env, i, type) & (PS_ENEMY_BOSS_FLAG | PS_ENEMY_ARI_K_FLAG)) != 0;
+        spd *= 1.0f - (big ? frost_boss_slow : frost_slow) * (slow > 0.0f);
         PS_ENEMY(sim, env, i, vx) = dx * inv_d * spd;
         PS_ENEMY(sim, env, i, vy) = dy * inv_d * spd;
         if (slow > 0.0f) PS_ENEMY(sim, env, i, slow) = slow - 1.0f;
+        float pulled = PS_ENEMY(sim, env, i, pulled);
+        if (pulled > 0.0f) PS_ENEMY(sim, env, i, pulled) = pulled - 1.0f;
         PS_ENEMY(sim, env, i, x) += PS_ENEMY(sim, env, i, vx);
         PS_ENEMY(sim, env, i, y) += PS_ENEMY(sim, env, i, vy);
         if ((PS_P(sim, env, tick) + i) % stride == 0)
@@ -1544,18 +1658,25 @@ PS_SIM_FN void ps_damage_radius(PSSim* sim, int env, float x, float y,
 }
 
 PS_SIM_FN void ps_update_areas(PSSim* sim, int env) {
-    int k = 0;
-    while (k < PS_P(sim, env, area_count)) {
+    // Count down first, so an area spawned by a kill below (a shatter) starts
+    // counting on the next update like any other new area.
+    for (int k = 0; k < PS_P(sim, env, area_count); k++) {
         int i = PS_AREA(sim, env, k, dense);
         PS_AREA(sim, env, i, ttl)--;
         PS_AREA(sim, env, i, tick_timer)--;
+    }
+    int k = 0;
+    while (k < PS_P(sim, env, area_count)) {
+        int i = PS_AREA(sim, env, k, dense);
         if (PS_AREA(sim, env, i, tick_timer) <= 0 && PS_AREA(sim, env, i, damage) > 0.0f) {
             // The grid query is exact for persistent area ticks. The old
             // knockback safety pad made every oil pool inspect many extra
             // cells while not changing which enemies actually took damage.
+            PS_P(sim, env, damage_source) = PS_AREA(sim, env, i, type);
             ps_damage_radius_with_query_pad(sim, env, PS_AREA(sim, env, i, x), PS_AREA(sim, env, i, y),
                 PS_AREA(sim, env, i, radius), PS_AREA(sim, env, i, damage),
                 sim->cfg.area_tick_knockback, 0.0f);
+            PS_P(sim, env, damage_source) = -1;
             PS_AREA(sim, env, i, tick_timer) = PS_AREA(sim, env, i, tick_rate);
         }
         if (PS_AREA(sim, env, i, ttl) <= 0) {
@@ -1590,18 +1711,34 @@ PS_SIM_FN void ps_cast_whirlpool(PSSim* sim, int env, int level) {
         * (1.0f + PS_P(sim, env, area_bonus));
     float damage = ps_weapon_damage(sim, env, PS_WEAPON_WHIRLPOOL, level, 0);
     ps_damage_radius(sim, env, PS_P(sim, env, px), PS_P(sim, env, py), radius, damage, sim->cfg.whirlpool_knockback);
+    // Enemies in a ring outside the burst are dragged in toward its edge.
+    float ax = PS_P(sim, env, px), ay = PS_P(sim, env, py);
+    float pull_r = radius * sim->cfg.whirlpool_pull_radius_scale;
+    int scan_capacity = PS_P(sim, env, enemy_count) * 2 >= sim->cfg.enemy_cap;
+    int scan_count = scan_capacity ? sim->cfg.enemy_cap : PS_P(sim, env, enemy_count);
+    for (int k = 0; k < scan_count; k++) {
+        int i = scan_capacity ? k : PS_ENEMY(sim, env, k, dense);
+        if (!PS_ENEMY(sim, env, i, active)) continue;
+        if (PS_ENEMY(sim, env, i, shape) != PS_SHAPE_CIRCLE) continue;
+        if (PS_ENEMY(sim, env, i, type) & (PS_ENEMY_BOSS_FLAG | PS_ENEMY_ARI_K_FLAG)) continue;
+        float dx = PS_ENEMY(sim, env, i, x) - ax, dy = PS_ENEMY(sim, env, i, y) - ay;
+        float d2 = dx * dx + dy * dy;
+        if (d2 <= radius * radius || d2 > pull_r * pull_r) continue;
+        float d = sqrtf(d2);
+        float new_d = fmaxf(0.9f * radius, d - sim->cfg.whirlpool_pull);
+        PS_ENEMY(sim, env, i, x) = ax + dx / d * new_d;
+        PS_ENEMY(sim, env, i, y) = ay + dy / d * new_d;
+        PS_ENEMY(sim, env, i, pulled) = (float)sim->cfg.whirlpool_pull_ttl;
+    }
     ps_spawn_area(sim, env, PS_WEAPON_WHIRLPOOL, PS_P(sim, env, px), PS_P(sim, env, py), radius, 0.0f,
         sim->cfg.whirlpool_ttl, sim->cfg.whirlpool_tick_rate);
     PS_W(sim, env, PS_WEAPON_WHIRLPOOL, weapon_active) = 1.0f;
 }
 
 PS_SIM_FN void ps_cast_orbit(PSSim* sim, int env, int level) {
-    int count = 1 + level / 2;
-    float orbit_r = (sim->cfg.weapon_orbit_distance
-        + sim->cfg.weapon_orbit_distance_per_level * (float)level)
-        * (1.0f + sim->cfg.orbit_area_distance_bonus * PS_P(sim, env, area_bonus));
-    float hit_r = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_ORBIT, level)
-        * (1.0f + PS_P(sim, env, area_bonus));
+    int count = 0;
+    float orbit_r = 0.0f, hit_r = 0.0f;
+    ps_orbit_shape(sim, env, level, &count, &orbit_r, &hit_r);
     float damage = ps_weapon_damage(sim, env, PS_WEAPON_ORBIT, level, 0);
     for (int i = 0; i < count; i++) {
         float a = PS_P(sim, env, orbit_phase) + 2.0f * PI * ((float)i / (float)count);
@@ -1669,6 +1806,25 @@ PS_SIM_FN void ps_cast_sonar(PSSim* sim, int env, int level) {
         * (1.0f + PS_P(sim, env, area_bonus));
     float damage = ps_weapon_damage(sim, env, PS_WEAPON_SONAR, level, 0);
     ps_damage_radius(sim, env, PS_P(sim, env, px), PS_P(sim, env, py), radius, damage, sim->cfg.sonar_knockback);
+    // The pulse sets off every oil pool it touches: a bigger, harder single hit,
+    // later for pools further out.
+    for (int k = 0; k < PS_P(sim, env, area_count); k++) {
+        int a = PS_AREA(sim, env, k, dense);
+        if (PS_AREA(sim, env, a, type) != PS_WEAPON_INK) continue;
+        float reach = radius + PS_AREA(sim, env, a, radius);
+        float d2 = ps_dist2(PS_AREA(sim, env, a, x), PS_AREA(sim, env, a, y),
+            PS_P(sim, env, px), PS_P(sim, env, py));
+        if (d2 > reach * reach) continue;
+        float dist = sqrtf(d2);
+        int delay = 1 + (int)((float)sim->cfg.oil_detonate_delay * fminf(1.0f, dist / radius));
+        PS_AREA(sim, env, a, type) = PS_AREA_DETONATION;
+        PS_AREA(sim, env, a, radius) *= sim->cfg.oil_detonate_radius_scale;
+        PS_AREA(sim, env, a, damage) *= sim->cfg.oil_detonate_damage_scale;
+        PS_AREA(sim, env, a, tick_rate) = 9999;
+        PS_AREA(sim, env, a, tick_timer) = delay;
+        PS_AREA(sim, env, a, ttl) = delay + sim->cfg.oil_detonate_ttl;
+        PS_P(sim, env, active_ink_count)--;
+    }
     ps_spawn_area(sim, env, PS_WEAPON_SONAR, PS_P(sim, env, px), PS_P(sim, env, py), radius, 0.0f,
         sim->cfg.sonar_ttl, sim->cfg.sonar_tick_rate);
     PS_W(sim, env, PS_WEAPON_SONAR, weapon_active) = 1.0f;
@@ -1710,7 +1866,7 @@ PS_SIM_FN void ps_cast_glacier(PSSim* sim, int env, int level) {
 }
 
 PS_SIM_FN void ps_cast_spikes(PSSim* sim, int env, int level) {
-    int n = 8 * level;
+    int n = sim->cfg.spikes_count_base + sim->cfg.spikes_count_per_level * (level - 1);
     float dmg = ps_weapon_damage(sim, env, PS_WEAPON_SPIKES, level, 0);
     float radius = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_SPIKES, level)
         * (1.0f + PS_P(sim, env, area_bonus));
@@ -1780,6 +1936,7 @@ PS_SIM_FN void ps_reset_core(PSSim* sim, int env, int clear_outputs) {
     for (int i = 0; i < PS_WEAPON_COUNT; i++) PS_W(sim, env, i, weapon_cd) = 0.0f;
     for (int i = 0; i < PS_WEAPON_COUNT; i++) PS_W(sim, env, i, weapon_active) = 0.0f;
     for (int i = 0; i < PS_WEAPON_COUNT; i++) PS_W(sim, env, i, weapon_level) = 0;
+    for (int i = 0; i < PS_PASSIVE_COUNT; i++) PS_W(sim, env, i, passive_level) = 0;
     PS_W(sim, env, PS_WEAPON_BUBBLE, weapon_level) = 1;
     if (sim->cfg.free_upgrade >= 0) {
         int count = sim->cfg.free_upgrade_count;
@@ -1808,12 +1965,82 @@ PS_SIM_FN void ps_reset_core(PSSim* sim, int env, int clear_outputs) {
     PS_P(sim, env, episode_pickups) = 0.0f;
     PS_P(sim, env, episode_levelups) = 0.0f;
     PS_P(sim, env, episode_obstacle_hits) = 0.0f;
+    PS_P(sim, env, episode_dashes) = 0.0f;
     PS_P(sim, env, episode_peak_enemies) = 0.0f;
     PS_P(sim, env, episode_peak_projectiles) = 0.0f;
     PS_P(sim, env, episode_min_hp) = PS_P(sim, env, hp);
+    PS_P(sim, env, damage_source) = -1;
+    PS_P(sim, env, episode_combo_kills) = 0.0f;
+    PS_P(sim, env, episode_burst_kills) = 0.0f;
+    PS_P(sim, env, episode_coverage_sum) = 0.0f;
+    PS_P(sim, env, episode_min_hp_frac) = 1.0f;
+    PS_P(sim, env, window_kills) = 0;
+    PS_P(sim, env, window_kills_avg) = 0.0f;
+    PS_P(sim, env, minute_kills) = 0;
+    PS_P(sim, env, first_minute_kills) = 0;
+    PS_P(sim, env, last_minute_kills) = 0;
+    PS_P(sim, env, straight_x) = PS_P(sim, env, px);
+    PS_P(sim, env, straight_y) = PS_P(sim, env, py);
+    PS_P(sim, env, straight_path) = 0.0f;
+    PS_P(sim, env, straight_sum) = 0.0f;
+    PS_P(sim, env, straight_n) = 0;
     ps_clear_entities(sim, env);
     ps_spawn_obstacles(sim, env);
     ps_compute_observations(sim, env);
+}
+
+// Per-tick fun scorecard bookkeeping. step_len is how far the player moved this tick.
+PS_SIM_FN void ps_update_fun_stats(PSSim* sim, int env, float step_len) {
+    // Share of the view covered by weapon areas and orbit pearls.
+    float cover = 0.0f;
+    for (int k = 0; k < PS_P(sim, env, area_count); k++) {
+        float r = PS_AREA(sim, env, PS_AREA(sim, env, k, dense), radius);
+        cover += PI * r * r;
+    }
+    int orbit_level = PS_W(sim, env, PS_WEAPON_ORBIT, weapon_level);
+    if (orbit_level > 0) {
+        int count = 0;
+        float orbit_r = 0.0f, hit_r = 0.0f;
+        ps_orbit_shape(sim, env, orbit_level, &count, &orbit_r, &hit_r);
+        cover += (float)count * PI * hit_r * hit_r;
+    }
+    float view = sim->cfg.fun_view_width * sim->cfg.fun_view_height;
+    PS_P(sim, env, episode_coverage_sum) += view > 0.0f ? fminf(1.0f, cover / view) : 0.0f;
+
+    float hp_frac = PS_P(sim, env, hp) / PS_P(sim, env, max_hp);
+    if (hp_frac < PS_P(sim, env, episode_min_hp_frac)) PS_P(sim, env, episode_min_hp_frac) = hp_frac;
+
+    int tick = PS_P(sim, env, tick);
+    // Kills in half-second windows that reach the burst size count as burst kills.
+    if (tick % 30 == 0) {
+        // A burst is a window well above the recent kill rate, not just a busy late game.
+        float window = (float)PS_P(sim, env, window_kills);
+        float burst_at = fmaxf((float)sim->cfg.fun_burst_kills,
+            sim->cfg.fun_burst_ratio * PS_P(sim, env, window_kills_avg));
+        if (window >= burst_at) PS_P(sim, env, episode_burst_kills) += window;
+        PS_P(sim, env, window_kills_avg) += 0.1f * (window - PS_P(sim, env, window_kills_avg));
+        PS_P(sim, env, window_kills) = 0;
+    }
+    // Kills in the first and the latest full minute.
+    if (tick % 3600 == 0) {
+        if (tick == 3600) PS_P(sim, env, first_minute_kills) = PS_P(sim, env, minute_kills);
+        PS_P(sim, env, last_minute_kills) = PS_P(sim, env, minute_kills);
+        PS_P(sim, env, minute_kills) = 0;
+    }
+    // Net displacement over path walked per 10 s window: 1 walks one way, 0 stays put.
+    PS_P(sim, env, straight_path) += step_len;
+    if (tick % 600 == 0) {
+        float path = PS_P(sim, env, straight_path);
+        if (path > 1.0f) {
+            float net = sqrtf(ps_dist2(PS_P(sim, env, px), PS_P(sim, env, py),
+                PS_P(sim, env, straight_x), PS_P(sim, env, straight_y)));
+            PS_P(sim, env, straight_sum) += net / path;
+            PS_P(sim, env, straight_n)++;
+        }
+        PS_P(sim, env, straight_x) = PS_P(sim, env, px);
+        PS_P(sim, env, straight_y) = PS_P(sim, env, py);
+        PS_P(sim, env, straight_path) = 0.0f;
+    }
 }
 
 PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
@@ -1835,6 +2062,7 @@ PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
     };
     int action = (int)PS_ACTIONS(sim, env)[0];
     action = (int)((unsigned)action % PS_MOVE_ACTION_COUNT);
+    float start_x = PS_P(sim, env, px), start_y = PS_P(sim, env, py);
     float speed = sim->cfg.player_speed * (1.0f + PS_P(sim, env, speed_bonus));
     int dash = action == PS_ACTION_DASH;
     if (dash && PS_P(sim, env, dash_timer) <= 0 && PS_P(sim, env, dash_cd) <= 0.0f) {
@@ -1854,6 +2082,7 @@ PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
         else if (dx > 0.001f) PS_P(sim, env, player_facing_left) = 0;
         PS_P(sim, env, dash_timer) = sim->cfg.dash_duration;
         PS_P(sim, env, dash_cd) = ps_dash_cooldown_total(sim, env);
+        PS_P(sim, env, episode_dashes) += 1.0f;
         if (PS_P(sim, env, invuln_timer) < sim->cfg.dash_duration + 1)
             PS_P(sim, env, invuln_timer) = sim->cfg.dash_duration + 1;
     }
@@ -1879,6 +2108,7 @@ PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
         PS_P(sim, env, py) += PS_P(sim, env, pvy);
     }
     ps_push_out_obstacles(sim, env, &PS_P(sim, env, px), &PS_P(sim, env, py), sim->cfg.player_radius, 1);
+    float step_len = sqrtf(ps_dist2(PS_P(sim, env, px), PS_P(sim, env, py), start_x, start_y));
     ps_recycle_far_obstacles(sim, env);
     ps_update_moving_obstacles(sim, env);
 
@@ -1894,6 +2124,7 @@ PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
     if ((float)PS_P(sim, env, projectile_count) > PS_P(sim, env, episode_peak_projectiles))
         PS_P(sim, env, episode_peak_projectiles) = (float)PS_P(sim, env, projectile_count);
     if (PS_P(sim, env, hp) < PS_P(sim, env, episode_min_hp)) PS_P(sim, env, episode_min_hp) = PS_P(sim, env, hp);
+    ps_update_fun_stats(sim, env, step_len);
 
     PS_P(sim, env, episode_return) += PS_REWARD(sim, env);
     if (PS_P(sim, env, hp) <= 0.0f || PS_P(sim, env, tick) >= sim->cfg.max_steps) {

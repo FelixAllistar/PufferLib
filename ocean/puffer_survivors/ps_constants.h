@@ -9,7 +9,7 @@
 #define PS_MAX_DROPS 256
 #define PS_MAX_OBSTACLES 32
 // Compile-time backing storage; env.area_cap may be lower, never higher.
-#define PS_AREA_STORAGE_CAP 96
+#define PS_AREA_STORAGE_CAP 160
 #define PS_MAX_MOVING_OBSTACLES 8
 #define PS_GRID_W 32
 #define PS_GRID_H 32
@@ -103,6 +103,26 @@ typedef enum {
     PS_UPGRADE_COUNT = 14,
 } PSUpgradeId;
 
+// Upgrades after the weapons are passives; each has its own level.
+#define PS_PASSIVE_COUNT (PS_UPGRADE_COUNT - PS_WEAPON_COUNT)
+
+// Area types: one per weapon, then the two combo areas.
+#define PS_AREA_DETONATION PS_WEAPON_COUNT
+#define PS_AREA_SHATTER (PS_WEAPON_COUNT + 1)
+
+// Terms of the per-episode fun scorecard.
+enum {
+    PS_FUN_TENSION = 0,
+    PS_FUN_DAMAGE = 1,
+    PS_FUN_SURVIVAL = 2,
+    PS_FUN_COVERAGE = 3,
+    PS_FUN_COMBO = 4,
+    PS_FUN_BURST = 5,
+    PS_FUN_GROWTH = 6,
+    PS_FUN_STRAIGHT = 7,
+    PS_FUN_TERMS = 8,
+};
+
 typedef struct {
     float hp;
     float speed_mult;
@@ -179,6 +199,7 @@ typedef struct {
     float enemy_hp_progress_scale;
     float enemy_speed_growth_per_wave;
     int enemy_speed_growth_wave_cap;
+    float enemy_speed_late_growth_per_wave;
     float elite_hp_multiplier;
     float elite_speed_multiplier;
     float elite_damage_multiplier;
@@ -238,8 +259,10 @@ typedef struct {
     float dash_shrink;
     float dash_cooldown;
     float dash_cooldown_per_level;
+    float dash_cooldown_min;
     float pickup_magnet_speed;
     int weapon_max_level;
+    int upgrade_passive_max_level;
     float upgrade_speed_bonus;
     float upgrade_magnet_bonus;
     float upgrade_health_bonus;
@@ -265,6 +288,9 @@ typedef struct {
     float whirlpool_knockback;
     int whirlpool_ttl;
     int whirlpool_tick_rate;
+    float whirlpool_pull;
+    float whirlpool_pull_radius_scale;
+    int whirlpool_pull_ttl;
     float orbit_area_distance_bonus;
     float orbit_knockback;
     float ink_target_range_ratio;
@@ -294,6 +320,10 @@ typedef struct {
     float sonar_knockback;
     int sonar_ttl;
     int sonar_tick_rate;
+    float oil_detonate_radius_scale;
+    float oil_detonate_damage_scale;
+    int oil_detonate_delay;
+    int oil_detonate_ttl;
     int moving_obstacle_cap;
     int moving_obstacle_start_wave;
     int moving_obstacle_spawn_interval;
@@ -307,8 +337,22 @@ typedef struct {
     float frost_half_angle;
     float frost_range;
     int frost_slow_ttl;
+    float frost_boss_slow;
+    float shatter_damage;
+    float shatter_radius;
+    int shatter_delay;
+    int shatter_ttl;
     float spike_speed;
     float spike_range;
+    int spikes_count_base;
+    int spikes_count_per_level;
+    int fun_burst_kills;
+    float fun_burst_ratio;
+    float fun_view_width;
+    float fun_view_height;
+    float fun_lo[PS_FUN_TERMS];
+    float fun_hi[PS_FUN_TERMS];
+    float fun_soft[PS_FUN_TERMS];
     int free_upgrade;
     int free_upgrade_count;
 } PSConfig;

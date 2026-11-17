@@ -56,16 +56,18 @@ struct PSCudaSim {
     float *weapon_cd;      // [PS_WEAPON_COUNT, N]
     float *weapon_active;  // [PS_WEAPON_COUNT, N]
     int *weapon_level;     // [PS_WEAPON_COUNT, N]
+    int *passive_level;    // [PS_PASSIVE_COUNT, N]
     float *orbit_phase, *frost_aim, *dash_cd;
     int *dash_timer;
     int *tick, *invuln_timer;
+    int *damage_source;
 
     // Enemy pool [PS_MAX_ENEMIES, N]
     uint8_t *enemy_active, *enemy_type, *enemy_shape;
     float *enemy_x, *enemy_y, *enemy_vx, *enemy_vy;
     float *enemy_hp, *enemy_max_hp, *enemy_radius, *enemy_bound_radius;
     float *enemy_half_width, *enemy_half_height, *enemy_speed, *enemy_damage;
-    float *enemy_slow;
+    float *enemy_slow, *enemy_pulled;
     int *enemy_next, *enemy_dense, *enemy_dense_pos;
 
     // Projectile pool [PS_MAX_PROJECTILES, N]
@@ -118,8 +120,15 @@ struct PSCudaSim {
     float *episode_reward_levelup, *episode_reward_obstacle, *episode_reward_terminal;
     float *episode_score, *episode_kills, *episode_xp;
     float *episode_damage_dealt, *episode_damage_taken, *episode_pickups;
-    float *episode_levelups, *episode_obstacle_hits;
+    float *episode_levelups, *episode_obstacle_hits, *episode_dashes;
     float *episode_peak_enemies, *episode_peak_projectiles, *episode_min_hp;
+
+    // Fun scorecard state.
+    float *episode_combo_kills, *episode_burst_kills, *episode_coverage_sum, *episode_min_hp_frac;
+    int *window_kills, *minute_kills, *first_minute_kills, *last_minute_kills;
+    float *window_kills_avg;
+    float *straight_x, *straight_y, *straight_path, *straight_sum;
+    int *straight_n;
 };
 
 
@@ -182,6 +191,8 @@ static inline size_t ps_cuda_layout(PSCudaSim* sim) {
     PS_BLOB_FIELD(float, weapon_cd, N * PS_WEAPON_COUNT);
     PS_BLOB_FIELD(float, weapon_active, N * PS_WEAPON_COUNT);
     PS_BLOB_FIELD(int, weapon_level, N * PS_WEAPON_COUNT);
+    PS_BLOB_FIELD(int, passive_level, N * PS_PASSIVE_COUNT);
+    PS_BLOB_FIELD(int, damage_source, N);
     PS_BLOB_FIELD(float, episode_return, N);
     PS_BLOB_FIELD(float, episode_reward_survival, N); PS_BLOB_FIELD(float, episode_reward_damage, N);
     PS_BLOB_FIELD(float, episode_reward_kill, N); PS_BLOB_FIELD(float, episode_reward_hurt, N);
@@ -193,7 +204,15 @@ static inline size_t ps_cuda_layout(PSCudaSim* sim) {
     PS_BLOB_FIELD(float, episode_pickups, N); PS_BLOB_FIELD(float, episode_levelups, N);
     PS_BLOB_FIELD(float, episode_obstacle_hits, N); PS_BLOB_FIELD(float, episode_peak_enemies, N);
     PS_BLOB_FIELD(float, episode_peak_projectiles, N); PS_BLOB_FIELD(float, episode_min_hp, N);
-    PS_BLOB_FIELD(float, nearest_enemy_d2, N);
+    PS_BLOB_FIELD(float, nearest_enemy_d2, N); PS_BLOB_FIELD(float, episode_dashes, N);
+    PS_BLOB_FIELD(float, episode_combo_kills, N); PS_BLOB_FIELD(float, episode_burst_kills, N);
+    PS_BLOB_FIELD(float, episode_coverage_sum, N); PS_BLOB_FIELD(float, episode_min_hp_frac, N);
+    PS_BLOB_FIELD(int, window_kills, N); PS_BLOB_FIELD(int, minute_kills, N);
+    PS_BLOB_FIELD(float, window_kills_avg, N);
+    PS_BLOB_FIELD(int, first_minute_kills, N); PS_BLOB_FIELD(int, last_minute_kills, N);
+    PS_BLOB_FIELD(float, straight_x, N); PS_BLOB_FIELD(float, straight_y, N);
+    PS_BLOB_FIELD(float, straight_path, N); PS_BLOB_FIELD(float, straight_sum, N);
+    PS_BLOB_FIELD(int, straight_n, N);
     PS_BLOB_FIELD(int, grid_head, NG);
     PS_BLOB_FIELD(int, grid_touched_count, N); PS_BLOB_FIELD(int, aabb_count, N);
     PS_BLOB_FIELD(int, grid_touched, NGT); PS_BLOB_FIELD(int, aabb_indices, NGT);
@@ -205,7 +224,7 @@ static inline size_t ps_cuda_layout(PSCudaSim* sim) {
     PS_BLOB_FIELD(float, enemy_radius, NE); PS_BLOB_FIELD(float, enemy_bound_radius, NE);
     PS_BLOB_FIELD(float, enemy_half_width, NE); PS_BLOB_FIELD(float, enemy_half_height, NE);
     PS_BLOB_FIELD(float, enemy_speed, NE); PS_BLOB_FIELD(float, enemy_damage, NE);
-    PS_BLOB_FIELD(float, enemy_slow, NE);
+    PS_BLOB_FIELD(float, enemy_slow, NE); PS_BLOB_FIELD(float, enemy_pulled, NE);
     PS_BLOB_FIELD(int, enemy_next, NE); PS_BLOB_FIELD(int, enemy_dense, NE);
     PS_BLOB_FIELD(int, enemy_dense_pos, NE);
     PS_BLOB_FIELD(uint8_t, projectile_active, NP); PS_BLOB_FIELD(uint8_t, projectile_type, NP);

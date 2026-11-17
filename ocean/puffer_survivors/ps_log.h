@@ -41,4 +41,33 @@ struct Log {
     float peak_enemies;
     float peak_projectiles;
     float min_hp;
+    float dashes;
+    // Fun scorecard: the product of the eight band scores, then each score.
+    float fun;
+    float fun_tension;
+    float fun_damage;
+    float fun_survival;
+    float fun_coverage;
+    float fun_combo;
+    float fun_burst;
+    float fun_growth;
+    float fun_straight;
+#ifndef PUFFER_GPU_ENV
+    // The raw value behind each score. CPU builds only: see the size limit below.
+    float raw_tension;
+    float raw_damage;
+    float raw_survival;
+    float raw_coverage;
+    float raw_combo;
+    float raw_burst;
+    float raw_growth;
+    float raw_straight;
+#endif
 };
+
+#ifdef PUFFER_GPU_ENV
+// The trainer sums GPU logs in one block of 256 threads with sizeof(Log) * 256 bytes of
+// dynamic shared memory. Past 48 floats that is over the 48 KB launch limit, the launch
+// fails and env/* stats go missing without an error.
+PS_STATIC_ASSERT(sizeof(struct Log) <= 48 * sizeof(float), "GPU Log must stay within 48 floats");
+#endif

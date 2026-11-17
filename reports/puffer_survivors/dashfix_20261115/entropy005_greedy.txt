@@ -1,0 +1,85 @@
+checkpoints/puffer_survivors/entropy005_20261116/0000000499908608.bin, 16 episodes, greedy
+max_steps 24000  dash cooldown 300 +0/level, floor 120  dash 12 ticks at 0.75  walk 0.18
+ep  0  len 24000  survived  level 45  kills 11937  dashes   2  damage   5  moving  94%  straight 0.23
+ep  1  len 24000  survived  level 51  kills 12980  dashes   1  damage  13  moving  85%  straight 0.14
+ep  2  len 24000  survived  level 60  kills 12764  dashes   3  damage  17  moving 100%  straight 0.22
+ep  3  len 24000  survived  level 72  kills 12395  dashes   1  damage  24  moving  89%  straight 0.16
+ep  4  len 16417  died      level 52  kills  7075  dashes   1  damage  27  moving  99%  straight 0.16
+ep  5  len 14596  died      level 16  kills  1372  dashes   3  damage   9  moving  90%  straight 0.59
+ep  6  len 24000  survived  level 66  kills 12533  dashes   3  damage  24  moving  90%  straight 0.22
+ep  7  len 24000  survived  level 49  kills  8796  dashes   4  damage  24  moving  96%  straight 0.34
+ep  8  len 24000  survived  level  7  kills   298  dashes   4  damage   8  moving  92%  straight 0.84
+ep  9  len 19609  died      level  9  kills   438  dashes   5  damage   9  moving  96%  straight 0.72
+ep 10  len 24000  survived  level 13  kills   438  dashes   6  damage   9  moving 101%  straight 0.69
+ep 11  len 24000  survived  level 10  kills   370  dashes   4  damage   9  moving  97%  straight 0.79
+ep 12  len 24000  survived  level 61  kills 12280  dashes   1  damage  13  moving  99%  straight 0.21
+ep 13  len 18425  died      level 15  kills  2076  dashes   2  damage  19  moving  91%  straight 0.61
+ep 14  len 24000  survived  level 82  kills 12819  dashes   3  damage   9  moving  77%  straight 0.15
+ep 15  len 24000  survived  level  9  kills  1234  dashes   4  damage  12  moving  98%  straight 0.74
+
+mean length 22315 of 24000 (93%), survived 12 of 16, mean level 38.6, mean kills 6863, mean dashes 2.9, mean damage 14.4, mean straightness 0.43
+
+level   ticks  dashing%  invuln%  dashes/1000t  damage/1000t
+    1    7512      2.6     2.8           2.1          0.00
+    2    5675      0.0     0.0           0.0          0.00
+    3    8051      0.4     0.5           0.4          0.00
+    4    7351      0.0     1.5           0.0          0.41
+    5   10277      0.4     0.7           0.3          0.19
+    6   22766      0.2     1.4           0.2          0.53
+    7   21552      0.3     1.8           0.3          0.84
+    8   17432      0.3     1.1           0.3          0.34
+    9   29059      0.1     1.4           0.1          0.59
+   10   10298      0.1     1.2           0.1          0.58
+   11    8478      0.3     1.4           0.2          0.59
+   12   12572      0.0     1.6           0.0          0.72
+   13    6496      0.2     1.9           0.2          0.92
+   14    3748      0.3     2.3           0.3          1.60
+   15   15183      0.1     1.5           0.1          0.79
+   16   10281      0.0     2.9           0.0          1.85
+   17    2505      0.0     8.2           0.0          4.39
+   18    2835      0.0     0.9           0.0          1.41
+   19    3110      0.4     1.9           0.3          0.64
+   20    2855      0.0     1.3           0.0          0.70
+   21    2688      0.4     2.7           0.4          1.49
+   22    2432      0.0     4.7           0.0          2.06
+   23    2394      0.0     3.7           0.0          3.76
+   24    2268      0.0     1.1           0.0          0.00
+   25    2259      0.0     3.2           0.0          2.66
+   26    2192      0.0     0.0           0.0          0.00
+   27    2417      0.0     0.7           0.0          0.83
+   28    2453      0.0     0.8           0.0          0.00
+   29    2483      0.0     0.4           0.0          0.81
+   30    2670      0.0     2.3           0.0          0.75
+   31    2535      0.0     0.0           0.0          0.00
+   32    3425      0.0     1.1           0.0          0.58
+   33    2381      0.0     0.0           0.0          0.00
+   34    2436      0.0     0.0           0.0          0.00
+   35    2650      0.0     0.0           0.0          0.00
+   36    2915      0.0     0.0           0.0          0.00
+   37    2908      0.0     0.0           0.0          0.69
+   38    2584      0.0     1.4           0.0          0.00
+   39    3057      0.0     2.4           0.0          1.31
+   40    3662      0.0     0.0           0.0          0.55
+   41    2876      0.0     1.2           0.0          0.00
+   42    3969      0.0     2.7           0.0          1.51
+   43    4305      0.0     0.4           0.0          0.93
+   44    3319      0.0     0.5           0.0          0.00
+   45    5713      0.0     0.0           0.0          0.00
+   46    2069      0.0     0.0           0.0          0.00
+   47    3183      0.0     0.0           0.0          0.00
+   48    4396      0.0     0.5           0.0          0.23
+   49   13282      0.0     0.9           0.0          0.45
+   50    2738      0.0     0.0           0.0          0.00
+   51    2198      0.0     1.6           0.0          1.82
+   52    3625      0.0     3.3           0.0          3.31
+   53    1420      0.0     1.7           0.0          0.00
+   54    1423      0.0     2.5           0.0          1.41
+   55    1580      0.0     2.3           0.0          1.27
+   56    1751      0.0     0.0           0.0          0.00
+   57    2681      0.0     0.3           0.0          1.49
+   58    2188      0.0     1.2           0.0          0.00
+   59    4360      0.0     0.0           0.0          0.00
+   60    2595      0.0     1.4           0.0          0.77
+   61    6105      0.0     0.0           0.0          0.00
+   62     937      0.0     0.0           0.0          0.00
+   63   19473      0.0     0.7           0.0          0.41

@@ -125,6 +125,7 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     cfg.enemy_hp_progress_scale = (float)dict_get(kwargs, "enemy_hp_progress_scale");
     cfg.enemy_speed_growth_per_wave = (float)dict_get(kwargs, "enemy_speed_growth_per_wave");
     cfg.enemy_speed_growth_wave_cap = (int)dict_get(kwargs, "enemy_speed_growth_wave_cap");
+    cfg.enemy_speed_late_growth_per_wave = (float)dict_get(kwargs, "enemy_speed_late_growth_per_wave");
     cfg.elite_hp_multiplier = (float)dict_get(kwargs, "elite_hp_multiplier");
     cfg.elite_speed_multiplier = (float)dict_get(kwargs, "elite_speed_multiplier");
     cfg.elite_damage_multiplier = (float)dict_get(kwargs, "elite_damage_multiplier");
@@ -184,8 +185,10 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     cfg.dash_shrink = (float)dict_get(kwargs, "dash_shrink");
     cfg.dash_cooldown = (float)dict_get(kwargs, "dash_cooldown");
     cfg.dash_cooldown_per_level = (float)dict_get(kwargs, "dash_cooldown_per_level");
+    cfg.dash_cooldown_min = (float)dict_get(kwargs, "dash_cooldown_min");
     cfg.pickup_magnet_speed = (float)dict_get(kwargs, "pickup_magnet_speed");
     cfg.weapon_max_level = (int)dict_get(kwargs, "weapon_max_level");
+    cfg.upgrade_passive_max_level = (int)dict_get(kwargs, "upgrade_passive_max_level");
     cfg.upgrade_speed_bonus = (float)dict_get(kwargs, "upgrade_speed_bonus");
     cfg.upgrade_magnet_bonus = (float)dict_get(kwargs, "upgrade_magnet_bonus");
     cfg.upgrade_health_bonus = (float)dict_get(kwargs, "upgrade_health_bonus");
@@ -211,6 +214,9 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     cfg.whirlpool_knockback = (float)dict_get(kwargs, "whirlpool_knockback");
     cfg.whirlpool_ttl = (int)dict_get(kwargs, "whirlpool_ttl");
     cfg.whirlpool_tick_rate = (int)dict_get(kwargs, "whirlpool_tick_rate");
+    cfg.whirlpool_pull = (float)dict_get(kwargs, "whirlpool_pull");
+    cfg.whirlpool_pull_radius_scale = (float)dict_get(kwargs, "whirlpool_pull_radius_scale");
+    cfg.whirlpool_pull_ttl = (int)dict_get(kwargs, "whirlpool_pull_ttl");
     cfg.orbit_area_distance_bonus = (float)dict_get(kwargs, "orbit_area_distance_bonus");
     cfg.orbit_knockback = (float)dict_get(kwargs, "orbit_knockback");
     cfg.ink_target_range_ratio = (float)dict_get(kwargs, "ink_target_range_ratio");
@@ -240,12 +246,39 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     cfg.sonar_knockback = (float)dict_get(kwargs, "sonar_knockback");
     cfg.sonar_ttl = (int)dict_get(kwargs, "sonar_ttl");
     cfg.sonar_tick_rate = (int)dict_get(kwargs, "sonar_tick_rate");
+    cfg.oil_detonate_radius_scale = (float)dict_get(kwargs, "oil_detonate_radius_scale");
+    cfg.oil_detonate_damage_scale = (float)dict_get(kwargs, "oil_detonate_damage_scale");
+    cfg.oil_detonate_delay = (int)dict_get(kwargs, "oil_detonate_delay");
+    cfg.oil_detonate_ttl = (int)dict_get(kwargs, "oil_detonate_ttl");
     cfg.frost_slow = (float)dict_get(kwargs, "frost_slow");
     cfg.frost_half_angle = (float)dict_get(kwargs, "frost_half_angle");
     cfg.frost_range = (float)dict_get(kwargs, "frost_range");
     cfg.frost_slow_ttl = (int)dict_get(kwargs, "frost_slow_ttl");
+    cfg.frost_boss_slow = (float)dict_get(kwargs, "frost_boss_slow");
+    cfg.shatter_damage = (float)dict_get(kwargs, "shatter_damage");
+    cfg.shatter_radius = (float)dict_get(kwargs, "shatter_radius");
+    cfg.shatter_delay = (int)dict_get(kwargs, "shatter_delay");
+    cfg.shatter_ttl = (int)dict_get(kwargs, "shatter_ttl");
     cfg.spike_speed = (float)dict_get(kwargs, "spike_speed");
     cfg.spike_range = (float)dict_get(kwargs, "spike_range");
+    cfg.spikes_count_base = (int)dict_get(kwargs, "spikes_count_base");
+    cfg.spikes_count_per_level = (int)dict_get(kwargs, "spikes_count_per_level");
+    cfg.fun_burst_kills = (int)dict_get(kwargs, "fun_burst_kills");
+    cfg.fun_burst_ratio = (float)dict_get(kwargs, "fun_burst_ratio");
+    cfg.fun_view_width = (float)dict_get(kwargs, "fun_view_width");
+    cfg.fun_view_height = (float)dict_get(kwargs, "fun_view_height");
+    // Scorecard bands: fun_<term>_lo, fun_<term>_hi, fun_<term>_soft, in PS_FUN_* order.
+    static const char* fun_terms[PS_FUN_TERMS] = {"tension", "damage", "survival",
+        "coverage", "combo", "burst", "growth", "straight"};
+    for (int t = 0; t < PS_FUN_TERMS; t++) {
+        char key[64];
+        snprintf(key, sizeof(key), "fun_%s_lo", fun_terms[t]);
+        cfg.fun_lo[t] = (float)dict_get(kwargs, key);
+        snprintf(key, sizeof(key), "fun_%s_hi", fun_terms[t]);
+        cfg.fun_hi[t] = (float)dict_get(kwargs, key);
+        snprintf(key, sizeof(key), "fun_%s_soft", fun_terms[t]);
+        cfg.fun_soft[t] = (float)dict_get(kwargs, key);
+    }
     cfg.moving_obstacle_cap = ps_config_cap((int)dict_get(kwargs, "moving_obstacle_cap"), PS_MAX_MOVING_OBSTACLES);
     cfg.moving_obstacle_start_wave = (int)dict_get(kwargs, "moving_obstacle_start_wave");
     cfg.moving_obstacle_spawn_interval = (int)dict_get(kwargs, "moving_obstacle_spawn_interval");
@@ -344,4 +377,24 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "peak_enemies", log->peak_enemies);
     dict_set(out, "peak_projectiles", log->peak_projectiles);
     dict_set(out, "min_hp", log->min_hp);
+    dict_set(out, "dashes", log->dashes);
+    dict_set(out, "fun", log->fun);
+    dict_set(out, "fun_tension", log->fun_tension);
+    dict_set(out, "fun_damage", log->fun_damage);
+    dict_set(out, "fun_survival", log->fun_survival);
+    dict_set(out, "fun_coverage", log->fun_coverage);
+    dict_set(out, "fun_combo", log->fun_combo);
+    dict_set(out, "fun_burst", log->fun_burst);
+    dict_set(out, "fun_growth", log->fun_growth);
+    dict_set(out, "fun_straight", log->fun_straight);
+#ifndef PUFFER_GPU_ENV
+    dict_set(out, "raw_tension", log->raw_tension);
+    dict_set(out, "raw_damage", log->raw_damage);
+    dict_set(out, "raw_survival", log->raw_survival);
+    dict_set(out, "raw_coverage", log->raw_coverage);
+    dict_set(out, "raw_combo", log->raw_combo);
+    dict_set(out, "raw_burst", log->raw_burst);
+    dict_set(out, "raw_growth", log->raw_growth);
+    dict_set(out, "raw_straight", log->raw_straight);
+#endif
 }

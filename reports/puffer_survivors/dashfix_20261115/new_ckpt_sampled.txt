@@ -1,0 +1,55 @@
+checkpoints/puffer_survivors/dashfix2_20261115/0000000499908608.bin, 16 episodes, sampled
+max_steps 24000  dash cooldown 300 +0/level, floor 120  dash 12 ticks at 0.75  walk 0.18
+ep  0  len  1365  died      level  3  kills    38  dashes   5  damage  12  moving  56%  straight 0.24
+ep  1  len  1899  died      level  5  kills    77  dashes   7  damage  22  moving  56%  straight 0.36
+ep  2  len  1178  died      level  3  kills    30  dashes   4  damage   7  moving  54%  straight 0.06
+ep  3  len  9809  died      level 21  kills  2157  dashes  34  damage  43  moving  55%  straight 0.23
+ep  4  len   879  died      level  2  kills    19  dashes   3  damage   7  moving  53%  straight 0.07
+ep  5  len  3001  died      level  9  kills   177  dashes  10  damage  32  moving  54%  straight 0.34
+ep  6  len  3375  died      level 10  kills   217  dashes  11  damage  36  moving  54%  straight 0.38
+ep  7  len 13158  died      level 33  kills  3742  dashes  45  damage 142  moving  56%  straight 0.25
+ep  8  len   520  died      level  1  kills     9  dashes   2  damage   6  moving  58%  straight 0.00
+ep  9  len  1956  died      level  5  kills    66  dashes   7  damage  18  moving  57%  straight 0.42
+ep 10  len 11580  died      level 26  kills  2840  dashes  41  damage  68  moving  59%  straight 0.22
+ep 11  len  1927  died      level  5  kills    76  dashes   7  damage  18  moving  56%  straight 0.24
+ep 12  len  4411  died      level 11  kills   299  dashes  16  damage  63  moving  60%  straight 0.26
+ep 13  len 10685  died      level 25  kills  2454  dashes  36  damage  97  moving  56%  straight 0.25
+ep 14  len 13676  died      level 27  kills  4285  dashes  52  damage  78  moving  61%  straight 0.22
+ep 15  len 13847  died      level 30  kills  4409  dashes  49  damage 110  moving  57%  straight 0.19
+
+mean length 5829 of 24000 (24%), survived 0 of 16, mean level 13.5, mean kills 1306, mean dashes 20.6, mean damage 47.4, mean straightness 0.23
+
+level   ticks  dashing%  invuln%  dashes/1000t  damage/1000t
+    1    8984      4.9    11.3           4.1          2.23
+    2    6390      3.8    32.6           3.1          9.08
+    3    4826      4.2    32.8           3.5          7.87
+    4    3379      3.2    40.4           2.7         12.13
+    5    3913      4.3    48.9           3.6         13.03
+    6    2251      4.3    46.4           3.6         13.77
+    7    2685      4.5    47.3           3.7         14.15
+    8    3004      2.8    33.8           2.3         10.32
+    9    3391      4.6    30.6           3.8          9.73
+   10    2424      4.0    32.2           3.3         11.14
+   11    3234      4.1    27.0           3.4          8.04
+   12    1813      4.0    32.8           3.3         10.48
+   13    1872      3.8    25.4           3.2         10.68
+   14    1659      5.1    33.3           4.2         12.06
+   15    1808      4.6    32.8           3.9         13.27
+   16    1734      4.2    33.6           3.5         15.57
+   17    2083      4.0    21.9           3.4         10.08
+   18    2510      3.8    12.7           3.2          5.58
+   19    2475      4.2    19.3           3.6          8.48
+   20    2264      4.4    19.5           3.5          7.51
+   21    4654      4.6    14.0           3.9          6.02
+   22    3351      4.3    18.6           3.6          5.97
+   23    2787      3.9    13.2           3.2          4.66
+   24    2641      4.1    13.4           3.4          4.92
+   25    4409      4.4    15.7           3.6          5.44
+   26    3088      4.7    20.5           3.9          9.07
+   27    2286      4.2    19.3           3.5          7.00
+   28    1574      4.6    16.1           3.8          6.35
+   29    1978      4.2    14.9           3.5          7.08
+   30     557      4.3    30.5           3.6         14.36
+   31     274      4.4     4.7           3.6          0.00
+   32     334      3.6     3.9           3.0          0.00
+   33    2618      4.6    11.8           3.8          3.06

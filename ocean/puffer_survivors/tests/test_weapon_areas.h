@@ -61,7 +61,8 @@ PS_SIM_FN void ps_test_weapon_areas(PSSim* sim, int env) {
         assert(fabsf(PS_PROJECTILE(sim, env, p, radius) - radius) < 1e-5f);
         ps_clear_entities(sim, env);
         ps_cast_spikes(sim, env, level);
-        assert(PS_P(sim, env, projectile_count) == 8 * level);
+        assert(PS_P(sim, env, projectile_count) == sim->cfg.spikes_count_base
+            + sim->cfg.spikes_count_per_level * (level - 1));
         int ttl = (int)ceilf(sim->cfg.spike_range / sim->cfg.spike_speed);
         for (int k = 0; k < PS_P(sim, env, projectile_count); k++) {
             p = PS_PROJECTILE(sim, env, k, dense);

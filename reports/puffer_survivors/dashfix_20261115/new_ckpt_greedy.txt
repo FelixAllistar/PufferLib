@@ -1,0 +1,33 @@
+checkpoints/puffer_survivors/dashfix2_20261115/0000000499908608.bin, 16 episodes, greedy
+max_steps 24000  dash cooldown 300 +0/level, floor 120  dash 12 ticks at 0.75  walk 0.18
+ep  0  len 24000  survived  level 10  kills   590  dashes   7  damage  21  moving  97%  straight 0.91
+ep  1  len 24000  survived  level 11  kills  1134  dashes   8  damage  14  moving  96%  straight 0.85
+ep  2  len 20259  died      level  5  kills   769  dashes   7  damage  11  moving  96%  straight 0.87
+ep  3  len  6167  died      level  4  kills    84  dashes   3  damage   7  moving  94%  straight 0.77
+ep  4  len 16542  died      level  5  kills   627  dashes   5  damage  11  moving  95%  straight 0.87
+ep  5  len 24000  survived  level 11  kills  2535  dashes   4  damage   6  moving  93%  straight 0.83
+ep  6  len  7292  died      level  2  kills    69  dashes   5  damage   7  moving  95%  straight 0.73
+ep  7  len 18812  died      level  4  kills   228  dashes   4  damage   8  moving  95%  straight 0.89
+ep  8  len 24000  survived  level  8  kills  1042  dashes   4  damage  18  moving 102%  straight 0.88
+ep  9  len  9119  died      level  7  kills   181  dashes   6  damage  15  moving 103%  straight 0.83
+ep 10  len 20520  died      level  8  kills  1214  dashes   5  damage  22  moving  94%  straight 0.86
+ep 11  len 24000  survived  level  4  kills   133  dashes   3  damage  17  moving  96%  straight 0.91
+ep 12  len 22680  died      level 10  kills  2031  dashes   9  damage  10  moving  93%  straight 0.81
+ep 13  len 24000  survived  level  7  kills   214  dashes   6  damage  17  moving 102%  straight 0.92
+ep 14  len  6224  died      level  2  kills    69  dashes   3  damage   7  moving  93%  straight 0.84
+ep 15  len 24000  survived  level  7  kills  1728  dashes   6  damage  16  moving  94%  straight 0.81
+
+mean length 18476 of 24000 (77%), survived 7 of 16, mean level 6.6, mean kills 790, mean dashes 5.3, mean damage 12.9, mean straightness 0.85
+
+level   ticks  dashing%  invuln%  dashes/1000t  damage/1000t
+    1   12632      1.6     2.2           1.3          0.24
+    2   53618      0.6     2.5           0.5          0.82
+    3   23366      0.4     3.8           0.3          1.28
+    4   34838      0.3     2.6           0.3          1.00
+    5   27355      0.2     2.4           0.1          0.99
+    6    7566      0.3     4.9           0.3          1.72
+    7   37175      0.3     1.7           0.2          0.56
+    8   31199      0.1     1.3           0.1          0.51
+    9    1733      0.0     5.1           0.0          1.15
+   10   33639      0.3     0.8           0.2          0.36
+   11   32478      0.0     0.2           0.0          0.12

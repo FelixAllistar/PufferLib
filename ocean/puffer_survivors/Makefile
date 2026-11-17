@@ -6,7 +6,7 @@ CPPFLAGS := -I. -I$(ROOT)/src -I$(RAYLIB)/include
 CFLAGS ?= -O2 -std=c17 -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-parameter
 CUDAFLAGS ?= -O3 --use_fast_math -std=c++17 -arch=native
 
-.PHONY: verify test sanitize cuda-test bench-cpu bench-cuda clean
+.PHONY: verify test sanitize cuda-test bench-cpu bench-cuda clean viewer viewer-test probe
 
 verify: test sanitize cuda-test
 
@@ -21,6 +21,10 @@ viewer-test: build
 	$(CC) $(CPPFLAGS) -O2 -std=gnu11 tests/test_viewer.c \
 		$(RAYLIB)/lib/libraylib.a -lm -lGL -ldl -lpthread -o build/test_viewer
 	cd $(ROOT) && ./ocean/puffer_survivors/build/test_viewer $(CHECKPOINT)
+
+probe: build
+	$(CC) $(CPPFLAGS) -O2 -std=gnu11 tests/probe_policy.c \
+		$(RAYLIB)/lib/libraylib.a -lm -lGL -ldl -lpthread -o build/probe
 
 test: tests/test_cpu
 	cd $(ROOT) && ./ocean/puffer_survivors/tests/test_cpu

@@ -35,6 +35,15 @@ make -C ocean/puffer_survivors viewer
 ./ocean/puffer_survivors/build/viewer watch latest --deterministic
 ```
 
+For numbers instead of a window, the headless probe plays a checkpoint on the CPU sim and
+prints episode lengths, per player level dash use, invulnerable time and damage taken, and
+the mean fun scorecard (the `fun_*` keys in the ini):
+
+```bash
+make -C ocean/puffer_survivors probe
+./ocean/puffer_survivors/build/probe checkpoints/puffer_survivors/<run>/<step>.bin 16 1  # 16 episodes, greedy
+```
+
 Always run from the repo root so `config/`, `checkpoints/`, and
 `resources/puffer_survivors/` resolve.
 
@@ -58,7 +67,8 @@ upgrade, Space to confirm, and `1`/`2`/`3` for direct card choice. `R` restarts,
 samples the policy. Watch mode auto-resets on death.
 
 The action heads are movement `[10]` and upgrade choice `[3]`; movement action
-9 is Dash. The fixed observation schema contains 337 floats: player and boss state, enemy and drop
+9 is Dash; it goes along the current velocity, and its cooldown has a floor
+(`dash_cooldown_min`) so dashes cannot chain. The fixed observation schema contains 337 floats: player and boss state, enemy and drop
 sector/ring summaries, nearest-obstacle relative `dx/dy`, weapon state, three
 one-hot upgrade cards, and four nearest moving-hazard slots. Friendly weapon
 areas and derived danger summaries are intentionally omitted. All
@@ -86,7 +96,8 @@ Every starter weapon has a crowd footprint: Bubble pops into a splash on its
 final impact (4x its projectile radius), Whirlpool bursts around the player,
 Orbit sweeps pearl-sized areas, Poison Oil leaves persistent pools, Sonar
 hits a wide disk, Glacier hits a cone, and Spikes fires a radial fan. Spikes
-scales linearly from 8 shots at level 1 to 64 at level 8; piercing still comes
+scales linearly from 8 shots at level 1 to 36 at level 8 (`spikes_count_base`,
+plus `spikes_count_per_level` per level); piercing still comes
 from its existing level/Pierce upgrades. Bubble radius growth and Area upgrades
 also enlarge its splash. Burst rings are visual only; they do not hit twice.
 

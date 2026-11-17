@@ -1,0 +1,165 @@
+checkpoints/puffer_survivors/hurt02_20261116/0000000499908608.bin, 48 episodes, greedy
+max_steps 24000  dash cooldown 300 +0/level, floor 120  dash 12 ticks at 0.75  walk 0.18
+ep  0  len 24000  survived  level 72  kills 14153  dashes   0  damage   7  moving 109%  straight 0.13
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 10 3 0 9 10 3 8 12 7 11  taken: 4 7 5 8 6 4 4 7 7 3 7 3 3 3
+ep  1  len 24000  survived  level 62  kills 13177  dashes   0  damage  19  moving 104%  straight 0.26
+       level at 1200/2400/4800/9600: 3 6 12 31  first picks: 1 7 10 10 1 1 4 3 6 5  taken: 3 8 3 8 4 4 4 5 7 1 6 2 3 3
+ep  2  len 16579  died      level  8  kills   222  dashes   2  damage  14  moving 109%  straight 0.79
+       level at 1200/2400/4800/9600: 3 5 7 8  first picks: 5 7 12 7 10 2 5  taken: 0 0 1 0 0 2 0 2 0 0 1 0 1 0
+ep  3  len 24000  survived  level 66  kills 13439  dashes   0  damage  13  moving 107%  straight 0.16
+       level at 1200/2400/4800/9600: 3 8 15 33  first picks: 13 7 1 3 7 3 9 11 8 10  taken: 2 7 4 8 3 2 3 5 8 7 3 6 1 6
+ep  4  len 24000  survived  level 52  kills 13702  dashes   0  damage   9  moving  90%  straight 0.30
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 3 3 6 3 5 4 6 1 13 11  taken: 2 3 2 8 2 2 7 2 8 2 0 4 6 3
+ep  5  len 24000  survived  level 39  kills 11283  dashes   0  damage  19  moving  95%  straight 0.53
+       level at 1200/2400/4800/9600: 3 5 13 31  first picks: 12 5 4 7 6 3 4 12 6 2  taken: 2 4 1 8 3 1 4 1 0 3 2 4 4 1
+ep  6  len 24000  survived  level 67  kills 13939  dashes   0  damage   5  moving  96%  straight 0.16
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 3 0 12 3 2 3 12 5 12 4  taken: 4 6 2 8 3 4 1 5 10 8 2 2 8 3
+ep  7  len 24000  survived  level 13  kills   436  dashes   1  damage  14  moving  92%  straight 0.76
+       level at 1200/2400/4800/9600: 3 5 8 9  first picks: 10 9 12 0 1 9 11 8 6 4  taken: 1 1 0 0 1 0 1 1 1 2 1 2 1 0
+ep  8  len 24000  survived  level 68  kills 14774  dashes   0  damage  10  moving  94%  straight 0.16
+       level at 1200/2400/4800/9600: 4 8 16 34  first picks: 3 13 8 1 5 3 11 3 11 8  taken: 3 5 4 8 3 2 3 5 13 4 4 6 3 4
+ep  9  len 24000  survived  level 78  kills 14096  dashes   0  damage  14  moving  92%  straight 0.14
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 6 3 4 8 9 10 8 3 2 6  taken: 4 8 8 8 4 4 4 6 11 6 6 1 5 2
+ep 10  len 24000  survived  level 55  kills 13176  dashes   0  damage  14  moving  99%  straight 0.20
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 1 5 1 3 3 7 1 10 1 11  taken: 4 8 2 8 4 2 3 3 2 3 8 3 2 2
+ep 11  len 15637  died      level 11  kills   259  dashes   1  damage  16  moving  90%  straight 0.76
+       level at 1200/2400/4800/9600: 3 6 9 10  first picks: 11 11 1 9 2 8 8 8 11 8  taken: 0 1 1 0 0 0 0 0 4 1 0 3 0 0
+ep 12  len 24000  survived  level 63  kills 13568  dashes   0  damage  12  moving 101%  straight 0.21
+       level at 1200/2400/4800/9600: 3 7 15 33  first picks: 2 7 3 9 11 5 13 2 1 3  taken: 3 6 2 8 2 3 2 5 13 4 1 9 2 2
+ep 13  len 24000  survived  level 71  kills 14141  dashes   0  damage  17  moving  98%  straight 0.16
+       level at 1200/2400/4800/9600: 3 8 16 34  first picks: 12 2 3 10 11 3 3 13 13 9  taken: 4 4 6 8 2 5 4 5 8 9 4 3 4 4
+ep 14  len 24000  survived  level 68  kills 14476  dashes   0  damage   4  moving  90%  straight 0.18
+       level at 1200/2400/4800/9600: 3 7 15 33  first picks: 8 9 3 10 10 2 13 8 3 1  taken: 2 5 4 8 7 1 6 4 11 5 5 4 4 1
+ep 15  len 24000  survived  level 51  kills 12893  dashes   0  damage  15  moving  83%  straight 0.34
+       level at 1200/2400/4800/9600: 3 6 14 32  first picks: 11 8 13 8 6 3 10 1 3 6  taken: 4 4 1 8 1 1 4 0 6 5 4 6 2 4
+ep 16  len 24000  survived  level 63  kills 14183  dashes   0  damage   4  moving  95%  straight 0.22
+       level at 1200/2400/4800/9600: 4 8 16 34  first picks: 11 3 10 6 0 8 3 3 7 8  taken: 6 1 4 8 4 3 5 3 9 3 4 4 3 5
+ep 17  len 24000  survived  level 81  kills 14133  dashes   0  damage  23  moving 116%  straight 0.10
+       level at 1200/2400/4800/9600: 3 6 15 32  first picks: 13 5 7 4 3 8 3 3 13 1  taken: 5 8 2 8 6 7 5 11 11 3 4 4 2 4
+ep 18  len 24000  survived  level 48  kills 13305  dashes   0  damage  10  moving  99%  straight 0.26
+       level at 1200/2400/4800/9600: 3 7 15 33  first picks: 12 9 3 3 1 6 1 13 1 5  taken: 1 5 1 7 2 1 6 3 5 3 2 4 5 2
+ep 19  len 24000  survived  level  7  kills   142  dashes   3  damage  12  moving 103%  straight 0.88
+       level at 1200/2400/4800/9600: 3 5 6 6  first picks: 0 8 12 8 7 8  taken: 1 0 0 0 0 0 0 1 3 0 0 0 1 0
+ep 20  len 24000  survived  level 63  kills 13296  dashes   0  damage   8  moving 108%  straight 0.19
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 3 6 10 6 1 7 6 3 10 10  taken: 4 3 0 8 2 3 7 5 11 5 7 3 0 4
+ep 21  len 24000  survived  level 67  kills 13285  dashes   0  damage  12  moving  95%  straight 0.20
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 10 3 5 8 0 3 1 9 7 6  taken: 1 8 3 8 6 1 6 4 6 7 3 4 3 6
+ep 22  len 24000  survived  level 65  kills 14721  dashes   0  damage  16  moving  95%  straight 0.17
+       level at 1200/2400/4800/9600: 4 8 16 34  first picks: 3 10 9 8 3 1 12 12 12 10  taken: 3 5 3 8 5 3 2 3 8 3 9 4 5 3
+ep 23  len 24000  survived  level 66  kills 14099  dashes   0  damage  17  moving 101%  straight 0.15
+       level at 1200/2400/4800/9600: 3 8 16 33  first picks: 8 4 3 5 7 3 9 3 9 7  taken: 3 3 2 8 5 4 4 5 10 5 5 4 4 3
+ep 24  len 24000  survived  level 60  kills 13795  dashes   0  damage   7  moving 105%  straight 0.26
+       level at 1200/2400/4800/9600: 4 7 15 33  first picks: 6 6 10 6 4 1 10 8 3 9  taken: 0 6 0 8 4 3 8 4 6 5 4 3 5 3
+ep 25  len 24000  survived  level 63  kills 13057  dashes   0  damage   8  moving 100%  straight 0.23
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 3 8 6 0 6 3 0 1 9 5  taken: 7 7 4 8 3 2 5 3 3 8 3 0 4 5
+ep 26  len 24000  survived  level 65  kills 13954  dashes   0  damage  12  moving 114%  straight 0.22
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 3 13 12 3 3 8 6 10 9 1  taken: 2 6 5 8 2 5 2 8 6 4 4 6 4 2
+ep 27  len 24000  survived  level 62  kills 14142  dashes   0  damage  14  moving 111%  straight 0.13
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 3 0 11 8 4 3 9 7 3 11  taken: 3 3 0 8 8 3 3 8 10 3 2 5 3 2
+ep 28  len 24000  survived  level 62  kills 13933  dashes   0  damage  15  moving 100%  straight 0.17
+       level at 1200/2400/4800/9600: 4 8 16 34  first picks: 3 3 8 13 1 8 5 3 11 0  taken: 5 8 3 8 4 1 3 5 8 2 2 3 3 6
+ep 29  len 24000  survived  level 67  kills 14371  dashes   0  damage  17  moving 106%  straight 0.15
+       level at 1200/2400/4800/9600: 4 8 16 34  first picks: 3 2 7 1 12 8 6 8 3 13  taken: 1 8 3 8 4 4 6 6 6 5 7 3 3 2
+ep 30  len 24000  survived  level 57  kills 12887  dashes   0  damage  19  moving  91%  straight 0.24
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 8 3 5 9 9 1 12 6 3 9  taken: 7 4 2 8 4 5 4 2 4 4 3 4 2 3
+ep 31  len 24000  survived  level 44  kills 11682  dashes   0  damage  19  moving  96%  straight 0.35
+       level at 1200/2400/4800/9600: 3 7 15 33  first picks: 1 10 13 0 7 8 3 10 9 0  taken: 6 7 0 8 1 1 4 2 5 2 3 1 2 1
+ep 32  len 24000  survived  level 66  kills 13624  dashes   0  damage  21  moving  97%  straight 0.17
+       level at 1200/2400/4800/9600: 4 8 15 32  first picks: 3 7 2 11 2 9 7 6 12 11  taken: 2 4 5 8 3 3 7 5 9 5 1 5 4 4
+ep 33  len 24000  survived  level 60  kills 12599  dashes   0  damage  41  moving  88%  straight 0.30
+       level at 1200/2400/4800/9600: 3 6 11 27  first picks: 5 1 6 8 8 8 8 3 7 5  taken: 1 4 3 8 4 5 5 2 9 3 2 4 5 4
+ep 34  len 24000  survived  level 65  kills 12449  dashes   0  damage  43  moving  96%  straight 0.27
+       level at 1200/2400/4800/9600: 3 5 6 20  first picks: 4 2 8 12 10 3 1 0 4 1  taken: 5 6 3 8 6 5 3 3 7 6 3 3 5 1
+ep 35  len 24000  survived  level 63  kills 15144  dashes   0  damage  13  moving 103%  straight 0.14
+       level at 1200/2400/4800/9600: 4 8 15 33  first picks: 13 1 6 12 6 13 5 12 3 10  taken: 2 8 2 8 3 5 5 3 7 1 2 4 6 6
+ep 36  len 24000  survived  level 44  kills 12389  dashes   0  damage   6  moving 100%  straight 0.23
+       level at 1200/2400/4800/9600: 4 9 16 34  first picks: 13 3 3 4 1 13 3 3 10 6  taken: 0 4 0 8 4 0 6 3 6 1 6 1 0 4
+ep 37  len 24000  survived  level 59  kills 14432  dashes   0  damage   8  moving 100%  straight 0.17
+       level at 1200/2400/4800/9600: 4 8 16 34  first picks: 3 3 0 0 0 8 8 3 3 8  taken: 5 8 4 8 3 2 2 4 9 1 2 4 4 2
+ep 38  len 24000  survived  level 74  kills 14388  dashes   0  damage  16  moving  90%  straight 0.27
+       level at 1200/2400/4800/9600: 3 5 11 30  first picks: 12 6 2 11 8 1 8 3 9 13  taken: 3 8 5 8 3 3 3 5 14 1 2 6 7 5
+ep 39  len 24000  survived  level 12  kills   340  dashes   0  damage  23  moving  93%  straight 0.86
+       level at 1200/2400/4800/9600: 3 4 6 7  first picks: 8 8 8 13 8 12 6 1 1 8  taken: 0 2 0 0 0 0 1 0 6 0 0 0 1 1
+ep 40  len 24000  survived  level 55  kills 13805  dashes   0  damage   9  moving 106%  straight 0.20
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 3 8 7 1 11 8 3 7 10 3  taken: 3 4 0 8 1 5 4 5 6 1 6 6 3 2
+ep 41  len 24000  survived  level 64  kills 13234  dashes   0  damage  11  moving 104%  straight 0.20
+       level at 1200/2400/4800/9600: 4 6 15 32  first picks: 1 12 1 8 2 3 9 3 4 7  taken: 1 8 8 8 3 2 2 7 8 5 1 3 4 3
+ep 42  len 24000  survived  level 74  kills 14444  dashes   0  damage  16  moving 116%  straight 0.17
+       level at 1200/2400/4800/9600: 4 8 16 34  first picks: 3 8 3 3 0 8 13 8 1 3  taken: 5 5 5 8 5 3 4 10 8 5 6 4 2 3
+ep 43  len 24000  survived  level 79  kills 14404  dashes   0  damage  12  moving  93%  straight 0.12
+       level at 1200/2400/4800/9600: 3 8 16 33  first picks: 2 13 6 3 7 6 8 8 3 3  taken: 1 6 5 8 7 2 8 6 12 5 5 2 5 6
+ep 44  len 24000  survived  level 61  kills 14166  dashes   0  damage  15  moving  99%  straight 0.18
+       level at 1200/2400/4800/9600: 3 8 16 33  first picks: 3 3 10 3 0 12 3 5 11 2  taken: 4 4 4 8 4 6 3 3 4 3 4 2 6 5
+ep 45  len 24000  survived  level 62  kills 12151  dashes   0  damage  12  moving 108%  straight 0.28
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 13 5 3 3 3 9 12 1 10 8  taken: 4 8 0 8 2 4 2 6 4 8 6 1 3 5
+ep 46  len 24000  survived  level 63  kills 14313  dashes   0  damage   8  moving  93%  straight 0.19
+       level at 1200/2400/4800/9600: 4 8 16 33  first picks: 8 3 4 6 5 11 3 12 3 9  taken: 0 8 1 8 6 3 4 2 8 4 6 5 4 3
+ep 47  len 24000  survived  level 68  kills 14273  dashes   0  damage  14  moving  92%  straight 0.20
+       level at 1200/2400/4800/9600: 3 6 13 31  first picks: 1 10 9 11 11 6 13 3 13 4  taken: 2 6 1 8 4 3 5 2 10 5 5 6 5 5
+
+mean length 23671 of 24000 (99%), survived 46 of 48, mean level 57.4, mean kills 12268, mean dashes 0.1, mean damage 14.2, mean straightness 0.27
+
+level   ticks  dashing%  invuln%  dashes/1000t  damage/1000t
+    1   20151      0.0     0.0           0.0          0.00
+    2   16969      0.0     0.0           0.0          0.00
+    3   21425      0.0     0.0           0.0          0.00
+    4   19351      0.0     0.9           0.0          0.26
+    5   17812      0.1     1.9           0.1          0.51
+    6   34402      0.1     1.4           0.1          0.61
+    7   25941      0.0     2.6           0.0          1.00
+    8   30145      0.0     2.5           0.0          1.06
+    9   21385      0.1     3.0           0.1          0.84
+   10   28565      0.0     2.9           0.0          1.30
+   11   20583      0.0     3.2           0.0          1.31
+   12   22973      0.0     2.7           0.0          1.26
+   13   15369      0.0     4.1           0.0          1.56
+   14   11313      0.0     5.9           0.0          2.21
+   15   11969      0.0     3.1           0.0          1.34
+   16   11856      0.0     2.1           0.0          1.10
+   17   10858      0.0     2.8           0.0          1.47
+   18   11736      0.0     2.3           0.0          1.19
+   19   14596      0.0     1.2           0.0          0.62
+   20   14074      0.0     1.0           0.0          0.43
+   21   12437      0.0     1.8           0.0          1.13
+   22   12369      0.0     3.3           0.0          1.46
+   23   10775      0.0     1.1           0.0          0.56
+   24   11159      0.0     0.5           0.0          0.27
+   25   10682      0.0     2.2           0.0          1.03
+   26   10476      0.0     0.7           0.0          0.29
+   27   10353      0.0     2.1           0.0          1.16
+   28   10081      0.0     1.5           0.0          0.99
+   29   10860      0.0     0.5           0.0          0.09
+   30   12389      0.0     2.4           0.0          1.29
+   31   12853      0.0     1.6           0.0          0.78
+   32   11269      0.0     1.2           0.0          0.71
+   33   10693      0.0     2.3           0.0          1.12
+   34   10333      0.0     0.6           0.0          0.39
+   35   10348      0.0     2.5           0.0          1.06
+   36   10983      0.0     1.7           0.0          0.55
+   37   11892      0.0     0.5           0.0          0.17
+   38   12614      0.0     1.4           0.0          0.79
+   39   23053      0.0     1.0           0.0          0.56
+   40   10626      0.0     0.8           0.0          0.38
+   41   10039      0.0     1.6           0.0          1.00
+   42    9795      0.0     1.2           0.0          0.71
+   43    9595      0.0     1.5           0.0          0.63
+   44   32870      0.0     0.9           0.0          0.46
+   45    9255      0.0     1.8           0.0          0.54
+   46    9747      0.0     0.8           0.0          0.41
+   47    9999      0.0     2.2           0.0          1.20
+   48   19520      0.0     1.2           0.0          0.61
+   49   10086      0.0     1.4           0.0          0.79
+   50   10649      0.0     0.4           0.0          0.38
+   51   22010      0.0     0.6           0.0          0.45
+   52   20710      0.0     0.5           0.0          0.24
+   53   11953      0.0     0.4           0.0          0.33
+   54   13838      0.0     1.1           0.0          0.72
+   55   24153      0.0     0.1           0.0          0.08
+   56   11405      0.0     0.2           0.0          0.00
+   57   16814      0.0     1.2           0.0          0.71
+   58   12294      0.0     1.2           0.0          0.41
+   59   20854      0.0     0.5           0.0          0.29
+   60   29380      0.0     0.1           0.0          0.07
+   61   13773      0.0     0.3           0.0          0.15
+   62   33561      0.0     0.4           0.0          0.18
+   63  156150      0.0     0.4           0.0          0.22
