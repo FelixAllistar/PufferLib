@@ -87,7 +87,8 @@ arXiv 1804.02717) is the method used here.
   rotations at 30 Hz, and the simulation runs at 1.2 kHz.
 - The reward is how closely the body matches a reference clip:
   `0.65 exp(-2 Σ pose²) + 0.1 exp(-0.1 Σ joint-velocity²) + 0.15 exp(-40 Σ end-effector²) + 0.1 exp(-10 |COM|²)`.
-  The COM term compares positions.
+  The COM term compares positions. (Ours compares COM velocities and uses
+  k = 10 for the end effectors; see the table below.)
 - Two tricks matter most:
   - Reference state initialisation: start each episode at a random point of the clip.
   - Early termination: end the episode when the torso or head touches the ground.
@@ -171,14 +172,20 @@ four terms, as built:
 |---|---|---|---|
 | pose | every joint's rotation (child relative to parent), plus the pelvis's world rotation; squared angles summed | 0.65 | 2 |
 | velocity | every joint's relative angular velocity, plus the pelvis's | 0.10 | 0.1 |
-| end effectors | the tips of the feet, the head and the tail, relative to the pelvis in its heading frame, height absolute (m²) | 0.15 | 40 |
-| centre of mass | position, including the forward travel of the clip (m²) | 0.10 | 10 |
+| end effectors | the tips of the feet, the head and the tail, relative to the pelvis in its heading frame, height absolute (m²) | 0.15 | 10 |
+| centre of mass | velocity, including the clip's forward speed ((m/s)²) | 0.10 | 10 |
 
-I kept DeepMimic's weights and scales. They are `[env]` keys, so tuning them
-needs no code. A perfect track scores exactly 1; the test checks this. The
+I kept DeepMimic's weights and its pose and velocity scales. They are
+`[env]` keys, so tuning them needs no code. Two terms changed after run 2,
+whose walk earned almost nothing from them. The COM term compared positions,
+so run 2's slightly fast walk (29 m to the clip's 27 m) had drifted metres
+ahead and scored 0 on it within seconds; a velocity cannot drift. DeepMimic's
+k = 40 for the end effectors suits a 1.7 m human; on the 3 m raptor, whose
+head and tail tip sit far from the pelvis, run 2's 19 cm of error scored
+0.003, which gives no gradient, so k is 10. A perfect track scores exactly 1; the test checks this. The
 clips are in place, so the reference walks forward at the clip's own speed
 (`DinoClip.speed`, the one `dino.c` measures from the feet), and the COM term
-charges an animal that walks in place or falls behind.
+charges an animal that walks in place, too slowly or too fast.
 
 **How do we get the tail?** The tail is part of the body: 4 or 5 rigid
 segments (the raptor's ten tail bones merge in pairs) on ball joints. They are
