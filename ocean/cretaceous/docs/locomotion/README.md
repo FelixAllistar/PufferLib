@@ -350,9 +350,10 @@ The interface the policy sees:
 
 Recommended settings (already in the ini):
 
-- PPO with γ 0.95 and λ 0.95, DeepMimic's values: a 30 Hz walk needs about a
-  second of horizon.
-- Learning rate 3e-4, clip 0.2.
+- PPO with γ 0.99, λ 0.99, learning rate 0.0087, momentum 0.884, clip 0.32:
+  `config/drone.ini`'s swept values. The first run used DeepMimic's γ/λ 0.95 and
+  Adam's 3e-4, and learned nothing in 300M steps; PufferLib 5.0's optimizer
+  wants learning rates near 1e-2.
 - Horizon 64, minibatch 32768.
 - Entropy 0 (continuous actions carry their own learned std).
 - 64×2 hidden, fixed (far smaller than DeepMimic's 1024 and 512; cheap to
@@ -360,9 +361,9 @@ Recommended settings (already in the ini):
 - 4096 agents.
 - 3e8 steps.
 
-The learning rate, minibatch size and clip follow the repo's continuous-control
-`robot_arm.ini`. The sample budget follows DeepMimic, where the T-Rex walk
-took 140 M.
+The minibatch size follows the repo's `robot_arm.ini`; the optimizer
+settings follow `drone.ini`. The sample budget follows DeepMimic, where the
+T-Rex walk took 140 M.
 
 What to expect, if it behaves like DeepMimic:
 
