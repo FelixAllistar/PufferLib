@@ -14,6 +14,8 @@
 //     else is in the animal's own heading frame, so without those two it
 //     cannot tell that a shove has turned it: runs 4 to 6p took the hit and
 //     walked on 30 to 60 degrees off. They are also the steering command.
+//     One more float (the last) is the step rate the policy has set, as
+//     log2 (0: the clip's own pace; see cadence below).
 //   Action (LOCO_MAX_DOF floats, the unused tail of it ignored): per joint
 //     an offset added to the clip's pose at this instant (residual control):
 //     three for a ball joint (a rotation vector in the joint frame), one for
@@ -54,13 +56,29 @@
 //     reward compares against blends from the old clip to the new one over
 //     clip_blend seconds (a clip's pose jumps otherwise). One name in clip
 //     is today's single-clip env, with the same random sequence.
+//   Speed first (reward_speed > 0): one more reward term for the commanded
+//     speed alone, the mass centre's velocity along the reference's heading
+//     against the clip's speed: 1 - |v - speed| / max(speed, speed_floor),
+//     not below 0. It is a straight slope, so it pulls from any distance. The
+//     COM term cannot: at k_com 10 it is flat past about 0.7 m/s of error,
+//     and runs 8 to 10 travelled at 1.9 m/s whatever the gait.
+//   Step rate (cadence > 0): the action after the rig's last joint sets how
+//     fast the clip plays, 2^e with e = 2 action_unit per output unit,
+//     clamped to +-cadence and eased (a quarter of the way per policy step).
+//     The clips step at one fixed pace (the raptor's trot and run take 1 s a
+//     stride) and their feet reach about 1 m, which caps the speed near
+//     2 m/s without long leaps; an animal steps faster to go faster. The
+//     reference's joint velocities scale with the rate; its travel along x
+//     runs in clip time, which nothing reads (the COM term does compare the
+//     clip's own travel speed).
 #ifndef CRET_LOCO_ENV_H
 #define CRET_LOCO_ENV_H
 #include "loco_sim.h"
 
 #define LOCO_BODY_OBS 15
 #define LOCO_OBS_V1 (LOCO_MAX_BODIES * LOCO_BODY_OBS + 4)   // before the heading floats (the checkpoints of runs 2 to 7)
-#define LOCO_OBS (LOCO_OBS_V1 + 2)
+#define LOCO_OBS_V2 (LOCO_OBS_V1 + 2)   // with the heading floats, before the step rate (runs 8 to 10)
+#define LOCO_OBS (LOCO_OBS_V2 + 1)
 #define LOCO_MAX_AGENTS 256
 #define LOCO_MAX_CLIPS 8
 
@@ -80,6 +98,8 @@ typedef struct LocoConfig {
     float push_adapt;      // shove curriculum step (0: the full range from the start)
     float clip_switch;     // several clips: mean seconds between switches to another clip (0: none)
     float clip_blend;      // seconds over which the reference blends from the old clip to the new one
+    float w_speed, speed_floor;   // the commanded-speed term's weight (0: off) and the least speed its slope is scaled by (m/s)
+    float cadence;         // the policy sets the clip's playback rate within 2^-cadence .. 2^cadence (0: the clip's own pace)
 } LocoConfig;
 
 static LocoConfig loco_default_config(void) {
@@ -94,6 +114,7 @@ static LocoConfig loco_default_config(void) {
     c.push_interval = 0; c.push_min = 0.5f; c.push_max = 1.5f; c.push_seconds = 0.1f; c.push_adapt = 0;
     c.w_heading = 0; c.k_heading = 1.0f;
     c.clip_switch = 0; c.clip_blend = 0.3f;
+    c.w_speed = 0; c.speed_floor = 1.0f; c.cadence = 0;
     return c;
 }
 
@@ -105,13 +126,14 @@ typedef struct LocoAgent {
     float blend_left;      // seconds of the blend from prev_clip still to go (0: none)
     float x_off, prev_x_off;   // added to the clips' forward travel so the reference moves on without a jump at a switch
     float elapsed, ret, err_pose, err_ee; int steps; bool fallen;
-    float r_pose, r_vel, r_ee, r_com, r_heading;   // last step's reward terms
+    float r_pose, r_vel, r_ee, r_com, r_heading, r_speed;   // last step's reward terms
+    float rate_log;        // log2 of the clip's playback rate (cadence); 0 after a reset
     float start_x;         // pelvis x at the reset
     int push_left, push_body; b3Vec3 push_force;   // the shove under way: physics steps left, body, force (N)
 } LocoAgent;
 
-// clip_speed: the target speed summed over steps, like reward (divide by steps).
-typedef struct LocoStats { double episodes, falls, length, ret, distance, reward, pose_deg, ee_cm, steps, push_level, clip_speed; } LocoStats;
+// clip_speed: the target speed summed over steps, like reward (divide by steps); rate: the playback rate, the same way.
+typedef struct LocoStats { double episodes, falls, length, ret, distance, reward, pose_deg, ee_cm, steps, push_level, clip_speed, rate; } LocoStats;
 
 typedef struct LocoWorld {
     LocoConfig cfg; LocoRig rig; LocoPhys phys;
@@ -208,6 +230,7 @@ static bool loco_world_init(LocoWorld* w, const LocoConfig* cfg, unsigned int se
     df_free(d); free(d);
     if (!ok) return false;
     if (w->rig.ndof > LOCO_MAX_DOF) { snprintf(err, errn, "rig has %d action dimensions (max %d)", w->rig.ndof, LOCO_MAX_DOF); return false; }
+    if (cfg->cadence > 0 && w->rig.ndof >= LOCO_MAX_DOF) { snprintf(err, errn, "cadence needs a spare action: the rig uses all %d", LOCO_MAX_DOF); return false; }
     for (int k = 0; k < w->nref; k++) {
         const LocoRef* R = &w->ref[k];
         for (int f = 0; f < R->period; f++) w->pelvis_h[k] += R->pos[f * R->nbody].y / R->period;
@@ -229,14 +252,24 @@ static inline b3Quat loco_heading(b3Quat q) {
 // doll's origin removed); any output may be NULL. Its clip's, with x_off added
 // to the travel; while a switch blends (blend_left), the previous clip's at
 // the same instant eased into it (smoothstep), so the pose does not jump. Not
-// blending, exactly loco_ref_sample of the clip.
+// blending, exactly loco_ref_sample of the clip. At a playback rate other than 1
+// (rate_log) the clip time runs that much faster and the velocities of the
+// in-place motion scale with it; the clip's travel speed stays.
+static void loco_ref_rate(const LocoRef* R, int nb, float rate, b3Vec3* vel, b3Vec3* angvel) {
+    for (int b = 0; b < nb; b++) {
+        if (vel) { vel[b].x = R->speed + (vel[b].x - R->speed) * rate; vel[b].y *= rate; vel[b].z *= rate; }
+        if (angvel) angvel[b] = b3MulSV(rate, angvel[b]);
+    }
+}
 static void loco_ref_agent(LocoWorld* w, const LocoAgent* a, double ahead, b3Vec3* pos, b3Quat* rot, b3Vec3* vel, b3Vec3* angvel) {
-    const int nb = w->rig.nbody;
-    loco_ref_sample(&w->ref[a->clip], a->t + ahead, pos, rot, vel, angvel);
+    const int nb = w->rig.nbody; const float rate = exp2f(a->rate_log); const double ca = a->rate_log != 0 ? ahead * rate : ahead;
+    loco_ref_sample(&w->ref[a->clip], a->t + ca, pos, rot, vel, angvel);
+    if (a->rate_log != 0) loco_ref_rate(&w->ref[a->clip], nb, rate, vel, angvel);
     if (pos && a->x_off != 0) for (int b = 0; b < nb; b++) pos[b].x += a->x_off;
     float T = w->cfg.clip_blend, left = a->blend_left - (float)ahead;
     if (T <= 0 || left <= 0) return;
-    loco_ref_sample(&w->ref[a->prev_clip], a->prev_t + ahead, pos ? w->bpos : NULL, rot ? w->brot : NULL, vel ? w->bvel : NULL, angvel ? w->bangvel : NULL);
+    loco_ref_sample(&w->ref[a->prev_clip], a->prev_t + ca, pos ? w->bpos : NULL, rot ? w->brot : NULL, vel ? w->bvel : NULL, angvel ? w->bangvel : NULL);
+    if (a->rate_log != 0) loco_ref_rate(&w->ref[a->prev_clip], nb, rate, vel ? w->bvel : NULL, angvel ? w->bangvel : NULL);
     float s = fminf(fmaxf(1.0f - left / T, 0.0f), 1.0f); s = s * s * (3.0f - 2.0f * s);
     for (int b = 0; b < nb; b++) {
         if (pos) { b3Vec3 o = w->bpos[b]; o.x += a->prev_x_off; pos[b] = lv_lerp(o, pos[b], s); }
@@ -325,7 +358,11 @@ static void loco_switch_clip(LocoWorld* w, int i, int clip) {
     a->clip = clip; a->t = tn; a->blend_left = w->cfg.clip_blend > 0 ? w->cfg.clip_blend : 0;
 }
 // Advances agent a's clip clocks and its blend by dt seconds.
-static inline void loco_advance(LocoAgent* a, double dt) { a->t += dt; a->prev_t += dt; a->blend_left = fmaxf(a->blend_left - (float)dt, 0.0f); }
+// dt seconds on: the clip times by dt at the playback rate, the blend by dt.
+static inline void loco_advance(LocoAgent* a, double dt) {
+    double ct = a->rate_log != 0 ? dt * exp2f(a->rate_log) : dt;
+    a->t += ct; a->prev_t += ct; a->blend_left = fmaxf(a->blend_left - (float)dt, 0.0f);
+}
 // A random switch to a neighbour in the clip list when one is due (none while a blend runs).
 static void loco_switch_maybe(LocoWorld* w, int i) {
     const LocoConfig* c = &w->cfg; LocoAgent* a = &w->ag[i];
@@ -398,7 +435,14 @@ static float loco_reward(LocoWorld* w, LocoAgent* a) {
     float eh = lq_angle(hs, hr); eh *= eh;
     a->r_pose = expf(-c->k_pose * ep); a->r_vel = expf(-c->k_vel * ev); a->r_ee = expf(-c->k_ee * ee); a->r_com = expf(-c->k_com * ec); a->r_heading = expf(-c->k_heading * eh);
     a->err_pose += sqrtf(ep / r->nbody); a->err_ee += sqrtf(ee / (r->nee > 0 ? r->nee : 1));
-    return c->w_pose * a->r_pose + c->w_vel * a->r_vel + c->w_ee * a->r_ee + c->w_com * a->r_com + c->w_heading * a->r_heading;
+    float rew = c->w_pose * a->r_pose + c->w_vel * a->r_vel + c->w_ee * a->r_ee + c->w_com * a->r_com + c->w_heading * a->r_heading;
+    if (c->w_speed > 0) {
+        b3Vec3 cv = loco_com_vel(w, w->rot, w->vel, w->angvel, false), fwd = lq_rot(hr, lv(1, 0, 0));
+        float v = cv.x * fwd.x + cv.z * fwd.z, cmd = w->ref[a->clip].speed;
+        a->r_speed = fmaxf(0.0f, 1.0f - fabsf(v - cmd) / fmaxf(cmd, c->speed_floor));
+        rew += c->w_speed * a->r_speed;
+    }
+    return rew;
 }
 
 // Agent i's observation (LOCO_OBS floats) from its current state in w->pos...
@@ -423,6 +467,7 @@ static void loco_observe_state(LocoWorld* w, const LocoAgent* a, float* o) {
     b3Quat rr[LOCO_MAX_BODIES]; loco_ref_agent(w, a, 0, NULL, rr, NULL, NULL);
     b3Vec3 f = lq_rot(lq_inv_mul(hd, loco_heading(rr[0])), lv(1, 0, 0));
     t[4] = -f.z; t[5] = f.x;
+    t[6] = a->rate_log;
 }
 static void loco_observe(LocoWorld* w, int i, float* o) {
     loco_doll_get(&w->phys, i, w->pos, w->rot, w->vel, w->angvel);
@@ -437,7 +482,10 @@ static void loco_observe(LocoWorld* w, int i, float* o) {
 static void loco_step(LocoWorld* w, const float* const* act, float* reward, float* terminal) {
     const LocoConfig* c = &w->cfg; int n = c->num_agents, k = c->sim_hz / c->policy_hz;
     float h = 1.0f / c->sim_hz; b3Quat dev[LOCO_MAX_BODIES];
-    for (int i = 0; i < n; i++) { w->ag[i].fallen = false; loco_push_maybe(w, i); loco_switch_maybe(w, i); }
+    for (int i = 0; i < n; i++) {
+        LocoAgent* a = &w->ag[i]; a->fallen = false; loco_push_maybe(w, i); loco_switch_maybe(w, i);
+        if (c->cadence > 0 && act) a->rate_log += 0.25f * (fminf(fmaxf(2.0f * c->action_unit * act[i][w->rig.ndof], -c->cadence), c->cadence) - a->rate_log);
+    }
     for (int s = 0; s < k; s++) {
         for (int i = 0; i < n; i++) {
             LocoAgent* a = &w->ag[i];
@@ -463,7 +511,7 @@ static void loco_step(LocoWorld* w, const float* const* act, float* reward, floa
         bool done = a->fallen || a->elapsed >= c->episode_seconds - 1e-4f;
         if (reward) reward[i] = r;
         if (terminal) terminal[i] = done ? 1.0f : 0.0f;
-        w->stats.reward += r; w->stats.steps += 1; w->stats.clip_speed += w->ref[a->clip].speed;
+        w->stats.reward += r; w->stats.steps += 1; w->stats.clip_speed += w->ref[a->clip].speed; w->stats.rate += exp2f(a->rate_log);
         if (done) {
             LocoStats* st = &w->stats;
             st->episodes += 1; st->falls += a->fallen; st->length += a->elapsed; st->ret += a->ret;
@@ -500,5 +548,6 @@ static uint64_t loco_hash(const LocoWorld* w) {
     X(gains.passive_tail, hertz_passive_tail, float) X(gains.damping, damping, float) X(gains.passive_damping, damping_passive_tail, float) X(gains.tail_stiffen, tail_stiffen, float) \
     X(gains.friction, friction, float) X(gains.passive, passive_tail, bool) X(fall_height, fall_height, float) X(weld_range, weld_range, float) X(tail_flex, tail_flex, int) \
     X(push_interval, push_interval, float) X(push_min, push_min, float) X(push_max, push_max, float) X(push_seconds, push_seconds, float) X(push_adapt, push_adapt, float) \
-    X(clip_switch, clip_switch, float) X(clip_blend, clip_blend, float)
+    X(clip_switch, clip_switch, float) X(clip_blend, clip_blend, float) \
+    X(w_speed, reward_speed, float) X(speed_floor, speed_floor, float) X(cadence, cadence, float)
 #endif

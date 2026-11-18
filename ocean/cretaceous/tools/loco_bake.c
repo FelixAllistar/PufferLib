@@ -264,6 +264,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(a, "--tail-flex") && more) c.tail_flex = atoi(argv[++i]);
         else if (!strcmp(a, "--passive-tail")) c.gains.passive = true;
         else if (!strcmp(a, "--passive-damping") && more) c.gains.passive_damping = (float)atof(argv[++i]);
+        else if (!strcmp(a, "--cadence") && more) c.cadence = (float)atof(argv[++i]);
         else { fprintf(stderr, "loco_bake: unknown argument %s (see the header of tools/loco_bake.c)\n", a); return 2; }
     }
     if (!selftest && (!policy || !out)) { fprintf(stderr, "loco_bake: needs --policy and --out (or --selftest)\n"); return 2; }

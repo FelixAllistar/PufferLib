@@ -57,6 +57,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(a, "--policy") && more) policy = argv[++i];
         else if (!strcmp(a, "--passive-tail")) c.gains.passive = true;
         else if (!strcmp(a, "--passive-damping") && more) c.gains.passive_damping = (float)atof(argv[++i]);
+        else if (!strcmp(a, "--cadence") && more) c.cadence = (float)atof(argv[++i]);
         else if (!strcmp(a, "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
         else if (!strcmp(a, "--record") && more) record = argv[++i];
         else if (!strcmp(a, "--seconds") && more) seconds = (float)atof(argv[++i]);

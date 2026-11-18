@@ -245,20 +245,80 @@ static void test_push(void) {
     free_world(w);
 }
 
-// The observation's last two floats: the way to the reference's heading.
+// The step rate (cadence) and the commanded-speed reward term.
+static uint64_t cadence_run(float cadence, float spare, double* t, float* last_obs) {
+    LocoConfig c = loco_default_config(); snprintf(c.dino, sizeof c.dino, "%s", FIXTURE); c.num_agents = 1; c.cadence = cadence;
+    LocoWorld* w = (LocoWorld*)calloc(1, sizeof(LocoWorld)); char err[256];
+    if (!loco_world_init(w, &c, 3, err, sizeof err)) { free(w); return 0; }
+    static float act[LOCO_MAX_DOF], o[LOCO_OBS], rew[1], term[1]; const float* ap[1] = {act};
+    memset(act, 0, sizeof act); act[w->rig.ndof] = spare;
+    loco_reset_agent(w, 0, 0.2f); for (int s = 0; s < 10; s++) loco_step(w, ap, rew, term);
+    loco_observe(w, 0, o); *t = w->ag[0].t; *last_obs = o[LOCO_OBS - 1];
+    uint64_t h = loco_hash(w); free_world(w); return h;
+}
+static void test_cadence_speed(void) {
+    // cadence 0: the spare action is ignored (the same run with it set), and the observation's last float stays 0.
+    double t0, t1, t2; float o0, o1, o2;
+    uint64_t h0 = cadence_run(0, 0, &t0, &o0), h1 = cadence_run(0, 50, &t1, &o1), h2 = cadence_run(1, 50, &t2, &o2);
+    CHECK(h0 != 0 && h1 == h0 && t1 == t0 && o1 == 0, "cadence 0: the spare action changes nothing");
+    CHECK(h2 != h0 && t2 > t0 + 0.1 && o2 > 0.9f, "cadence 1: the same action speeds the clip up (clip time %.3f s against %.3f s in 10 steps, log2 rate %.3f)", t2, t0, o2);
+    LocoConfig c = loco_default_config(); snprintf(c.dino, sizeof c.dino, "%s", FIXTURE); c.num_agents = 1; c.cadence = 1.0f;
+    LocoWorld* w = (LocoWorld*)calloc(1, sizeof(LocoWorld)); char err[256];
+    bool ok = loco_world_init(w, &c, 3, err, sizeof err);
+    CHECK(ok, "cadence world builds");
+    if (!ok) { free(w); return; }
+    static float act[LOCO_MAX_DOF], o[LOCO_OBS], rew[1], term[1]; const float* ap[1] = {act}; int nd = w->rig.ndof; bool ended = false;
+    memset(act, 0, sizeof act);
+    // A large action eases the rate toward 2x, a quarter of the way per step, and the clip time runs at that rate.
+    loco_reset_agent(w, 0, 0.2f); act[nd] = 50; double tb = 0;
+    for (int s = 0; s < 8; s++) { tb = w->ag[0].t; loco_step(w, ap, rew, term); ended |= term[0] != 0; }
+    float want = 1 - powf(0.75f, 8), got = w->ag[0].rate_log; double per = (w->ag[0].t - tb) * w->cfg.policy_hz;
+    loco_observe(w, 0, o);
+    CHECK(!ended && fabsf(got - want) < 1e-4f && fabs(per - exp2(got)) < 1e-4 && o[LOCO_OBS - 1] == got, "cadence 1: eight steps ease the rate to log2 %.4f (%.4f), clip time %.4f steps per step", want, got, per);
+    // The reference's in-place velocities scale with the rate; its travel speed is the clip's own.
+    static b3Vec3 v1[LOCO_MAX_BODIES], a1[LOCO_MAX_BODIES], v2[LOCO_MAX_BODIES], a2[LOCO_MAX_BODIES];
+    LocoAgent probe = w->ag[0]; float sp = w->ref[0].speed, k = exp2f(got);
+    loco_ref_agent(w, &probe, 0, NULL, NULL, v2, a2); probe.rate_log = 0; loco_ref_agent(w, &probe, 0, NULL, NULL, v1, a1);
+    float worst = 0, big = 0;
+    for (int b = 0; b < w->rig.nbody; b++) {
+        worst = fmaxf(worst, sqrtf(lv_len2(b3Sub(a2[b], b3MulSV(k, a1[b]))))); worst = fmaxf(worst, fabsf((v2[b].x - sp) - k * (v1[b].x - sp))); worst = fmaxf(worst, fabsf(v2[b].y - k * v1[b].y));
+        big = fmaxf(big, sqrtf(lv_len2(a1[b])));
+    }
+    CHECK(worst < 1e-4f && big > 0.1f, "at %.2fx the reference's in-place velocities are %.2fx the clip's (worst gap %.6f)", k, k, worst);
+    // The other way the rate is held at 2^-cadence.
+    act[nd] = -50; ended = false; float lo = 0;
+    for (int s = 0; s < 60 && !ended; s++) { loco_step(w, ap, rew, term); ended |= term[0] != 0; if (!ended) lo = w->ag[0].rate_log; }
+    CHECK(lo < -0.5f && lo >= -1.0f, "cadence 1: the rate goes down and stops at 0.5x (log2 %.4f)", lo);
+    // The speed term at the reset: near 1 (the body moves at about the clip's speed; its mass centre also
+    // moves within the stride), and the reward is the imitation reward plus reward_speed times it.
+    act[nd] = 0; w->cfg.cadence = 0; w->cfg.w_speed = 0.5f; loco_reset_agent(w, 0, 0.2f);
+    loco_doll_get(&w->phys, 0, w->pos, w->rot, w->vel, w->angvel); loco_ref_at(w, &w->ag[0]);
+    float r = loco_reward(w, &w->ag[0]), rs = w->ag[0].r_speed;
+    CHECK(rs > 0.8f && rs <= 1.0f && fabsf(r - (1.0f + 0.5f * rs)) < 0.01f, "at the reset the speed term is near 1 (%.4f) and the reward 1 + reward_speed x it (%.4f)", rs, r);
+    // Standing still against a moving clip: 1 - speed / max(speed, floor), which is 0 at any speed above the floor.
+    for (int b = 0; b < w->rig.nbody; b++) w->vel[b] = lv(0, 0, 0);
+    loco_reward(w, &w->ag[0]);
+    CHECK(sp > 1 ? w->ag[0].r_speed < 1e-4f : fabsf(w->ag[0].r_speed - (1 - sp)) < 1e-4f, "standing still the speed term is %.4f at a clip speed of %.2f", w->ag[0].r_speed, sp);
+    // Halfway there it is half: the slope is straight.
+    for (int b = 0; b < w->rig.nbody; b++) w->vel[b] = lv(0.5f * sp, 0, 0);
+    loco_reward(w, &w->ag[0]);
+    CHECK(fabsf(w->ag[0].r_speed - 0.5f) < 1e-3f, "at half the clip's speed the speed term is %.4f", w->ag[0].r_speed);
+    free_world(w);
+}
+// The observation's last two floats before the step rate: the way to the reference's heading.
 static void test_heading_obs(void) {
     LocoWorld* w = make_world(FIXTURE, 1, 3);
     CHECK(w != NULL, "heading world builds");
     if (!w) return;
     static float o[LOCO_OBS];
     loco_reset_agent(w, 0, 0.3f); loco_observe(w, 0, o);
-    CHECK(fabsf(o[LOCO_OBS - 2]) < 1e-4f && fabsf(o[LOCO_OBS - 1] - 1) < 1e-4f, "at the reset the animal faces the reference's way (sin %.5f, cos %.5f)", o[LOCO_OBS - 2], o[LOCO_OBS - 1]);
+    CHECK(fabsf(o[LOCO_OBS_V2 - 2]) < 1e-4f && fabsf(o[LOCO_OBS_V2 - 1] - 1) < 1e-4f, "at the reset the animal faces the reference's way (sin %.5f, cos %.5f)", o[LOCO_OBS_V2 - 2], o[LOCO_OBS_V2 - 1]);
     // The same state turned 0.5 rad to its left: the reference's heading lies 0.5 rad to its right.
     loco_doll_get(&w->phys, 0, w->pos, w->rot, w->vel, w->angvel);
     b3Quat turn = lq_axis_angle(lv(0, 1, 0), 0.5f);
     for (int b = 0; b < w->rig.nbody; b++) w->rot[b] = lq_mul(turn, w->rot[b]);
     loco_observe_state(w, &w->ag[0], o);
-    CHECK(fabsf(o[LOCO_OBS - 2] + sinf(0.5f)) < 1e-3f && fabsf(o[LOCO_OBS - 1] - cosf(0.5f)) < 1e-3f, "turned 0.5 rad left, the way back reads -0.5 rad (sin %.4f, cos %.4f)", o[LOCO_OBS - 2], o[LOCO_OBS - 1]);
+    CHECK(fabsf(o[LOCO_OBS_V2 - 2] + sinf(0.5f)) < 1e-3f && fabsf(o[LOCO_OBS_V2 - 1] - cosf(0.5f)) < 1e-3f, "turned 0.5 rad left, the way back reads -0.5 rad (sin %.4f, cos %.4f)", o[LOCO_OBS_V2 - 2], o[LOCO_OBS_V2 - 1]);
     free_world(w);
 }
 
@@ -566,6 +626,7 @@ int main(void) {
     test_config();
     test_raptor();
     test_heading_obs();
+    test_cadence_speed();
     test_multiclip();
     return t_finish("test_loco", t0);
 }

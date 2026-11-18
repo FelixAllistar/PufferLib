@@ -193,7 +193,62 @@ several clips, and the target speed tells it which.
   reference's. They are also the steering command for later (turn the
   reference, the animal follows). Checkpoints from before (runs 2 to 7) still
   load: the runner feeds them the observation without the two floats.
-- **Untrained so far.** Nothing has been trained this way yet.
+- **Trained: runs 8, 9, 10** (64x2, 128x2, 256x2; 600M steps each, shoves
+  with the curriculum, rod tail). 32 raptors for 30 s per test, falls out of
+  episodes, final checkpoints:
+
+  | Test | 64x2 | 128x2 | 256x2 |
+  |---|---|---|---|
+  | Idle alone | 3 / 64 | 0 / 64 | 0 / 64 |
+  | Walk alone | 10 / 65 | 0 / 64 | 0 / 64 |
+  | Trot alone | 0 / 64 | 0 / 64 | 0 / 64 |
+  | Run alone | 0 / 64 | 0 / 64 | 0 / 64 |
+  | Switching every ~4 s | 1 / 64 | 1 / 64 | 0 / 64 |
+  | Switching + 1.5 m/s shoves | 30 / 71 | 5 / 64 | 1 / 64 |
+  | Switching + 2.0 m/s shoves | 50 / 83 | 11 / 64 | 2 / 65 |
+  | Switching + 2.5 m/s shoves | 90 / 106 | 29 / 70 | 8 / 66 |
+  | Joint error while switching | 13.8 deg | 8.6 deg | 11.4 deg |
+  | Speed at trot (3.6 m/s asked) | 2.48 | 2.26 | 1.87 |
+  | Speed at run (6.0 m/s asked) | 1.53 | 2.05 | 1.85 |
+
+  One run per size. Walking under 1.5 m/s shoves the 128 and 256 policies
+  average 8.7 and 9.4 degrees off their heading (runs 6 and 6p, without the
+  heading floats: 24 degrees); single animals still get spun right around.
+  The 256 policy walks off at 1.6 m/s when told to idle.
+
+## Speed first, and the animal sets its step rate (2026-11-18)
+
+**Nobody ran.** Runs 8 to 10 match the trot and run poses within about 10
+degrees but travel at about 1.9 m/s whatever gait is asked. Two causes were
+traced, both in the setup:
+
+- **The speed reward was flat.** The only term that sees travel speed is the
+  COM term, exp(-10 x error^2): at 0.7 m/s of error it is already under 0.01,
+  so from 2 m/s nothing points toward 3.6 or 6.
+- **The clips step too slowly for their speeds.** The raptor's trot and run
+  clips take 1.00 s a stride (walk 1.29 s) and their feet reach 0.73 to
+  0.79 m fore and aft (walk 1.02 m). Without long leaps that is about 2 m/s.
+  The speed the stance foot moves backward in each clip (the speed the animal
+  travels without sliding) is about 1.3 (walk), 1.4 (trot) and 1.7 m/s (run),
+  against the 1.8, 3.6 and 6.0 the game slides the model at. The stance
+  detection is crude (lowest foot within 4 cm of the ground).
+
+Two keys, both off by default (single-clip and runs 8 to 10 behave as before):
+
+- `reward_speed` (with `speed_floor`): a term for the commanded speed alone,
+  1 - |v - speed| / max(speed, speed_floor), not below 0, where v is the mass
+  centre's velocity along the reference's heading. A straight slope, so it
+  pulls from any distance, and at idle it pays for standing still.
+- `cadence`: the action after the rig's last joint sets how fast the clip
+  plays, 2^e with e within +-cadence (1.5: 0.35x to 2.8x), eased a quarter of
+  the way per policy step. The observation's last float is the current e
+  (LOCO_OBS 367; older checkpoints load as before). The reference's joint
+  velocities scale with the rate. The tools take `--cadence X`, which must
+  match training. The log's `cadence` is the mean rate.
+
+Run 11 (256x2, live): the settings of runs 8 to 10 plus `reward_speed 0.45`,
+`cadence 1.5`, the pose held more loosely (`reward_pose 0.3, k_pose 1`,
+`reward_ee 0.1, k_ee 5`, `reward_vel 0.05`, `reward_com 0`). Not evaluated yet.
 
 ## The research, briefly
 
