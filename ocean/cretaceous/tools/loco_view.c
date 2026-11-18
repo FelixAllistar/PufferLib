@@ -3,10 +3,12 @@
 // clip's pose for the followed animal as a wire ghost, and the reward terms.
 // Run from the repository root.
 //   loco_view [--dino PATH] [--clip walk] [--agents 4] [--seed 1] [--policy CHECKPOINT.bin]
-//             [--passive-tail] [--size W H] [--record OUT.mp4 --seconds S]
+//             [--passive-tail] [--tail-flex N] [--push-interval S --push-min V --push-max V]
+//             [--size W H] [--record OUT.mp4 --seconds S]
+// Shoves (loco_env.h) show as a red arrow on the body hit, along the push.
 // Without --policy the animals run the plain PD-tracking baseline (actions
 // zero). --record renders S seconds without a window prompt and encodes them
-// with ffmpeg (an X display is still needed: xvfb-run works).
+// with ffmpeg in a hidden window (an X display is still needed: xvfb-run, or WSLg).
 // Keys: space pause, R reset, G ghost on/off, Tab follow the next animal,
 // arrows orbit and zoom the camera.
 #include "raylib.h"
@@ -52,6 +54,10 @@ int main(int argc, char** argv) {
         else if (!strcmp(a, "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
         else if (!strcmp(a, "--record") && more) record = argv[++i];
         else if (!strcmp(a, "--seconds") && more) seconds = (float)atof(argv[++i]);
+        else if (!strcmp(a, "--push-interval") && more) c.push_interval = (float)atof(argv[++i]);
+        else if (!strcmp(a, "--push-min") && more) c.push_min = (float)atof(argv[++i]);
+        else if (!strcmp(a, "--push-max") && more) c.push_max = (float)atof(argv[++i]);
+        else if (!strcmp(a, "--tail-flex") && more) c.tail_flex = atoi(argv[++i]);
         else { fprintf(stderr, "loco_view: unknown argument %s (see the header of tools/loco_view.c)\n", a); return 2; }
     }
     LocoWorld* w = (LocoWorld*)calloc(1, sizeof(LocoWorld)); char err[256];
@@ -64,7 +70,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < n; i++) ap[i] = act + (size_t)i * LOCO_MAX_DOF;
     loco_reset_all(w);
 
-    SetConfigFlags(FLAG_MSAA_4X_HINT);
+    SetConfigFlags(FLAG_MSAA_4X_HINT | (record ? FLAG_WINDOW_HIDDEN : 0));   // a recording opens no window
     InitWindow(W, H, "Cretaceous locomotion");
     SetTargetFPS(c.policy_hz);
     FILE* enc = NULL;
@@ -77,6 +83,7 @@ int main(int argc, char** argv) {
     Camera3D cam = {0}; cam.up = (Vector3){0, 1, 0}; cam.fovy = 45; cam.projection = CAMERA_PERSPECTIVE;
     float yaw = 0.6f, pitch = 0.22f, dist = 2.2f * w->rig.length;   // a three-quarter side view
     int follow = 0, frames = 0;
+    float push_shown[LOCO_MAX_AGENTS] = {0}; int push_b[LOCO_MAX_AGENTS] = {0}; b3Vec3 push_dir[LOCO_MAX_AGENTS]; float push_sp[LOCO_MAX_AGENTS] = {0};
     bool paused = false, ghost = true;
     b3Vec3 look = lv(0, w->pelvis_h * 0.8f, 0);
     while (!WindowShouldClose() && (!record || frames < (int)(seconds * c.policy_hz))) {
@@ -91,7 +98,16 @@ int main(int argc, char** argv) {
         if (!paused) {
             if (pol) { for (int i = 0; i < n; i++) loco_observe(w, i, obs + (size_t)i * LOCO_OBS); loco_policy_forward(pol, obs, n, act); }
             loco_step(w, pol ? ap : NULL, rew, term);
-            for (int i = 0; i < n; i++) { last_r[i] = rew[i]; if (term[i] && pol) loco_policy_reset(pol, i); }
+            for (int i = 0; i < n; i++) {
+                last_r[i] = rew[i]; if (term[i] && pol) loco_policy_reset(pol, i);
+                const LocoAgent* a = &w->ag[i];
+                if (a->push_left > 0 && push_shown[i] <= 0.3f) {   // a shove under way: shown for 0.6 s from its start
+                    float f = sqrtf(lv_len2(a->push_force));
+                    push_b[i] = a->push_body; push_dir[i] = b3MulSV(1.0f / fmaxf(f, 1e-6f), a->push_force); push_shown[i] = 0.6f;
+                    push_sp[i] = f * c.push_seconds / w->rig.total_mass;
+                }
+                push_shown[i] -= 1.0f / c.policy_hz;
+            }
         }
         // Camera: eased toward the followed animal's pelvis.
         loco_doll_get(&w->phys, follow, w->pos, w->rot, NULL, NULL);
@@ -111,6 +127,12 @@ int main(int argc, char** argv) {
             for (int b = 0; b < w->rig.nbody; b++)
                 for (int k = 0; k < w->rig.body[b].nshape; k++)
                     draw_shape(&w->rig.body[b].shape[k], b3Add(o, w->pos[b]), w->rot[b], body_color(&w->rig.body[b], false), false);
+            if (push_shown[i] > 0) {
+                b3Vec3 p = b3Add(o, b3Add(w->pos[push_b[i]], lq_rot(w->rot[push_b[i]], w->rig.body[push_b[i]].com)));
+                b3Vec3 tail = b3Sub(p, b3MulSV(1.2f, push_dir[i]));
+                DrawCylinderEx(V3(tail), V3(b3Sub(p, b3MulSV(0.25f, push_dir[i]))), 0.035f, 0.035f, 8, RED);
+                DrawCylinderEx(V3(b3Sub(p, b3MulSV(0.25f, push_dir[i]))), V3(p), 0.09f, 0.0f, 8, RED);
+            }
             if (ghost && i == follow) {
                 loco_ref_at(w, w->ag[i].t);
                 for (int b = 0; b < w->rig.nbody; b++)
@@ -125,7 +147,7 @@ int main(int argc, char** argv) {
         DrawText(TextFormat("animal %d of %d: up %.1f s, reward %.2f (pose %.2f vel %.2f feet/head/tail %.2f com %.2f)", follow + 1, n, A->elapsed, last_r[follow], A->r_pose, A->r_vel, A->r_ee, A->r_com), 18, 40, 14, DARKGRAY);
         DrawText(TextFormat("episodes ended %.0f (falls %.0f), mean time up %.2f s", w->stats.episodes, w->stats.falls, w->stats.episodes > 0 ? w->stats.length / w->stats.episodes : 0.0), 18, 60, 14, DARKGRAY);
         DrawText("ghost: the clip's pose now   space pause  R reset  G ghost  Tab next  arrows camera", 18, 82, 12, GRAY);
-        DrawText(TextFormat("t %.1f s", frames / (float)c.policy_hz), 18, 102, 12, GRAY);
+        DrawText(TextFormat("t %.1f s%s", frames / (float)c.policy_hz, push_shown[follow] > 0 ? TextFormat("   SHOVE %.1f m/s", push_sp[follow]) : ""), 18, 102, 12, push_shown[follow] > 0 ? RED : GRAY);
         EndDrawing();
         if (enc) { Image img = LoadImageFromScreen(); if (img.width == W && img.height == H) fwrite(img.data, 4, (size_t)W * H, enc); UnloadImage(img); }
         frames++;
