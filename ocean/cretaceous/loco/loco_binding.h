@@ -32,7 +32,10 @@ static_assert(LOCO_MAX_DOF == 69, "ACT_SIZES lists LOCO_MAX_DOF ones");
 // return, its length (s), the distance the pelvis travelled (m), and the
 // mean tracking errors (joint rotation in degrees per body, end effectors in cm).
 // push_level: the shove curriculum's level at episode ends (0..1, push_adapt).
-struct Log { float perf, score, episode_return, episode_length, distance, falls, pose_deg, ee_cm, push_level, n; };
+// clip_speed: the mean target speed (m/s) over the steps since the last log
+// update, the mix of clips (weighted by the episodes ended, so the trainer's
+// division by n gives the mean).
+struct Log { float perf, score, episode_return, episode_length, distance, falls, pose_deg, ee_cm, push_level, clip_speed, n; };
 
 struct Env {
     Log log;
@@ -82,6 +85,8 @@ void puf_step(Env* env) {
         l->score += (float)(s->ret - p->ret); l->episode_return += (float)(s->ret - p->ret);
         l->episode_length += (float)(s->length - p->length); l->distance += (float)(s->distance - p->distance);
         l->pose_deg += (float)(s->pose_deg - p->pose_deg); l->ee_cm += (float)(s->ee_cm - p->ee_cm); l->push_level += (float)(s->push_level - p->push_level);
+        double ds = s->steps - p->steps;
+        l->clip_speed += ne * (float)(ds > 0 ? (s->clip_speed - p->clip_speed) / ds : 0.0);
         l->n += ne;
         *p = *s;
     }
@@ -92,7 +97,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "perf", log->perf); dict_set(out, "score", log->score);
     dict_set(out, "episode_return", log->episode_return); dict_set(out, "episode_length", log->episode_length);
     dict_set(out, "distance", log->distance); dict_set(out, "falls", log->falls);
-    dict_set(out, "pose_deg", log->pose_deg); dict_set(out, "ee_cm", log->ee_cm); dict_set(out, "push_level", log->push_level); dict_set(out, "n", log->n);
+    dict_set(out, "pose_deg", log->pose_deg); dict_set(out, "ee_cm", log->ee_cm); dict_set(out, "push_level", log->push_level); dict_set(out, "clip_speed", log->clip_speed); dict_set(out, "n", log->n);
 }
 
 // Training renders nothing; tools/loco_view.c draws the ragdolls.

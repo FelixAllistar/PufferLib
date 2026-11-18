@@ -117,7 +117,7 @@ static OutClip bake_clip(const DinoFile* d, const LocoWorld* w, const b3Quat* ri
     snprintf(o.name, sizeof o.name, "%s", name); o.duration = (float)(dt * (nf - 1)); o.speed = C->speed; o.loop = loop; o.nframes = nf;
     o.frames = (float*)malloc(sizeof(float) * 8 * d->njoint * nf);
     float (*G)[12] = (float (*)[12])malloc(sizeof(float) * 12 * d->njoint);
-    const LocoRef* ref = &w->ref; b3Vec3 d0 = lv(0, 0, 0), dn = lv(0, 0, 0);
+    const LocoRef* ref = &w->ref[0]; b3Vec3 d0 = lv(0, 0, 0), dn = lv(0, 0, 0);
     if (loop) {
         b3Vec3 pos[LOCO_MAX_BODIES]; b3Quat rot[LOCO_MAX_BODIES];
         track_at(tr, t0, pos, rot, rig->nbody); d0 = pelvis_drift(ref, t0, pos, rot, NULL);
@@ -161,7 +161,7 @@ static OutClip bake_clip(const DinoFile* d, const LocoWorld* w, const b3Quat* ri
 // push_t (seconds of clip time; < 0: none). Returns the track; *fell when the
 // ragdoll went down.
 static Track run_track(LocoWorld* w, LocoPolicy* pol, double seconds, double push_t, int pb, b3Vec3 dv, bool* fell) {
-    double ref_step = w->ref.dt;   // without a policy, the reference at its own frame times
+    double ref_step = w->ref[0].dt;   // without a policy, the reference at its own frame times
     Track tr; tr.n = 0; tr.s = (Sample*)calloc(BAKE_MAX_SAMPLES, sizeof(Sample));
     w->cfg.episode_seconds = 1e9f;
     loco_reset_agent(w, 0, 0.0f);
@@ -173,10 +173,10 @@ static Track run_track(LocoWorld* w, LocoPolicy* pol, double seconds, double pus
         S->t = a->t;
         if (pol) {
             loco_doll_get(&w->phys, 0, S->pos, S->rot, NULL, NULL);
-            for (int b = 0; b < w->rig.nbody; b++) S->pos[b].x -= w->ref.speed * (float)a->t;
+            for (int b = 0; b < w->rig.nbody; b++) S->pos[b].x -= w->ref[0].speed * (float)a->t;
         } else {
-            loco_ref_sample(&w->ref, a->t, S->pos, S->rot, NULL, NULL);
-            for (int b = 0; b < w->rig.nbody; b++) S->pos[b].x -= w->ref.speed * (float)a->t;
+            loco_ref_sample(&w->ref[0], a->t, S->pos, S->rot, NULL, NULL);
+            for (int b = 0; b < w->rig.nbody; b++) S->pos[b].x -= w->ref[0].speed * (float)a->t;
         }
         if (s == steps) break;
         if (!pushed && push_t >= 0 && a->t + 1e-6 >= push_t) { loco_push(w, 0, pb, dv, 0.1f); pushed = true; }
@@ -268,6 +268,7 @@ int main(int argc, char** argv) {
     if (!selftest && (!policy || !out)) { fprintf(stderr, "loco_bake: needs --policy and --out (or --selftest)\n"); return 2; }
     LocoWorld* w = (LocoWorld*)calloc(1, sizeof(LocoWorld)); char err[256];
     if (!loco_world_init(w, &c, 1, err, sizeof err)) { fprintf(stderr, "loco_bake: %s\n", err); return 1; }
+    if (w->nref > 1) { fprintf(stderr, "loco_bake: bakes one clip at a time (--clip %s lists %d)\n", c.clip, w->nref); return 2; }
     // The file with its bind space in metres as the rig has it (loco_unscale_bind changes only the
     // inverse binds and vertices, so the clips' locals, which get rewritten, are the file's own).
     DinoFile* d = (DinoFile*)calloc(1, sizeof(DinoFile));
@@ -321,7 +322,7 @@ int main(int argc, char** argv) {
         float drift = 0, yaw_end = 0, yaw_max = 0, deg, cm;
         for (int k = 0; k < tr.n; k++) {
             if (tr.s[k].t < t0) continue;
-            float yaw; b3Vec3 off = pelvis_drift(&w->ref, tr.s[k].t, tr.s[k].pos, tr.s[k].rot, &yaw);
+            float yaw; b3Vec3 off = pelvis_drift(&w->ref[0], tr.s[k].t, tr.s[k].pos, tr.s[k].rot, &yaw);
             drift = fmaxf(drift, sqrtf(lv_len2(off))); yaw_max = fmaxf(yaw_max, fabsf(yaw) * 57.2958f); yaw_end = yaw * 57.2958f;
         }
         check_clip(d, rig, &add[nadd], &tr, t0, dt, false, &deg, &cm);

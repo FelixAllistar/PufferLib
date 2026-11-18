@@ -47,7 +47,7 @@ static bool loco_check_stability(const LocoConfig* base, int substeps, LocoStab*
     if (!loco_world_init(w, &c, 1, err, errn)) { free(w); return false; }
     float h = 1.0f / c.sim_hz; int steps = 0;
     b3Vec3 pos[LOCO_MAX_BODIES], zero[LOCO_MAX_BODIES], lifted[LOCO_MAX_BODIES]; b3Quat rot[LOCO_MAX_BODIES], dev[LOCO_MAX_BODIES];
-    loco_ref_sample(&w->ref, 0, pos, rot, NULL, NULL);
+    loco_ref_sample(&w->ref[0], 0, pos, rot, NULL, NULL);
     for (int b = 0; b < w->rig.nbody; b++) zero[b] = lv(0, 0, 0);
     loco_targets(w, rot, NULL, dev);
     double t0 = loco_clock();
@@ -71,7 +71,7 @@ static bool loco_check_stability(const LocoConfig* base, int substeps, LocoStab*
         o->free_sep = fmaxf(o->free_sep, loco_doll_separation(&w->phys, 0));
         loco_joint_error(w, 0, rot, &mean, &worst);
         if (s + 1 == c.sim_hz / 2) { o->free_mean = mean; o->free_worst = worst; }
-        if (loco_doll_fallen(&w->phys, 0) || w->pos[0].y < c.fall_height * w->pelvis_h) { o->free_up = (s + 1) * h; break; }
+        if (loco_doll_fallen(&w->phys, 0) || w->pos[0].y < c.fall_height * w->pelvis_h[0]) { o->free_up = (s + 1) * h; break; }
     }
     o->free_ok = o->free_sep < 0.02f && isfinite(mean) && loco_max_speed(w, 0) < 20.0f;
     // Dropped from 0.5 m.

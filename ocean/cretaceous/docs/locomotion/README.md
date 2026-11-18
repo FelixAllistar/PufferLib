@@ -158,6 +158,35 @@ the active tail's tip flutters at 3-4 times the clip's speed.
   the clip's 41 (active) or 62 (passive, ζ 1), never at a limit. The baked
   clips keep the artist's motion of the bones inside the rod.
 
+## Several clips in one policy (2026-11-18)
+
+A first step toward stage 2 without the discriminator: one policy tracks
+several clips, and the target speed tells it which.
+
+- **The list.** `clip` takes several names joined by `+`, for example
+  `clip = idle+walk+trot+run` (at most 8, each a looping clip of the
+  `.dino`). Each episode starts on one of them at random, at a random phase.
+  One name is the env as before, with the same random numbers.
+- **The command.** The observation keeps its size; its last float, 0.2 x the
+  target speed (raptor: idle 0, walk 1.8, trot 3.6, run 6.0 m/s), is now the
+  command that says which clip to do. The phase floats are that clip's,
+  counted from the shared start of the stride.
+- **Switches** (`clip_switch`, seconds, 0 by default: never): each animal
+  switches to a neighbour in the list every `clip_switch` seconds on average
+  (list the clips slowest first: idle to walk to trot to run, as an animal
+  changes gait; a run cannot stop in 0.3 s), at the matching point of the
+  stride. The clips start their cycles on different feet (the raptor's run
+  starts about 0.45 of a cycle from its walk), so the env finds each moving
+  clip's offset against the first one when it loads. The command jumps at once; the
+  reference the reward compares against blends from the old clip to the new
+  one over `clip_blend` seconds (0.3 by default), so the target pose does not
+  jump, and its forward travel carries on from where it was.
+- `tools/loco_play.c` and `tools/loco_view.c` take the same list with
+  `--clip`, and `--clip-switch` and `--clip-blend`; the viewer shows the
+  followed animal's clip and target speed. The training log gains
+  `clip_speed`, the mean target speed, which shows the mix.
+- **Untrained so far.** Nothing has been trained this way yet.
+
 ## The research, briefly
 
 **DeepMimic** (Peng, Abbeel, Levine, van de Panne, SIGGRAPH 2018,

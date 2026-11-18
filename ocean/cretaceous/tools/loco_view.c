@@ -2,10 +2,13 @@
 // the ragdolls as their collision capsules and boxes on the ground, the
 // clip's pose for the followed animal as a wire ghost, and the reward terms.
 // Run from the repository root.
-//   loco_view [--dino PATH] [--clip walk] [--agents 4] [--seed 1] [--policy CHECKPOINT.bin]
+//   loco_view [--dino PATH] [--clip walk | --clip idle+walk+trot+run] [--agents 4] [--seed 1] [--policy CHECKPOINT.bin]
+//             [--clip-switch S] [--clip-blend S]
 //             [--passive-tail] [--tail-flex N] [--push-interval S --push-min V --push-max V]
 //             [--size W H] [--record OUT.mp4 --seconds S]
 // Shoves (loco_env.h) show as a red arrow on the body hit, along the push.
+// With several clips the HUD names the followed animal's clip and target
+// speed, and the ghost shows the reference as the env blends it at a switch.
 // Without --policy the animals run the plain PD-tracking baseline (actions
 // zero). --record renders S seconds without a window prompt and encodes them
 // with ffmpeg in a hidden window (an X display is still needed: xvfb-run, or WSLg).
@@ -47,6 +50,8 @@ int main(int argc, char** argv) {
         const char* a = argv[i]; bool more = i + 1 < argc;
         if (!strcmp(a, "--dino") && more) snprintf(c.dino, sizeof c.dino, "%s", argv[++i]);
         else if (!strcmp(a, "--clip") && more) snprintf(c.clip, sizeof c.clip, "%s", argv[++i]);
+        else if (!strcmp(a, "--clip-switch") && more) c.clip_switch = (float)atof(argv[++i]);
+        else if (!strcmp(a, "--clip-blend") && more) c.clip_blend = (float)atof(argv[++i]);
         else if (!strcmp(a, "--agents") && more) c.num_agents = atoi(argv[++i]);
         else if (!strcmp(a, "--seed") && more) seed = (unsigned int)atoi(argv[++i]);
         else if (!strcmp(a, "--policy") && more) policy = argv[++i];
@@ -85,7 +90,7 @@ int main(int argc, char** argv) {
     int follow = 0, frames = 0;
     float push_shown[LOCO_MAX_AGENTS] = {0}; int push_b[LOCO_MAX_AGENTS] = {0}; b3Vec3 push_dir[LOCO_MAX_AGENTS]; float push_sp[LOCO_MAX_AGENTS] = {0};
     bool paused = false, ghost = true;
-    b3Vec3 look = lv(0, w->pelvis_h * 0.8f, 0);
+    b3Vec3 look = lv(0, w->pelvis_h[0] * 0.8f, 0);
     while (!WindowShouldClose() && (!record || frames < (int)(seconds * c.policy_hz))) {
         if (IsKeyPressed(KEY_SPACE)) paused = !paused;
         if (IsKeyPressed(KEY_R)) loco_reset_all(w);
@@ -112,7 +117,7 @@ int main(int argc, char** argv) {
         // Camera: eased toward the followed animal's pelvis.
         loco_doll_get(&w->phys, follow, w->pos, w->rot, NULL, NULL);
         b3Vec3 pel = b3Add(w->pos[0], w->phys.doll[follow].origin);
-        look = lv_lerp(look, lv(pel.x, w->pelvis_h * 0.8f, pel.z), 0.15f);
+        look = lv_lerp(look, lv(pel.x, w->pelvis_h[w->ag[follow].clip] * 0.8f, pel.z), 0.15f);
         cam.target = V3(look);
         cam.position = (Vector3){look.x + dist * cosf(pitch) * sinf(yaw), look.y + dist * sinf(pitch), look.z + dist * cosf(pitch) * cosf(yaw)};
         BeginDrawing();
@@ -134,16 +139,17 @@ int main(int argc, char** argv) {
                 DrawCylinderEx(V3(b3Sub(p, b3MulSV(0.25f, push_dir[i]))), V3(p), 0.09f, 0.0f, 8, RED);
             }
             if (ghost && i == follow) {
-                loco_ref_at(w, w->ag[i].t);
+                loco_ref_agent(w, &w->ag[i], 0, w->rpos, w->rrot, NULL, NULL);
                 for (int b = 0; b < w->rig.nbody; b++)
                     for (int k = 0; k < w->rig.body[b].nshape; k++)
                         draw_shape(&w->rig.body[b].shape[k], b3Add(o, w->rpos[b]), w->rrot[b], Fade(DARKBLUE, 0.6f), true);
             }
         }
         EndMode3D();
-        const LocoAgent* A = &w->ag[follow];
+        const LocoAgent* A = &w->ag[follow]; const LocoRef* R = &w->ref[A->clip];
         DrawRectangle(10, 10, 470, 118, Fade(WHITE, 0.75f));
-        DrawText(TextFormat("%s, clip %s (%.2f m/s)  %s%s", w->rig.table, w->ref.clip, w->ref.speed, pol ? "policy" : "PD-tracking baseline", c.gains.passive ? ", passive tail" : ""), 18, 16, 18, BLACK);
+        DrawText(TextFormat("%s, clip %s (%.2f m/s)%s  %s%s", w->rig.table, R->clip, R->speed, A->blend_left > 0 ? TextFormat(", blending from %s", w->ref[A->prev_clip].clip) : "",
+            pol ? "policy" : "PD-tracking baseline", c.gains.passive ? ", passive tail" : ""), 18, 16, 18, BLACK);
         DrawText(TextFormat("animal %d of %d: up %.1f s, reward %.2f (pose %.2f vel %.2f feet/head/tail %.2f com %.2f)", follow + 1, n, A->elapsed, last_r[follow], A->r_pose, A->r_vel, A->r_ee, A->r_com), 18, 40, 14, DARKGRAY);
         DrawText(TextFormat("episodes ended %.0f (falls %.0f), mean time up %.2f s", w->stats.episodes, w->stats.falls, w->stats.episodes > 0 ? w->stats.length / w->stats.episodes : 0.0), 18, 60, 14, DARKGRAY);
         DrawText("ghost: the clip's pose now   space pause  R reset  G ghost  Tab next  arrows camera", 18, 82, 12, GRAY);

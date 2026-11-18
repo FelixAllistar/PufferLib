@@ -1,6 +1,7 @@
 // Headless runner for the locomotion env (loco/loco_env.h,
 // docs/locomotion/README.md). Run from the repository root.
-//   loco_play [--dino PATH] [--clip walk] [--agents 32] [--seconds 20] [--seed 1]
+//   loco_play [--dino PATH] [--clip walk | --clip idle+walk+trot+run] [--agents 32] [--seconds 20] [--seed 1]
+//             [--clip-switch S] [--clip-blend S]
 //             [--substeps 4] [--passive-tail] [--policy CHECKPOINT.bin]
 //             [--hertz-leg 100] [--hertz-body 60] [--hertz-tail 40] [--damping 1] [--no-weld]
 //             [--push-interval S --push-min V --push-max V] [--tail-flex N] [--tail-stiffen X]
@@ -16,6 +17,9 @@
 //   --push-*     shoves during the runs (loco_env.h): mean seconds between them, speed change in m/s
 //   --tail-flex  keep N tail joints from the base, weld the rest into a rod (loco_rig.h)
 //   --tail-stiffen  tail springs this many times stiffer at the tip than at the base (loco_sim.h)
+//   --clip       one clip, or several joined by '+' (each episode starts on one at random)
+//   --clip-switch  several clips: switch to another every S seconds on average; --clip-blend: the
+//                reference blends over S seconds (loco_env.h)
 // Exit status 1 when the rig does not build or a stability check fails at the
 // configured substep count.
 #include "loco/loco_check.h"
@@ -41,7 +45,8 @@ static void print_rig(const LocoWorld* w) {
     float tail = 0, front = 0;
     for (int b = 0; b < r->nbody; b++) { if (loco_is_tail(&r->body[b])) tail += r->body[b].mass; else if (r->body[b].bind.x > r->body[0].bind.x) front += r->body[b].mass; }
     printf("  tail %.1f kg (%.0f%% of the body), parts ahead of the hips %.1f kg\n", tail, 100 * tail / r->total_mass, front);
-    printf("reference: clip %s, %.2f s cycle (%d frames), %.2f m/s, pelvis %.2f m up\n", w->ref.clip, w->ref.duration, w->ref.period, w->ref.speed, w->pelvis_h);
+    for (int k = 0; k < w->nref; k++)
+        printf("reference: clip %s, %.2f s cycle (%d frames), %.2f m/s, pelvis %.2f m up\n", w->ref[k].clip, w->ref[k].duration, w->ref[k].period, w->ref[k].speed, w->pelvis_h[k]);
 }
 
 // Prints the chain checks (loco/loco_check.h) at one substep count; false on a failure.
@@ -80,7 +85,10 @@ static void run(const LocoConfig* c, unsigned int seed, float seconds, LocoPolic
     const LocoStats* st = &w->stats;
     for (int i = 0; i < n; i++) { ups++; best = fmaxf(best, w->ag[i].elapsed); }
     double eps = st->episodes;
-    printf("%s: %d agents x %.0f s, %s clip, %d substeps%s\n", label, n, seconds, w->ref.clip, c->substeps, c->gains.passive ? ", passive tail" : "");
+    printf("%s: %d agents x %.0f s, %s clip, %d substeps%s\n", label, n, seconds, c->clip, c->substeps, c->gains.passive ? ", passive tail" : "");
+    if (w->nref > 1)
+        printf("  %d clips, switch every %.1f s on average (0: never), blend %.2f s; mean target speed %.2f m/s over the steps\n",
+            w->nref, c->clip_switch, c->clip_blend, st->steps > 0 ? st->clip_speed / st->steps : 0.0);
     if (eps > 0)
         printf("  %.0f episodes ended (%.0f falls): mean time up %.2f s, mean return %.1f, pelvis travelled %.2f m per episode; tracking error %.1f deg per joint, end effectors %.1f cm\n",
             eps, st->falls, st->length / eps, st->ret / eps, st->distance / eps, st->pose_deg / eps, st->ee_cm / eps);
@@ -117,6 +125,8 @@ int main(int argc, char** argv) {
         const char* a = argv[i]; bool more = i + 1 < argc;
         if (!strcmp(a, "--dino") && more) snprintf(c.dino, sizeof c.dino, "%s", argv[++i]);
         else if (!strcmp(a, "--clip") && more) snprintf(c.clip, sizeof c.clip, "%s", argv[++i]);
+        else if (!strcmp(a, "--clip-switch") && more) c.clip_switch = (float)atof(argv[++i]);
+        else if (!strcmp(a, "--clip-blend") && more) c.clip_blend = (float)atof(argv[++i]);
         else if (!strcmp(a, "--agents") && more) c.num_agents = atoi(argv[++i]);
         else if (!strcmp(a, "--seconds") && more) seconds = (float)atof(argv[++i]);
         else if (!strcmp(a, "--seed") && more) seed = (unsigned int)atoi(argv[++i]);
