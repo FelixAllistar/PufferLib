@@ -303,6 +303,22 @@ static void test_cadence_speed(void) {
     for (int b = 0; b < w->rig.nbody; b++) w->vel[b] = lv(0.5f * sp, 0, 0);
     loco_reward(w, &w->ag[0]);
     CHECK(fabsf(w->ag[0].r_speed - 0.5f) < 1e-3f, "at half the clip's speed the speed term is %.4f", w->ag[0].r_speed);
+    // Sideways motion counts as error: full speed forward plus half of it sideways is half.
+    for (int b = 0; b < w->rig.nbody; b++) w->vel[b] = lv(sp, 0, 0.5f * sp);
+    loco_reward(w, &w->ag[0]);
+    CHECK(fabsf(w->ag[0].r_speed - 0.5f) < 1e-3f, "at the clip's speed with half of it sideways the speed term is %.4f", w->ag[0].r_speed);
+    // kernel 1: long tails. Half speed gives 1 / (1 + (2 x 0.5)^2) = 0.5, standing still 0.2, and the
+    // pose term 60 degrees off at the root is 1 / (1 + k x^2) where exp gives almost nothing.
+    w->cfg.kernel = 1;
+    for (int b = 0; b < w->rig.nbody; b++) w->vel[b] = lv(0.5f * sp, 0, 0);
+    loco_reward(w, &w->ag[0]); float half = w->ag[0].r_speed;
+    for (int b = 0; b < w->rig.nbody; b++) w->vel[b] = lv(0, 0, 0);
+    loco_reward(w, &w->ag[0]); float still = w->ag[0].r_speed;
+    CHECK(fabsf(half - 0.5f) < 1e-3f && fabsf(still - 0.2f) < 1e-3f, "kernel 1: the speed term is %.4f at half speed and %.4f standing still", half, still);
+    loco_doll_get(&w->phys, 0, w->pos, w->rot, w->vel, w->angvel);
+    b3Quat tilt = lq_axis_angle(lv(0, 0, 1), 1.0f); for (int b = 0; b < w->rig.nbody; b++) w->rot[b] = lq_mul(tilt, w->rot[b]);
+    loco_reward(w, &w->ag[0]); float long_tail = w->ag[0].r_pose; w->cfg.kernel = 0; loco_reward(w, &w->ag[0]); float short_tail = w->ag[0].r_pose;
+    CHECK(fabsf(long_tail - 1.0f / (1.0f + w->cfg.k_pose)) < 1e-3f && fabsf(short_tail - expf(-w->cfg.k_pose)) < 1e-3f, "1 rad off at the root the pose term is %.4f with kernel 1 and %.4f with exp", long_tail, short_tail);
     free_world(w);
 }
 // The observation's last two floats before the step rate: the way to the reference's heading.
@@ -609,6 +625,15 @@ static void test_raptor(void) {
     // metres, or the body is a hundred times too big.
     CHECK(w->rig.height > 0.5f && w->rig.height < 3.0f && w->rig.total_mass > 20.0f && w->rig.total_mass < 1000.0f,
           "raptor in metres: %.2f m tall, %.1f kg", w->rig.height, w->rig.total_mass);
+    // The speed term on the real animal: in the clip's own state it is near 1 at every phase. (Its pelvis
+    // bone's X axis points sideways; a term measured along that axis reads 0 here, as run 11's did.)
+    w->cfg.w_speed = 0.5f; float least = 1;
+    for (int k = 0; k < 8; k++) {
+        loco_reset_agent(w, 0, k / 8.0f);
+        loco_doll_get(&w->phys, 0, w->pos, w->rot, w->vel, w->angvel); loco_ref_at(w, &w->ag[0]);
+        loco_reward(w, &w->ag[0]); least = fminf(least, w->ag[0].r_speed);
+    }
+    CHECK(least > 0.8f, "raptor: in the walk clip's own state the speed term is near 1 at every phase (least %.3f)", least);
     free_world(w);
 }
 

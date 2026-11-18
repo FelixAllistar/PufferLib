@@ -233,22 +233,49 @@ traced, both in the setup:
   against the 1.8, 3.6 and 6.0 the game slides the model at. The stance
   detection is crude (lowest foot within 4 cm of the ground).
 
-Two keys, both off by default (single-clip and runs 8 to 10 behave as before):
+Three keys, all off by default (single-clip and runs 8 to 10 behave as before):
 
-- `reward_speed` (with `speed_floor`): a term for the commanded speed alone,
-  1 - |v - speed| / max(speed, speed_floor), not below 0, where v is the mass
-  centre's velocity along the reference's heading. A straight slope, so it
-  pulls from any distance, and at idle it pays for standing still.
+- `reward_speed` (with `speed_floor`): a term for the commanded velocity
+  alone. The error is the length of the difference between the mass centre's
+  ground velocity and the clip's speed along the clips' travel axis (+X),
+  over max(speed, speed_floor). The term is 1 - error, not below 0: a
+  straight slope, and at idle it pays for standing still.
 - `cadence`: the action after the rig's last joint sets how fast the clip
   plays, 2^e with e within +-cadence (1.5: 0.35x to 2.8x), eased a quarter of
   the way per policy step. The observation's last float is the current e
   (LOCO_OBS 367; older checkpoints load as before). The reference's joint
   velocities scale with the rate. The tools take `--cadence X`, which must
   match training. The log's `cadence` is the mean rate.
+- `kernel = 1`: every reward term is 1 / (1 + x) in place of exp(-x) (the
+  speed term 1 / (1 + (2 error)^2)). The same near a perfect track, but it
+  still slopes far from it, so the clip pulls from any distance: a guide the
+  policy can leave and still feel.
 
-Run 11 (256x2, live): the settings of runs 8 to 10 plus `reward_speed 0.45`,
-`cadence 1.5`, the pose held more loosely (`reward_pose 0.3, k_pose 1`,
-`reward_ee 0.1, k_ee 5`, `reward_vel 0.05`, `reward_com 0`). Not evaluated yet.
+**Run 11 (256x2) ran sideways: my bug.** Settings of runs 8 to 10 plus
+`reward_speed 0.45`, `cadence 1.5`, a looser pose (`reward_pose 0.3,
+k_pose 1`, `reward_ee 0.1, k_ee 5`, `reward_vel 0.05`, `reward_com 0`). Its
+speed term measured speed along the pelvis bone's X axis, taken for
+"forward". On the raptor that axis points sideways (the heading code only
+ever used it as a yaw reference, where the offset cancels). The test rig's
+pelvis happens to line up, so the tests passed; there is now a check on the
+raptor itself. What the run did, final checkpoint, 32 raptors for 20 s:
+
+| Gait | Asked | Travel along the lane | Step rate | Falls |
+|---|---|---|---|---|
+| Idle | 0 | 1.75 m/s | 2.4x | 0 / 32 |
+| Walk | 1.8 | 3.10 m/s | 2.6x | 0 / 32 |
+| Trot | 3.6 | 3.90 m/s | 2.5x | 0 / 32 |
+| Run | 6.0 | 5.29 m/s | 2.5x | 0 / 32 |
+
+A trace of one animal on the run clip: about 4.9 m/s along the lane and
+6.5 m/s across it at once, about 8 m/s over the ground, both feet more than
+12 cm up on about 22 of every 30 steps, joints 32 degrees off the clip, pose
+term 0.002 (flat: the clip no longer pulled). Under switching with 2.5 m/s
+shoves 2 of 32 episodes fell. So the numbers say nothing about a forward run,
+but the body can cover ground at 8 m/s and stay up.
+
+**Run 12 (256x2, live):** run 11's settings with the speed term on the
+travel axis and `kernel 1`. Not evaluated yet.
 
 ## The research, briefly
 

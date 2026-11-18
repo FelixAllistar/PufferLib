@@ -57,11 +57,20 @@
 //     clip_blend seconds (a clip's pose jumps otherwise). One name in clip
 //     is today's single-clip env, with the same random sequence.
 //   Speed first (reward_speed > 0): one more reward term for the commanded
-//     speed alone, the mass centre's velocity along the reference's heading
-//     against the clip's speed: 1 - |v - speed| / max(speed, speed_floor),
-//     not below 0. It is a straight slope, so it pulls from any distance. The
-//     COM term cannot: at k_com 10 it is flat past about 0.7 m/s of error,
-//     and runs 8 to 10 travelled at 1.9 m/s whatever the gait.
+//     velocity alone: the mass centre's ground velocity against the clip's
+//     speed along the clips' travel axis (+X; the pelvis bone's own axes are
+//     arbitrary, on the raptor its X points sideways, and run 11 was paid
+//     for speed along that). With err the length of the difference and
+//     s = max(speed, speed_floor): 1 - err / s, not below 0, a straight
+//     slope (flat again past s, so an idle animal moving faster than
+//     speed_floor feels nothing); with kernel 1, 1 / (1 + (2 err / s)^2).
+//     The COM term cannot do this: at k_com 10 it is flat past about
+//     0.7 m/s of error, and runs 8 to 10 travelled at 1.9 m/s whatever the gait.
+//   Long tails (kernel 1): every term is 1 / (1 + x) in place of exp(-x)
+//     (x the scaled squared error). The same near a perfect track, but it
+//     still slopes far from it, so the clip pulls from any distance: a
+//     guide the policy can leave and still feel. With exp, run 11's pose
+//     term sat at 0.002, 32 degrees off, and no longer pointed anywhere.
 //   Step rate (cadence > 0): the action after the rig's last joint sets how
 //     fast the clip plays, 2^e with e = 2 action_unit per output unit,
 //     clamped to +-cadence and eased (a quarter of the way per policy step).
@@ -100,6 +109,7 @@ typedef struct LocoConfig {
     float clip_blend;      // seconds over which the reference blends from the old clip to the new one
     float w_speed, speed_floor;   // the commanded-speed term's weight (0: off) and the least speed its slope is scaled by (m/s)
     float cadence;         // the policy sets the clip's playback rate within 2^-cadence .. 2^cadence (0: the clip's own pace)
+    int kernel;            // reward terms: 0 exp(-x), 1 the long-tailed 1 / (1 + x)
 } LocoConfig;
 
 static LocoConfig loco_default_config(void) {
@@ -114,7 +124,7 @@ static LocoConfig loco_default_config(void) {
     c.push_interval = 0; c.push_min = 0.5f; c.push_max = 1.5f; c.push_seconds = 0.1f; c.push_adapt = 0;
     c.w_heading = 0; c.k_heading = 1.0f;
     c.clip_switch = 0; c.clip_blend = 0.3f;
-    c.w_speed = 0; c.speed_floor = 1.0f; c.cadence = 0;
+    c.w_speed = 0; c.speed_floor = 1.0f; c.cadence = 0; c.kernel = 0;
     return c;
 }
 
@@ -409,6 +419,8 @@ static inline b3Vec3 loco_ee(const LocoBody* B, b3Vec3 p, b3Quat q, b3Vec3 pel, 
     r.y = e.y; return r;
 }
 
+// A reward term from its scaled squared error x: exp(-x), or with kernel 1 the long-tailed 1 / (1 + x).
+static inline float loco_kernel(const LocoConfig* c, float x) { return c->kernel ? 1.0f / (1.0f + x) : expf(-x); }
 // Imitation reward of agent i's current state (w->pos...) against the
 // reference (w->rpos...), and its terms. Tail bodies are left out of the
 // pose, velocity and end-effector terms when the tail is passive.
@@ -433,13 +445,13 @@ static float loco_reward(LocoWorld* w, LocoAgent* a) {
     }
     float ec = lv_len2(b3Sub(loco_com_vel(w, w->rot, w->vel, w->angvel, false), loco_com_vel(w, w->rrot, w->rvel, w->rangvel, true)));
     float eh = lq_angle(hs, hr); eh *= eh;
-    a->r_pose = expf(-c->k_pose * ep); a->r_vel = expf(-c->k_vel * ev); a->r_ee = expf(-c->k_ee * ee); a->r_com = expf(-c->k_com * ec); a->r_heading = expf(-c->k_heading * eh);
+    a->r_pose = loco_kernel(c, c->k_pose * ep); a->r_vel = loco_kernel(c, c->k_vel * ev); a->r_ee = loco_kernel(c, c->k_ee * ee); a->r_com = loco_kernel(c, c->k_com * ec); a->r_heading = loco_kernel(c, c->k_heading * eh);
     a->err_pose += sqrtf(ep / r->nbody); a->err_ee += sqrtf(ee / (r->nee > 0 ? r->nee : 1));
     float rew = c->w_pose * a->r_pose + c->w_vel * a->r_vel + c->w_ee * a->r_ee + c->w_com * a->r_com + c->w_heading * a->r_heading;
     if (c->w_speed > 0) {
-        b3Vec3 cv = loco_com_vel(w, w->rot, w->vel, w->angvel, false), fwd = lq_rot(hr, lv(1, 0, 0));
-        float v = cv.x * fwd.x + cv.z * fwd.z, cmd = w->ref[a->clip].speed;
-        a->r_speed = fmaxf(0.0f, 1.0f - fabsf(v - cmd) / fmaxf(cmd, c->speed_floor));
+        b3Vec3 cv = loco_com_vel(w, w->rot, w->vel, w->angvel, false);
+        float cmd = w->ref[a->clip].speed, dx = cv.x - cmd, es = sqrtf(dx * dx + cv.z * cv.z) / fmaxf(cmd, c->speed_floor);
+        a->r_speed = c->kernel ? 1.0f / (1.0f + 4.0f * es * es) : fmaxf(0.0f, 1.0f - es);
         rew += c->w_speed * a->r_speed;
     }
     return rew;
@@ -549,5 +561,5 @@ static uint64_t loco_hash(const LocoWorld* w) {
     X(gains.friction, friction, float) X(gains.passive, passive_tail, bool) X(fall_height, fall_height, float) X(weld_range, weld_range, float) X(tail_flex, tail_flex, int) \
     X(push_interval, push_interval, float) X(push_min, push_min, float) X(push_max, push_max, float) X(push_seconds, push_seconds, float) X(push_adapt, push_adapt, float) \
     X(clip_switch, clip_switch, float) X(clip_blend, clip_blend, float) \
-    X(w_speed, reward_speed, float) X(speed_floor, speed_floor, float) X(cadence, cadence, float)
+    X(w_speed, reward_speed, float) X(speed_floor, speed_floor, float) X(cadence, cadence, float) X(kernel, kernel, int)
 #endif
