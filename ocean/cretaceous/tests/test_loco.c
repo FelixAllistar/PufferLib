@@ -175,6 +175,26 @@ static void test_determinism(void) {
     CHECK(a != c, "another seed, another run");
 }
 
+// tail_flex: the tail keeps that many joints from the base, the rest one rigid
+// rod carrying the tip's end-effector flag (if any), and the mass is unchanged.
+static void test_tail_flex(void) {
+    LocoWorld* a = make_world(FIXTURE, 1, 1);
+    LocoConfig c = loco_default_config(); snprintf(c.dino, sizeof c.dino, "%s", FIXTURE); c.num_agents = 1; c.tail_flex = 1;
+    LocoWorld* b = (LocoWorld*)calloc(1, sizeof(LocoWorld)); char err[256];
+    bool ok = a && loco_world_init(b, &c, 1, err, sizeof err);
+    CHECK(ok, "tail_flex 1 builds");
+    if (ok) {
+        int ta = 0, tb = 0, ee = -1; bool had_ee = false;
+        for (int k = 0; k < a->rig.nbody; k++) if (loco_is_tail(&a->rig.body[k])) { ta++; had_ee |= (a->rig.body[k].flags & LB_EE) != 0; }
+        for (int k = 0; k < b->rig.nbody; k++) if (loco_is_tail(&b->rig.body[k])) { tb++; if (b->rig.body[k].flags & LB_EE) ee = k; }
+        CHECK(ta > 1 && tb == 1 && b->rig.nbody == a->rig.nbody - (ta - 1), "the tail's %d segments become one rod (%d bodies of %d)", ta, b->rig.nbody, a->rig.nbody);
+        CHECK((ee >= 0) == had_ee && a->rig.nee == b->rig.nee, "the rod keeps the tail's end effector, if it had one (%d, %d)", a->rig.nee, b->rig.nee);
+        CHECK(fabsf(b->rig.total_mass - a->rig.total_mass) < 1e-3f * a->rig.total_mass, "same mass (%.2f, %.2f kg)", b->rig.total_mass, a->rig.total_mass);
+        loco_world_close(b);
+    }
+    free(b); free_world(a);
+}
+
 // A shove: twin worlds, one pushed along +x by 1 m/s over 0.1 s; after it the
 // pushed animal's centre of mass moves about 1 m/s faster (the feet's friction
 // and the springs take some). Random shoves (push_interval) start and end.
@@ -352,6 +372,7 @@ int main(void) {
     test_rsi_reward();
     test_determinism();
     test_push();
+    test_tail_flex();
     test_policy();
     test_binding();
     test_config();

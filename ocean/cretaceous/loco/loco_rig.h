@@ -406,9 +406,13 @@ static float loco_unscale_bind(DinoFile* d) {
 }
 
 // Builds the rig from a .dino. clips: the clip indices whose range sets the
-// joint limits (the training clip and the other gaits). Returns false with a
-// message in err on a rig the tables do not cover.
-static bool loco_rig_build(LocoRig* rig, const DinoFile* d, const int* clips, int nclips, float min_range, char* err, size_t errn) {
+// joint limits (the training clip and the other gaits). tail_flex > 0 keeps
+// that many tail joints from the base and welds the segments beyond into one
+// rigid rod (a dromaeosaur's tail is flexible at the base and stiffened by
+// long bony rods beyond it; a chain of ever lighter segments whips instead);
+// 0 keeps every tail joint. Returns false with a message in err on a rig the
+// tables do not cover.
+static bool loco_rig_build(LocoRig* rig, const DinoFile* d, const int* clips, int nclips, float min_range, int tail_flex, char* err, size_t errn) {
     memset(rig, 0, sizeof *rig);
     const LocoTable* t = loco_pick_table(d);
     if (!t) { snprintf(err, errn, "no bone table matches this rig (add one to loco/loco_rig.h)"); return false; }
@@ -468,7 +472,9 @@ static bool loco_rig_build(LocoRig* rig, const DinoFile* d, const int* clips, in
         }
         free(G);
     }
-    for (int k = nt - 1; k > 0; k--) if (map[k] == k && range[k] < min_range) {
+    int tdep[LOCO_MAX_BODIES];   // tail segments from the base, in table order (parents come first)
+    for (int k = 0; k < nt; k++) tdep[k] = (t->body[k].flags & LB_TAIL) ? (par[k] >= 0 ? tdep[par[k]] : 0) + 1 : 0;
+    for (int k = nt - 1; k > 0; k--) if (map[k] == k && (range[k] < min_range || (tail_flex > 0 && tdep[k] > tail_flex))) {
         int p = map[par[k]];
         for (int j = 0; j < nt; j++) if (map[j] == k) map[j] = p;
         cnt[p] += cnt[k]; flags[p] |= flags[k] & (LB_EE | LB_FOOT | LB_CONTACT);

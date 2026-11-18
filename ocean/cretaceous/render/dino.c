@@ -267,6 +267,8 @@ static void chain_apply(const Chain* C, float* g, float w) {
     }
 }
 
+unsigned cret_dino_phys = DPHYS_HITS;
+
 static int find_clip(const DinoModel* m, const char* name) {
     for (int i = 0; i < m->nclip; i++) if (!strcmp(m->clip[i].name, name)) return i;
     return -1;
@@ -346,6 +348,13 @@ static bool load_model(DinoModel* m, const char* asset, GLuint inst_vbo) {
     for (int r = 0; r < DCLIP_COUNT; r++) m->slot[r] = find_clip(m, roles[r]);
     if (m->slot[DCLIP_CALL] < 0) m->slot[DCLIP_CALL] = find_clip(m, "roar");
     if (m->slot[DCLIP_DRINK] < 0) m->slot[DCLIP_DRINK] = m->slot[DCLIP_EAT];
+    m->walk_phys = find_clip(m, "walk_phys");
+    static const char* const HIT_SIDE[4] = {"front", "back", "left", "right"};
+    m->has_hit = true;
+    for (int s = 0; s < 4; s++) for (int k = 0; k < 4; k++) {
+        char nm[32]; snprintf(nm, sizeof nm, "hit_%s_%d", HIT_SIDE[s], k);
+        m->hit[s][k] = find_clip(m, nm); if (m->hit[s][k] < 0) m->has_hit = false;
+    }
     // No idle clip (models with a single walk or run cycle): stand in a
     // frozen frame of the gait, and shorten the stride at low speed (animate).
     m->idle_loco = m->slot[DCLIP_IDLE] < 0;
@@ -458,6 +467,7 @@ void cret_dino_hit(CretDinos* d, int slot, float dir_x, float dir_z, float stren
     A->fl_t = 0; A->fl_amp = clampf(strength, 0, 1.5f);
     A->fl_front = dir_x * cy + dir_z * sy;        // + pushed forward (a blow from behind)
     A->fl_side = -dir_x * sy + dir_z * cy;        // + pushed toward the model's +z side
+    A->hr_new = true;
 }
 bool cret_dino_joint(const CretDinos* d, int slot, int which, float out[3]) {
     if (!d || slot < 0 || slot >= DINO_SLOTS || which < 0 || which > 2 || d->lod[slot] < 0) return false;
@@ -529,7 +539,7 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
         memset(A, 0, sizeof *A); A->init = true; A->species = a->species; A->y = a->y; A->last_yaw = a->yaw;
         A->phase = (float)((a->seed * 0.37) - floor(a->seed * 0.37)); A->idle_t = a->seed * 0.71f; A->act_clip = A->prev_act_clip = -1;
         uint32_t h = (uint32_t)a->seed * 2654435761u; A->tint = ((h >> 8) & 255) / 255.0f;
-        A->lod_prev = -1; A->lod_t = 1; A->hurt_t = 10; d->lod_last[i] = -1; A->kd_t = -1;
+        A->lod_prev = -1; A->lod_t = 1; A->hurt_t = 10; d->lod_last[i] = -1; A->kd_t = -1; A->hr_clip = -1;
         memset(&d->proc[i], 0, sizeof d->proc[i]);
     }
     // Knockdown: the fall's clock runs on the frame time, re-synced to the
@@ -550,11 +560,14 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     // Locomotion: pick the two gait clips around the speed. Clip speeds are
     // for the adult; a smaller animal's stride is shorter in proportion.
     float vref = v / gs;
-    int ca = m->loco[0], cb = m->loco[0]; float wb = 0;
+    // The physics walk (Settings > Physics animation) stands in for the first gait.
+    int loco[3] = {m->loco[0], m->loco[1], m->loco[2]};
+    if ((cret_dino_phys & DPHYS_WALK) && m->walk_phys >= 0) loco[0] = m->walk_phys;
+    int ca = loco[0], cb = loco[0]; float wb = 0;
     if (m->nloco > 1) {
         for (int k = 0; k + 1 < m->nloco; k++) {
-            float s0 = m->clip[m->loco[k]].speed, s1 = m->clip[m->loco[k + 1]].speed;
-            if (vref <= s1 || k + 2 == m->nloco) { ca = m->loco[k]; cb = m->loco[k + 1]; wb = clampf((vref - s0) / fmaxf(s1 - s0, 0.01f), 0, 1); break; }
+            float s0 = m->clip[loco[k]].speed, s1 = m->clip[loco[k + 1]].speed;
+            if (vref <= s1 || k + 2 == m->nloco) { ca = loco[k]; cb = loco[k + 1]; wb = clampf((vref - s0) / fmaxf(s1 - s0, 0.01f), 0, 1); break; }
         }
     }
     float clip_speed = (m->clip[ca].speed * (1 - wb) + m->clip[cb].speed * wb) * gs;
@@ -566,7 +579,7 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     if (m->idle_loco && m->nloco == 1) amp = clampf(v / fmaxf(clip_speed, 0.05f), 0.3f, 1.0f);
     float rate = m->nloco == 1 ? clampf(v / fmaxf(clip_speed * amp, 0.05f), 0.4f, 4.5f) : clampf(v / fmaxf(clip_speed, 0.05f), 0.55f, 2.4f);
     A->phase += dt * rate / dur; A->phase -= floorf(A->phase);
-    float walk_v = m->clip[m->loco[0]].speed;
+    float walk_v = m->clip[loco[0]].speed;
     A->w_move = approach(A->w_move, sstep(0.08f, 0.45f, v / fmaxf(walk_v * gs, 0.3f)), 8.0f, dt);
     // Idle alternates between its variants every ~12 s.
     A->idle_t += dt;
@@ -612,6 +625,30 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     A->w_act = approach(A->w_act, want >= 0 ? 1.0f : 0.0f, 6.0f, dt);
     A->prev_w = approach(A->prev_w, 0.0f, 6.0f, dt);
 
+    // Physics hit reaction (tools/loco_bake.c): a blow while walking turns the
+    // walk into the ragdoll's stumble from that side and its recovery, a clip
+    // the trained physics raptor walked when shoved. Of the four baked at
+    // different points of the stride, the one nearest this stride's phase
+    // starts where its shove lands (0.1 s in), so it takes over mid-stride;
+    // it plays at the walk's rate and ends on the phase it began at, so the
+    // walk takes back over in step. The game's knockback moves the animal.
+    if (A->hr_new) {
+        A->hr_new = false;
+        if ((cret_dino_phys & DPHYS_HITS) && m->has_hit && !air && a->dead_t < 0 && kd <= 0 && !attack && A->w_move > 0.6f && ca == loco[0] && wb < 0.5f) {
+            float wd = clip_dur(m, loco[0]);
+            int side = fabsf(A->fl_front) >= fabsf(A->fl_side) ? (A->fl_front < 0 ? 0 : 1) : (A->fl_side > 0 ? 2 : 3);
+            float ph = A->phase - 0.1f / wd; ph -= floorf(ph);
+            int k = (int)floorf(ph * 4 + 0.5f) & 3;
+            float off = ph - 0.25f * k; if (off > 0.5f) off -= 1; else if (off < -0.5f) off += 1;
+            A->hr_clip = m->hit[side][k]; A->hr_ct = fmaxf(0.1f + off * wd, 0);
+        }
+    }
+    if (A->hr_clip >= 0) {
+        A->hr_ct += dt * rate;
+        bool on = A->hr_ct < clip_dur(m, A->hr_clip) - 0.3f && A->w_move > 0.3f && !air && a->dead_t < 0 && kd <= 0;
+        A->hr_w = approach(A->hr_w, on ? 1.0f : 0.0f, on ? 12.0f : 5.0f, dt);
+        if (!on && A->hr_w < 0.01f) { A->hr_clip = -1; A->hr_w = 0; }
+    }
     // Blend: idle/locomotion base, then air and action layers over it.
     static Pose P; memset(&P, 0, sizeof P);
     float w_air = A->w_air * (m->slot[DCLIP_JUMP] >= 0), w_act = A->w_act * (1 - w_air), w_prev = A->act_clip < 0 ? A->prev_w * (1 - w_air) : 0;
@@ -626,8 +663,10 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     pose_stand(&P, m, idle_t, (w_idle + w_move * (1 - amp)) * (1 - A->idle2_w));
     pose_add(&P, m, idle2, A->idle_t, w_idle * A->idle2_w);
     w_move *= amp;
+    float w_hr = A->hr_clip >= 0 ? A->hr_w * w_move : 0; w_move -= w_hr;
     pose_add(&P, m, ca, A->phase * clip_dur(m, ca), w_move * (1 - wb));
     if (cb != ca) pose_add(&P, m, cb, A->phase * clip_dur(m, cb), w_move * wb);
+    if (w_hr > 0) pose_add(&P, m, A->hr_clip, fminf(A->hr_ct, clip_dur(m, A->hr_clip)), w_hr);
     // Leap: hold mid-flight while airborne, play the landing out after.
     if (w_air > 0) { float jd = clip_dur(m, m->slot[DCLIP_JUMP]); pose_add(&P, m, m->slot[DCLIP_JUMP], fminf(A->air_t * 1.2f + 0.15f * jd, 0.55f * jd), w_air); }
     if (w_act > 0) pose_add(&P, m, A->act_clip, A->act_ct, w_act);
@@ -637,7 +676,7 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     if (a->hurt > A->last_hurt) A->hurt_t = 0;
     A->last_hurt = a->hurt; A->hurt_t += dt;
     int hc = m->slot[DCLIP_HURT];
-    if (hc >= 0 && A->hurt_t < 0.7f) pose_add(&P, m, hc, A->hurt_t + 0.1f, 0.8f * sstep(0, 0.06f, A->hurt_t) * (1 - sstep(0.2f, 0.7f, A->hurt_t)));
+    if (hc >= 0 && A->hurt_t < 0.7f) pose_add(&P, m, hc, A->hurt_t + 0.1f, 0.8f * sstep(0, 0.06f, A->hurt_t) * (1 - sstep(0.2f, 0.7f, A->hurt_t)) * (1 - (A->hr_clip >= 0 ? A->hr_w : 0)));
     // Lying after a knockdown: the legs paddle weakly (the first gait clip, slowly, half in).
     if (kd > 0.3f && m->nloco > 0) pose_add(&P, m, m->loco[0], fmodf(A->kd_t * 0.3f, 1.0f) * clip_dur(m, m->loco[0]), 0.6f * kd);
     if (P.w <= 0) pose_stand(&P, m, idle_t, 1);

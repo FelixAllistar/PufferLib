@@ -27,9 +27,16 @@
 // 40 Hz the pinned pose holds within a degree). In the passive-tail
 // experiment the tail has no actions: its springs pull it toward its mean
 // pose with less damping, as a tail of ligaments and tendons would swing.
-typedef struct LocoGains { float leg, body, tail, passive_tail, damping, passive_damping, friction; bool passive; } LocoGains;
+// tail_stiffen: the tail's springs stiffen along it, from its first segment's
+// hertz to tail_stiffen times that at the tip (geometric steps; 1: the same
+// along the whole tail). A raptor's tail is flexible at the base and stiff
+// beyond it (long bony rods along the vertebrae), and the segments here get
+// 230 times lighter toward the tip, so equal springs make a whip: motion runs
+// down the chain into the light tip and cracks it against its limits.
+typedef struct LocoGains { float leg, body, tail, passive_tail, damping, passive_damping, friction, tail_stiffen; bool passive; } LocoGains;
 static LocoGains loco_default_gains(void) {
-    LocoGains g; g.leg = 100.0f; g.body = 60.0f; g.tail = 40.0f; g.passive_tail = 20.0f; g.damping = 1.0f; g.passive_damping = 0.4f; g.friction = 0.9f; g.passive = false;
+    LocoGains g; g.leg = 100.0f; g.body = 60.0f; g.tail = 40.0f; g.passive_tail = 20.0f; g.damping = 1.0f; g.passive_damping = 0.4f; g.friction = 0.9f;
+    g.tail_stiffen = 1.0f; g.passive = false;
     return g;
 }
 
@@ -42,8 +49,14 @@ typedef struct LocoPhys {
 
 static inline bool loco_is_leg(const LocoBody* b) { return strstr(b->name, "thigh") || strstr(b->name, "shin") || strstr(b->name, "meta") || strstr(b->name, "foot"); }
 static inline bool loco_is_tail(const LocoBody* b) { return (b->flags & LB_TAIL) != 0; }
-static inline float loco_hertz(const LocoPhys* p, const LocoBody* b) {
-    return loco_is_tail(b) ? (p->gains.passive ? p->gains.passive_tail : p->gains.tail) : loco_is_leg(b) ? p->gains.leg : p->gains.body;
+// Tail segments from the base (1) to b, and the tail's length in segments.
+static inline int loco_tail_depth(const LocoRig* r, int b) { int d = 0; while (b >= 0 && loco_is_tail(&r->body[b])) { d++; b = r->body[b].parent; } return d; }
+static inline int loco_tail_len(const LocoRig* r) { int n = 0; for (int b = 0; b < r->nbody; b++) { int d = loco_tail_depth(r, b); if (d > n) n = d; } return n; }
+static inline float loco_hertz(const LocoPhys* p, int bi) {
+    const LocoBody* b = &p->rig->body[bi];
+    if (!loco_is_tail(b)) return loco_is_leg(b) ? p->gains.leg : p->gains.body;
+    float hz = p->gains.passive ? p->gains.passive_tail : p->gains.tail; int n = loco_tail_len(p->rig);
+    return n > 1 ? hz * powf(p->gains.tail_stiffen, (float)(loco_tail_depth(p->rig, bi) - 1) / (float)(n - 1)) : hz;
 }
 
 // Creates the world, the ground and n ragdolls at the rig's bind pose, each
@@ -94,7 +107,7 @@ static void loco_phys_create(LocoPhys* p, const LocoRig* rig, int n, const b3Vec
         }
         for (int b = 1; b < rig->nbody; b++) {
             const LocoBody* B = &rig->body[b];
-            float hz = loco_hertz(p, B), zeta = loco_is_tail(B) && gains.passive ? gains.passive_damping : gains.damping;
+            float hz = loco_hertz(p, b), zeta = loco_is_tail(B) && gains.passive ? gains.passive_damping : gains.damping;
             if (B->jtype == LJ_HINGE) {
                 b3RevoluteJointDef jd = b3DefaultRevoluteJointDef();
                 jd.base.bodyIdA = d->body[B->parent]; jd.base.bodyIdB = d->body[b];

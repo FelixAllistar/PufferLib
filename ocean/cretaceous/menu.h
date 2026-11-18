@@ -23,6 +23,7 @@ typedef struct CretSettings {
     unsigned anim;            // the dinosaurs' procedural animation layers that are on (DPROC_* bits, render/dino_proc.h)
     unsigned plants;          // the plant card switches that are on (VEG_LOOK_* bits, render/veg_look.h)
     unsigned plant_detail;    // the leaf material switches that are on (VEG_DETAIL_* bits, render/veg.h)
+    unsigned phys;            // the physics clips that are on (DPHYS_* bits, render/dino.h)
 } CretSettings;
 
 // Defaults. On web they depend on the device (web/loader.js sets
@@ -78,6 +79,7 @@ typedef struct CretMenu {
     int plant_sel;            // row on the plant cards page
     const char* look_name;    // the look in play, shown on the Look studio row (the caller points it at view.look.name)
     int detail_sel;           // row on the plant detail page
+    int phys_sel;             // row on the physics animation page
     float t;                  // time on the title (fades)
     char note[128];           // a message under the title menu (e.g. a failed join)
     // Character (character.c): saved names; char_sel == nnames is "New character".

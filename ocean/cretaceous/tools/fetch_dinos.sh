@@ -54,3 +54,14 @@ for sp in "${SPECIES[@]}"; do
     galli) retarget galli "idle,idle2,eat=eat+loop,drink,call,sleep,hurt,death";;
     esac
 done
+# The raptor's physics clips (tools/loco_bake.c, docs/locomotion/README.md):
+# walk_phys and sixteen hit reactions (hit_<side>_<k>, played by render/dino.c
+# when an animal is hit while walking), walked by the trained locomotion policy
+# committed in loco/policies. Needs box3d (BOX3D, default ../box3d next to the repo).
+POLICY=ocean/cretaceous/loco/policies/raptor_walk_shoves.bin
+for sp in "${SPECIES[@]}"; do
+    if [ "$sp" = raptor ] && [ -f "$OUT/raptor.dino" ] && [ -f "$POLICY" ]; then
+        make -s -C ocean/cretaceous loco_bake
+        build/cretaceous/loco_bake --policy "$POLICY" --dino "$OUT/raptor.dino" --out "$OUT/raptor.dino" | grep -E "^loco_bake: wrote" || { echo "loco_bake failed" >&2; exit 1; }
+    fi
+done

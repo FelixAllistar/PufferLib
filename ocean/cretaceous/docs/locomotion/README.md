@@ -1,15 +1,17 @@
 # Teaching the dinosaurs to walk
 
-This is stage 1 of physics-based locomotion for Cretaceous: an environment in
-which a ragdoll raptor, built from our own rig, learns to walk by imitating
-its walk clip. It plugs into the PufferLib trainer without changing it. It
-has not been trained yet (this sandbox has no GPU); everything below about
-learned walking is the plan and what the papers report, not a result.
+This is physics-based locomotion for Cretaceous: an environment in which a
+ragdoll raptor, built from our own rig, learns to walk by imitating its walk
+clip, and to take a shove and walk on. It plugs into the PufferLib trainer
+without changing it. Trained policies walk (runs 2 to 4 below), and their
+motion is baked into ordinary clips the game plays ("New clips from physics").
 
 - Code: `ocean/cretaceous/loco/` (header-only), `tools/loco_play.c`,
-  `tools/loco_view.c`, `tests/test_loco.c`, `config/cretaceous_loco.ini`.
-- The game itself is untouched: the sim, its hashes and the determinism suite
-  are the same. Loco mode is a separate build of the binding.
+  `tools/loco_view.c`, `tools/loco_bake.c`, `tests/test_loco.c`,
+  `config/cretaceous_loco.ini`.
+- The sim is untouched: its hashes and the determinism suite are the same.
+  Loco mode is a separate build of the binding. The game only plays the baked
+  clips (render/dino.c), which change what is drawn, never the sim.
 
 ## Quick start
 
@@ -92,6 +94,69 @@ checks the raptor comes out between 0.5 and 3 m tall).
   the trainer (`tests/fixtures/loco_policy_run2*`).
 - `--headless` is needed for `puffer_loco eval`: without it the trainer
   renders, and the loco build draws nothing, so it returns at once.
+
+## New clips from physics (2026-11-18)
+
+Why train a physics raptor at all, when the game already has a walk clip? An
+artist's clip covers the one situation it was animated for. The physics
+raptor has to cope with whatever happens to it, and what it does then is
+motion nobody animated that still obeys gravity and friction. Baking turns
+that motion back into ordinary clips: no physics or policy runs in the game.
+
+- **Shoves** (`push_interval`, `push_min`, `push_max`, `push_seconds`; off
+  by default): a push on the pelvis, spine or chest from a random side, sized
+  as a change of the whole animal's speed. The reward stays the clip's, so the
+  policy learns to take the hit and walk on. Run 3, never shoved in training,
+  holds 1 m/s (3 falls in 64 episodes) and falls in 21 of 67 at 1.5 m/s.
+- **Baking** (`tools/loco_bake.c`): each frame's body poses become the rig's
+  joint rotations; joints inside a body (a merged bone pair, fingers, a welded
+  tail rod) keep the artist's clip, so they still move. `--selftest` bakes the
+  walk clip itself and gets it back within 0.0001°. It writes `walk_phys` (one
+  cycle of the policy's walk, looping) and sixteen hit reactions
+  `hit_<front|back|left|right>_<0..3>` (the blow lands at four points of the
+  stride, 2.6 s each, ending in step with the walk), appended to a copy of the
+  `.dino`. `tools/fetch_dinos.sh` runs it on the raptor when the policy file
+  `loco/policies/raptor_walk_shoves.bin` is there.
+- **In the game** (`render/dino.c`): a blow while walking plays the clip for
+  the side it came from, the one whose stride phase is nearest, starting where
+  its shove lands, so it takes over mid-stride and hands back in step. The
+  pelvis stays on the walk's line in the clip: the sim's knockback moves the
+  animal. Settings > Physics animation switches the hit reactions (on) and the
+  physics walk (off); the gallery's "hit while walking" shows them.
+- **The physics walk skates less.** `animcheck` measures how fast planted
+  feet slide against the ground: the artist's walk 49% of its speed, run 3's
+  baked walk 15%. The ragdoll cannot skate; its feet stick or it falls.
+
+### The tail was a whip
+
+The passive-tail run (3p) looked broken at the tip, and measurement agrees.
+Relative angular speed of each tail joint over 32 animals x 20 s (deg/s, the
+clip's own in brackets), and the share of time against the joint's cone limit:
+
+| joint | run 3p passive (20 Hz, ζ 0.4) | at limit | run 3 active (40 Hz, ζ 1) |
+|---|---|---|---|
+| tail_1 | 55 (0) | 0% | 21 (0) |
+| tail_2 | 101 (41) | 0% | 47 (41) |
+| tail_3 | 276 (29) | 0% | 43 (29) |
+| tail_4 | 778 (50) | 40% | 138 (50) |
+| tail_5 | 1268 (40) | 56% | 177 (40) |
+
+The segments weigh 35, 8.5, 1.9, 0.32 and 0.15 kg: each lighter than the one
+before, on its own loose spring, free to bend 30-39°. That is a whip: motion
+runs down the chain into the light tip and cracks it against its limits. Even
+the active tail's tip flutters at 3-4 times the clip's speed.
+
+- More damping helps the passive tail (ζ 1), and so do springs that stiffen
+  toward the tip (`tail_stiffen` 8 brings the tip to 74 deg/s and off its
+  limits), but stiff springs on 0.15 kg bodies are past what the solver steps
+  stably: the active tail at `tail_stiffen` 6 falls every episode.
+- The anatomical fix is a rod. A dromaeosaur's tail bends at the base; beyond
+  it the vertebrae carried long bony rods that kept it stiff (described for
+  Deinonychus by Ostrom, 1969). `tail_flex = 2` keeps the first two tail
+  joints and welds the rest into one rigid body (20 bodies, 43 actions). In
+  the no-learning baseline its remaining tail joint moves at 40 deg/s against
+  the clip's 41 (active) or 62 (passive, ζ 1), never at a limit. The baked
+  clips keep the artist's motion of the bones inside the rod.
 
 ## The research, briefly
 
@@ -489,7 +554,10 @@ Not done here:
 - **All six species,** one table each. The quadrupeds (stego, sauropelta)
   should be easier to balance and harder to make look right.
 
-## Stage 3 (not built): how it reaches the game
+## Stage 3: how it reaches the game
+
+Option 1 is built for hit reactions and the walk ("New clips from physics"
+above); options 2 and 3 are not.
 
 1. **Bake new clips offline.**
    - Run trained policies on slopes, turns and stumbles, record them, and

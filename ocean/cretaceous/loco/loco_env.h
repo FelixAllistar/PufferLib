@@ -49,6 +49,7 @@ typedef struct LocoConfig {
     LocoGains gains;
     float fall_height;     // also fallen when the pelvis is below this share of the clip's pelvis height
     float weld_range;      // joints the clips move less than this (rad) are welded (loco_rig.h); 0 keeps every joint
+    int tail_flex;         // tail joints kept from the base, the rest welded into a rod (loco_rig.h); 0 keeps them all
     float push_interval, push_min, push_max, push_seconds;   // shoves: mean seconds between them (0: none), speed change (m/s), duration (s)
 } LocoConfig;
 
@@ -105,7 +106,7 @@ static bool loco_world_init(LocoWorld* w, const LocoConfig* cfg, unsigned int se
     w->clip_index = loco_clip_index(d, cfg->clip);
     if (w->clip_index < 0 || !d->clip[w->clip_index].loop) { snprintf(err, errn, "%.200s has no looping clip %.31s", cfg->dino, cfg->clip); df_free(d); free(d); return false; }
     int clips[8], nc = loco_limit_clips(d, w->clip_index, clips);
-    bool ok = loco_rig_build(&w->rig, d, clips, nc, cfg->weld_range, err, errn) && loco_ref_build(&w->ref, d, &w->rig, w->clip_index);
+    bool ok = loco_rig_build(&w->rig, d, clips, nc, cfg->weld_range, cfg->tail_flex, err, errn) && loco_ref_build(&w->ref, d, &w->rig, w->clip_index);
     df_free(d); free(d);
     if (!ok) return false;
     if (w->rig.ndof > LOCO_MAX_DOF) { snprintf(err, errn, "rig has %d action dimensions (max %d)", w->rig.ndof, LOCO_MAX_DOF); return false; }
@@ -332,7 +333,7 @@ static uint64_t loco_hash(const LocoWorld* w) {
     X(w_pose, reward_pose, float) X(w_vel, reward_vel, float) X(w_ee, reward_ee, float) X(w_com, reward_com, float) \
     X(k_pose, k_pose, float) X(k_vel, k_vel, float) X(k_ee, k_ee, float) X(k_com, k_com, float) \
     X(gains.leg, hertz_leg, float) X(gains.body, hertz_body, float) X(gains.tail, hertz_tail, float) \
-    X(gains.passive_tail, hertz_passive_tail, float) X(gains.damping, damping, float) X(gains.passive_damping, damping_passive_tail, float) \
-    X(gains.friction, friction, float) X(gains.passive, passive_tail, bool) X(fall_height, fall_height, float) X(weld_range, weld_range, float) \
+    X(gains.passive_tail, hertz_passive_tail, float) X(gains.damping, damping, float) X(gains.passive_damping, damping_passive_tail, float) X(gains.tail_stiffen, tail_stiffen, float) \
+    X(gains.friction, friction, float) X(gains.passive, passive_tail, bool) X(fall_height, fall_height, float) X(weld_range, weld_range, float) X(tail_flex, tail_flex, int) \
     X(push_interval, push_interval, float) X(push_min, push_min, float) X(push_max, push_max, float) X(push_seconds, push_seconds, float)
 #endif

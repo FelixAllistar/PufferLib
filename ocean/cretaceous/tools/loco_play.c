@@ -3,7 +3,7 @@
 //   loco_play [--dino PATH] [--clip walk] [--agents 32] [--seconds 20] [--seed 1]
 //             [--substeps 4] [--passive-tail] [--policy CHECKPOINT.bin]
 //             [--hertz-leg 100] [--hertz-body 60] [--hertz-tail 40] [--damping 1] [--no-weld]
-//             [--push-interval S --push-min V --push-max V]
+//             [--push-interval S --push-min V --push-max V] [--tail-flex N] [--tail-stiffen X]
 //             [--rig] [--stability] [--baseline] [--bench] [--all]
 //   --rig        the ragdoll built from the rig: bodies, shapes, masses, joints and limits
 //   --stability  the chain checks at 1, 2, 4, 8 and 16 substeps: the clip's first pose held with
@@ -14,6 +14,8 @@
 //   --bench      env throughput: agent steps per second on one core
 //   --no-weld    keep the joints the clips never move (the full chain; see loco_rig.h)
 //   --push-*     shoves during the runs (loco_env.h): mean seconds between them, speed change in m/s
+//   --tail-flex  keep N tail joints from the base, weld the rest into a rod (loco_rig.h)
+//   --tail-stiffen  tail springs this many times stiffer at the tip than at the base (loco_sim.h)
 // Exit status 1 when the rig does not build or a stability check fails at the
 // configured substep count.
 #include "loco/loco_check.h"
@@ -122,6 +124,8 @@ int main(int argc, char** argv) {
         else if (!strcmp(a, "--policy") && more) policy = argv[++i];
         else if (!strcmp(a, "--passive-tail")) c.gains.passive = true;
         else if (!strcmp(a, "--no-weld")) c.weld_range = 0;
+        else if (!strcmp(a, "--tail-flex") && more) c.tail_flex = atoi(argv[++i]);
+        else if (!strcmp(a, "--tail-stiffen") && more) c.gains.tail_stiffen = (float)atof(argv[++i]);
         else if (!strcmp(a, "--push-interval") && more) c.push_interval = (float)atof(argv[++i]);
         else if (!strcmp(a, "--push-min") && more) c.push_min = (float)atof(argv[++i]);
         else if (!strcmp(a, "--push-max") && more) c.push_max = (float)atof(argv[++i]);

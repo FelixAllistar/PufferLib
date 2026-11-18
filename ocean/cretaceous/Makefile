@@ -13,7 +13,7 @@ VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c rend
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player balance ecoprobe rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe combatprobe fightprobe floraprobe animcheck terrashade loco_play loco_view net-test net-test-build encoder-test netbench netfuzz
+.PHONY: all bake player balance ecoprobe rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe combatprobe fightprobe floraprobe animcheck terrashade loco_play loco_bake loco_view net-test net-test-build encoder-test netbench netfuzz
 all: bake player balance
 # Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
 balance: | $(BUILD)
@@ -65,6 +65,8 @@ terrashade: | $(BUILD)
 LOCO_DEPS := $(wildcard loco/*.h) tools/dino_file.h
 loco_play: $(LOCO_DEPS) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/loco_play.c $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/loco_play
+loco_bake: $(LOCO_DEPS) | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/loco_bake.c $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/loco_bake
 loco_view: $(LOCO_DEPS) | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I$(RAYLIB)/include -I. tools/loco_view.c $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl -o $(BUILD)/loco_view
 $(BUILD):

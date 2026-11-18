@@ -66,9 +66,10 @@ static const GalPatch GAL_PATCH[] = {
 static const char* const VEG_NAME[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass", "snag", "lily", "drop", "fungus"};
 static const char* const PROP_NAME[PROP_KINDS] = {"boulder", "outcrop", "stone", "log", "stump", "roots", "debris", "driftwood", "coast", "cliff"};
 // Gallery clips: what each one sets on the agent.
-enum { GC_IDLE, GC_WALK, GC_TROT, GC_RUN, GC_JUMP, GC_EAT, GC_DRINK, GC_CALL, GC_ATTACK, GC_ATTACK2, GC_REST, GC_HURT, GC_DEATH, GC_COUNT };
-static const char* const GC_NAME[GC_COUNT] = {"idle", "walk", "trot", "run", "jump", "eat", "drink", "call", "attack", "attack2 (tail/slash)", "rest", "hurt", "death"};
-static const int GC_ROLE[GC_COUNT] = {DCLIP_IDLE, DCLIP_WALK, DCLIP_TROT, DCLIP_RUN, DCLIP_JUMP, DCLIP_EAT, DCLIP_DRINK, DCLIP_CALL, DCLIP_ATTACK, -1, DCLIP_REST, DCLIP_HURT, DCLIP_DEATH};
+enum { GC_IDLE, GC_WALK, GC_TROT, GC_RUN, GC_JUMP, GC_EAT, GC_DRINK, GC_CALL, GC_ATTACK, GC_ATTACK2, GC_REST, GC_HURT, GC_HITS, GC_DEATH, GC_COUNT };
+static const char* const GC_NAME[GC_COUNT] = {"idle", "walk", "trot", "run", "jump", "eat", "drink", "call", "attack", "attack2 (tail/slash)", "rest", "hurt",
+                                              "hit while walking (front, left, back, right)", "death"};
+static const int GC_ROLE[GC_COUNT] = {DCLIP_IDLE, DCLIP_WALK, DCLIP_TROT, DCLIP_RUN, DCLIP_JUMP, DCLIP_EAT, DCLIP_DRINK, DCLIP_CALL, DCLIP_ATTACK, -1, DCLIP_REST, DCLIP_HURT, -1, DCLIP_DEATH};
 
 // The locomotion clip a gait plays: walk the slowest, run the fastest, trot the middle one (if the model has three).
 static int gal_loco(const DinoModel* m, int clip) {
@@ -282,13 +283,14 @@ static void gallery_build(Gallery* g, CretSim* sim, CretView* view) {
 }
 
 // Sets each dinosaur's state for its clip (the animation reads only the agent).
-static void gallery_pose_dinos(Gallery* g, CretSim* sim, const CretView* view, float dt) {
+static void gallery_pose_dinos(Gallery* g, CretSim* sim, CretView* view, float dt) {
     g->clip_t += dt;
     for (int k = 0; k < g->ndino; k++) {
         int i = g->dino_slot[k]; CretAgent* a = &sim->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
         int clip = g->dino_clip[k] >= 0 ? g->dino_clip[k] : g->clip;
         const DinoModel* m = view->dinos_ok ? &view->dinos.model[a->species] : NULL;
         float period = 1.6f; if (m && GC_ROLE[clip] >= 0 && m->slot[GC_ROLE[clip]] >= 0) period = fmaxf(m->clip[m->slot[GC_ROLE[clip]]].duration + 0.4f, 1.0f);
+        if (clip == GC_HITS) period = 3.2f;
         float t = fmodf(g->clip_t + k * 0.21f, clip == GC_DEATH ? 5.0f : period);
         a->alive = true; a->act = CRET_ACT_NONE; a->speed = 0; a->on_ground = true; a->swimming = false; a->y = GAL_GROUND;
         if (a->hurt_ticks > 0) a->hurt_ticks--;
@@ -308,6 +310,16 @@ static void gallery_pose_dinos(Gallery* g, CretSim* sim, const CretView* view, f
         case GC_ATTACK2: a->act = t < 0.9f ? CRET_ACT_ATTACK2 : CRET_ACT_NONE; break;
         case GC_REST: a->act = CRET_ACT_REST; break;
         case GC_HURT: if (t < dt * 1.01f) a->hurt_ticks = 12; break;
+        case GC_HITS: {   // walking, a blow every 3.2 s from the front, left, back, right in turn (the raptor's physics hit clips; a flinch elsewhere)
+            int li = gal_loco(m, GC_WALK); a->speed = li >= 0 && m->clip[li].speed > 0 ? m->clip[li].speed : S->walk;
+            if (t < dt * 1.01f && view->dinos_ok) {
+                int n = (int)floorf((g->clip_t + k * 0.21f) / period) & 3;
+                float fx = cosf(a->yaw), fz = sinf(a->yaw), rx = -fz, rz = fx;   // forward, and the model's right (+z)
+                float px[4] = {-fx, rx, fx, -rx}, pz[4] = {-fz, rz, fz, -rz};   // the push: back, to the right, forward, to the left
+                a->hurt_ticks = 12; cret_dino_hit(&view->dinos, i, px[n], pz[n], 1.0f);
+            }
+            break;
+        }
         case GC_DEATH: {   // a carcass at its feet, replayed every 5 s
             a->alive = false; CretCarcass* c = &sim->carcasses[k];
             *c = (CretCarcass){.active = true, .species = (uint8_t)a->species, .x = a->x, .y = GAL_GROUND, .z = a->z, .yaw = a->yaw, .growth = 1,
