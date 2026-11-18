@@ -70,6 +70,21 @@ checks the raptor comes out between 0.5 and 3 m tall).
   loose: almost all of the reward is the pose term; the end-effector and
   centre-of-mass terms sit near 0, so the body walks the clip's gait but
   drifts from where the clip is.
+- **Run 3 and 3p** (2026-11-18; the COM velocity term and k_ee 10, then the
+  same with `passive_tail = 1`): both walk. Scored alike (mean actions, 64
+  animals x 60 s, tail joints left out of the body numbers):
+
+  | run | falls | m per 15 s (clip 27.0) | body joints | feet + head | COM speed error | tail joints vs clip |
+  |---|---|---|---|---|---|---|
+  | 2 | 0 of 256 | 29.2 | 6.5° | 15.0 cm | 0.82 m/s | 5.9° |
+  | 3, active tail | 0 of 256 | 27.5 | 7.0° | 13.7 cm | 0.69 m/s | 4.7° |
+  | 3p, passive tail | 0 of 256 | 29.9 | 7.0° | 13.8 cm | 0.72 m/s | 20.8° |
+
+  Run 3 now walks at the clip's speed and tracks the feet, head and COM
+  speed better. The passive tail costs the body nothing: it balances as
+  well. Its tail swings about 21° off the clip's pose; whether that looks
+  more alive or just floppy is a judgement for the videos
+  (`D:\puffer_media\cretaceous\loco_run3_20261118`).
 - The CPU runner (`loco/loco_policy.h`) first read the checkpoint wrongly:
   the trainer's allocator starts every tensor on a 16-byte boundary, so the
   MinGRU weights sit 3 values after where a packed layout puts them. Fixed;
