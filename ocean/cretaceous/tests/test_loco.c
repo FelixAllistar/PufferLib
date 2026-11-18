@@ -4,7 +4,8 @@
 // random actions; the chain stability checks pass at the default substeps;
 // reference state initialisation puts the body exactly in the clip's pose and
 // velocities at its phase; the reward is 1 at a perfect track and less off
-// it; same seed, same run; the CPU policy runner reads a checkpoint layout;
+// it; same seed, same run; the CPU policy runner reads the trainer's
+// checkpoint layout and reproduces a real trained policy's actions;
 // and the PufferLib binding (built here with CRET_LOCO, as the trainer is)
 // runs: observations finite and padded, rewards in [0, 1], terminals and logs;
 // config/cretaceous_loco.ini loads the way the trainer loads it, takes
@@ -19,6 +20,7 @@
 
 #define FIXTURE "ocean/cretaceous/tests/fixtures/fixture_biped.dino"
 #define RAPTOR "ocean/cretaceous/assets/dinos/raptor.dino"
+#define POLICY_RUN2 "ocean/cretaceous/tests/fixtures/loco_policy_run2"
 
 static LocoWorld* make_world(const char* dino, int agents, unsigned int seed) {
     LocoConfig c = loco_default_config();
@@ -192,6 +194,24 @@ static void test_policy(void) {
     }
     float* bad = (float*)calloc(100, sizeof(float));
     CHECK(loco_policy_create(bad, 100, 1, err, sizeof err) == NULL, "a wrong-sized file is refused");
+    // A real checkpoint against the trainer's own actions: run 2's final policy and 60 steps of one
+    // agent recorded inside the trainer (observation, then the action the trainer sampled for it).
+    // The runner's mean must sit within the policy's std of every sampled action on average.
+    LocoPolicy* rp = loco_policy_load(POLICY_RUN2 ".bin", 1, err, sizeof err);
+    FILE* tf = fopen(POLICY_RUN2 "_trace.bin", "rb");
+    CHECK(rp && tf, "run 2 checkpoint and trace load");
+    if (rp && tf) {
+        const float* logstd = rp->dec + (long)(LOCO_MAX_DOF + 1) * rp->hidden;
+        static float o[LOCO_OBS], ta[LOCO_MAX_DOF + 1], ma[LOCO_MAX_DOF]; double z2 = 0; long nz = 0;
+        while (fread(o, 4, LOCO_OBS, tf) == LOCO_OBS && fread(ta, 4, LOCO_MAX_DOF + 1, tf) == LOCO_MAX_DOF + 1) {
+            loco_policy_forward(rp, o, 1, ma);
+            for (int k = 0; k < LOCO_MAX_DOF; k++) if (logstd[k] != 0) { float z = (ta[k] - ma[k]) / expf(logstd[k]); z2 += z * z; nz++; }
+        }
+        double rms = nz ? sqrt(z2 / nz) : 99;
+        CHECK(nz > 1000 && rms > 0.8 && rms < 1.2, "the runner reproduces the trainer's actions: rms z %.3f over %ld values (1 = within the policy's noise)", rms, nz);
+    }
+    if (tf) fclose(tf);
+    loco_policy_free(rp);
 }
 
 // The binding as the trainer drives it: config keys, reset, steps with random actions.

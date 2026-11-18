@@ -5,15 +5,21 @@
 // sizes. The policy acts with its mean (the trainer samples around it with a
 // learned standard deviation).
 //
-// File layout (src/algo.cu weights_create; fp32, tensors back to back):
+// File layout (src/algo.cu weights_create, fp32): the trainer's parameter
+// buffer copied flat, in registration order:
 //   encoder (hidden x LOCO_OBS), no bias
 //   decoder ((LOCO_MAX_DOF + 1) x hidden): action means, then the value
 //   decoder log std (LOCO_MAX_DOF)
 //   MinGRU layer l: (3 hidden x hidden), l = 0 .. layers - 1
-// The hidden size and layer count are found from the file's size. This
-// runner has been checked against hand-made files (tests/test_loco.c), not
-// yet against a checkpoint the trainer wrote: the first trained policy
-// should be compared with the trainer's own eval.
+// The trainer's allocator starts every tensor on a 16-byte boundary of the
+// parameter buffer (8 bf16 values; 4 floats in a --float build), so the
+// 69-value log std is followed by 3 padding values and the MinGRU layers start
+// at the next multiple of 8. The file holds only as many values as there are
+// parameters, so it ends 3 values short of the last layer: those 3 weights
+// (the last row's last inputs) stay at the trainer's random init, which a
+// reader cannot know; this runner takes them as 0. The hidden size and layer
+// count are found from the file's size. Checked against the trainer's own
+// actions on recorded observations (docs/locomotion/README.md, run 2).
 #ifndef CRET_LOCO_POLICY_H
 #define CRET_LOCO_POLICY_H
 #include "loco_env.h"
@@ -24,6 +30,8 @@ typedef struct LocoPolicy {
     float *state, *x, *comb, *out, *y;
 } LocoPolicy;
 
+// A tensor's length rounded up to the trainer allocator's alignment (8 values).
+#define LOCO_POLICY_ALIGN(n) (((n) + 7L) / 8 * 8)
 static long loco_policy_count(int h, int l) { return (long)h * LOCO_OBS + (long)(LOCO_MAX_DOF + 1) * h + LOCO_MAX_DOF + (long)l * 3 * h * h; }
 
 static void loco_policy_free(LocoPolicy* p) {
@@ -36,9 +44,16 @@ static LocoPolicy* loco_policy_create(float* w, long n, int max_agents, char* er
     for (int h = 16; h <= 4096; h *= 2) for (int l = 1; l <= 8; l++) if (loco_policy_count(h, l) == n) { fh = h; fl = l; fits++; }
     if (fits != 1) { snprintf(err, errn, "%ld weights fit no single (hidden, layers) of the loco net (obs %d, actions %d)", n, LOCO_OBS, LOCO_MAX_DOF); free(w); return NULL; }
     LocoPolicy* p = (LocoPolicy*)calloc(1, sizeof(LocoPolicy));
-    p->hidden = fh; p->layers = fl; p->max_agents = max_agents; p->w = w;
-    p->enc = w; p->dec = p->enc + (long)fh * LOCO_OBS;
-    float* g = p->dec + (long)(LOCO_MAX_DOF + 1) * fh + LOCO_MAX_DOF;
+    p->hidden = fh; p->layers = fl; p->max_agents = max_agents;
+    // The MinGRU weights start after the log std's padding (see the layout above); the
+    // buffer is grown to the padded length so the last layer's last values read as 0.
+    long gru0 = (long)fh * LOCO_OBS + (long)(LOCO_MAX_DOF + 1) * fh + LOCO_POLICY_ALIGN(LOCO_MAX_DOF);
+    long padded = gru0 + (long)fl * 3 * fh * fh;
+    float* grown = (float*)realloc(w, sizeof(float) * padded);
+    if (!grown) { free(w); free(p); snprintf(err, errn, "out of memory"); return NULL; }
+    w = grown; memset(w + n, 0, sizeof(float) * (padded - n));
+    p->w = w; p->enc = w; p->dec = p->enc + (long)fh * LOCO_OBS;
+    float* g = w + gru0;
     for (int l = 0; l < fl; l++) { p->gru[l] = g; g += 3L * fh * fh; }
     p->state = (float*)calloc((size_t)fl * max_agents * fh, sizeof(float));
     p->x = (float*)calloc((size_t)max_agents * fh, sizeof(float)); p->out = (float*)calloc((size_t)max_agents * fh, sizeof(float));

@@ -57,6 +57,27 @@ checks the raptor comes out between 0.5 and 3 m tall).
   13,000 steps/s, so 300 M steps is about 6.5 hours; the CPU, not the GPU,
   sets the pace.
 
+## First training runs (2026-11-17, Vast 5060 Ti, 15 cores, ~60K steps/s)
+
+- **Run 1** (lr 3e-4, γ/λ 0.95, the cloud's first settings): 300M steps,
+  nothing learned. Up 1.2 s at the end, and its mean actions did no better
+  than no actions.
+- **Run 2** (`drone.ini`'s optimizer settings, now in the ini): the raptor
+  walks. Every episode reaches the 15 s cap from about 175M steps on; at
+  300M, return 103, joint error 9°, end effectors 19 cm off, 26.5 m per
+  episode (the clip's 1.8 m/s). Its mean actions, run on the CPU: 128 of 128
+  episodes up the full 15 s, 29 m each, 6.7° joint error. The tracking is
+  loose: almost all of the reward is the pose term; the end-effector and
+  centre-of-mass terms sit near 0, so the body walks the clip's gait but
+  drifts from where the clip is.
+- The CPU runner (`loco/loco_policy.h`) first read the checkpoint wrongly:
+  the trainer's allocator starts every tensor on a 16-byte boundary, so the
+  MinGRU weights sit 3 values after where a packed layout puts them. Fixed;
+  `test_loco` checks the runner against 60 steps of actions recorded inside
+  the trainer (`tests/fixtures/loco_policy_run2*`).
+- `--headless` is needed for `puffer_loco eval`: without it the trainer
+  renders, and the loco build draws nothing, so it returns at once.
+
 ## The research, briefly
 
 **DeepMimic** (Peng, Abbeel, Levine, van de Panne, SIGGRAPH 2018,
