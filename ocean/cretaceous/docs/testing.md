@@ -156,7 +156,8 @@ The ragdoll env of `loco/` (docs/locomotion/README.md) on `tests/fixtures/fixtur
 - same seed, same hash;
 - the CPU policy runner on a hand-made checkpoint;
 - the binding's `puf_init/reset/step/log`, and `config/cretaceous_loco.ini` read with the trainer's ini code (every `[env]` key known);
-- the step rate (`cadence`): off, the spare action changes nothing; on, the rate eases to its target, stays inside its range, and the reference's velocities scale with it; the speed term (`reward_speed`) is a straight slope that counts sideways motion as error, and on the raptor reads near 1 in the clip's own state; `kernel 1` gives the terms their long tails.
+- the step rate (`cadence`): off, the spare action changes nothing; on, the rate eases to its target, stays inside its range, and the reference's velocities scale with it; the speed term (`reward_speed`) is a straight slope that counts sideways motion as error, and on the raptor reads near 1 in the clip's own state; `kernel 1` gives the terms their long tails;
+- the target pose block: the reference one policy step on, in the animal's heading frame, padded, and turning with the animal.
 
 If the licensed raptor is installed, its rig must build with the `raptor` table too.
 

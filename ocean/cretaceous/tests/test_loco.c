@@ -245,6 +245,38 @@ static void test_push(void) {
     free_world(w);
 }
 
+// The target pose block: the reference one policy step on, in the animal's heading frame.
+static void test_target_obs(void) {
+    LocoWorld* w = make_world(FIXTURE, 1, 3);
+    CHECK(w != NULL, "target pose world builds");
+    if (!w) return;
+    static float o[LOCO_OBS]; int nb = w->rig.nbody; const float* g = o + LOCO_OBS_V3;
+    loco_reset_agent(w, 0, 0.3f); loco_observe(w, 0, o);
+    // At the reset the body is in the clip's pose, so the target (one step on) lies close to the body block,
+    // and not on it: the clip moves in a step.
+    float gap = 0; for (int b = 1; b < nb; b++) for (int k = 0; k < LOCO_TARGET_OBS; k++) gap = fmaxf(gap, fabsf(g[b * LOCO_TARGET_OBS + k] - o[b * LOCO_BODY_OBS + k]));
+    CHECK(gap > 1e-4f && gap < 0.25f, "at the reset the target pose is one step from the body's (largest gap %.4f)", gap);
+    // It is the reference at t + one policy step, pelvis-relative, and the pelvis slot's height is the target's.
+    static b3Vec3 rp[LOCO_MAX_BODIES]; static b3Quat rq[LOCO_MAX_BODIES];
+    loco_ref_agent(w, &w->ag[0], 1.0 / w->cfg.policy_hz, rp, rq, NULL, NULL);
+    loco_doll_get(&w->phys, 0, w->pos, w->rot, w->vel, w->angvel); b3Quat hd = loco_heading(w->rot[0]);
+    float worst = fabsf(g[1] - rp[0].y) + fabsf(g[0]) + fabsf(g[2]);
+    for (int b = 1; b < nb; b++) { b3Vec3 p = lq_inv_rot(hd, b3Sub(rp[b], rp[0])); worst = fmaxf(worst, fabsf(g[b * LOCO_TARGET_OBS] - p.x) + fabsf(g[b * LOCO_TARGET_OBS + 1] - p.y) + fabsf(g[b * LOCO_TARGET_OBS + 2] - p.z)); }
+    CHECK(worst < 1e-5f, "the target block is the reference one policy step on, from its pelvis (worst gap %.7f)", worst);
+    bool pad = true; for (int k = nb * LOCO_TARGET_OBS; k < LOCO_MAX_BODIES * LOCO_TARGET_OBS; k++) pad &= g[k] == 0;
+    CHECK(pad && LOCO_OBS == LOCO_OBS_V3 + LOCO_MAX_BODIES * LOCO_TARGET_OBS, "unused body slots of the target block are 0");
+    // Turned 0.5 rad to its left, the animal sees the target turned 0.5 rad to its right: a body ahead of the
+    // pelvis (+x) now reads toward +z (the animal's right).
+    static float o2[LOCO_OBS]; b3Quat turn = lq_axis_angle(lv(0, 1, 0), 0.5f);
+    for (int b = 0; b < nb; b++) w->rot[b] = lq_mul(turn, w->rot[b]);
+    loco_observe_state(w, &w->ag[0], o2); const float* g2 = o2 + LOCO_OBS_V3; float tw = 0;
+    for (int b = 1; b < nb; b++) {
+        const float* a = g + b * LOCO_TARGET_OBS; const float* c = g2 + b * LOCO_TARGET_OBS;
+        tw = fmaxf(tw, fabsf(c[0] - (cosf(0.5f) * a[0] - sinf(0.5f) * a[2])) + fabsf(c[2] - (sinf(0.5f) * a[0] + cosf(0.5f) * a[2])) + fabsf(c[1] - a[1]));
+    }
+    CHECK(tw < 1e-4f, "turned 0.5 rad left, the target pose reads turned 0.5 rad right (worst gap %.6f)", tw);
+    free_world(w);
+}
 // The step rate (cadence) and the commanded-speed reward term.
 static uint64_t cadence_run(float cadence, float spare, double* t, float* last_obs) {
     LocoConfig c = loco_default_config(); snprintf(c.dino, sizeof c.dino, "%s", FIXTURE); c.num_agents = 1; c.cadence = cadence;
@@ -253,7 +285,7 @@ static uint64_t cadence_run(float cadence, float spare, double* t, float* last_o
     static float act[LOCO_MAX_DOF], o[LOCO_OBS], rew[1], term[1]; const float* ap[1] = {act};
     memset(act, 0, sizeof act); act[w->rig.ndof] = spare;
     loco_reset_agent(w, 0, 0.2f); for (int s = 0; s < 10; s++) loco_step(w, ap, rew, term);
-    loco_observe(w, 0, o); *t = w->ag[0].t; *last_obs = o[LOCO_OBS - 1];
+    loco_observe(w, 0, o); *t = w->ag[0].t; *last_obs = o[LOCO_OBS_V3 - 1];
     uint64_t h = loco_hash(w); free_world(w); return h;
 }
 static void test_cadence_speed(void) {
@@ -274,7 +306,7 @@ static void test_cadence_speed(void) {
     for (int s = 0; s < 8; s++) { tb = w->ag[0].t; loco_step(w, ap, rew, term); ended |= term[0] != 0; }
     float want = 1 - powf(0.75f, 8), got = w->ag[0].rate_log; double per = (w->ag[0].t - tb) * w->cfg.policy_hz;
     loco_observe(w, 0, o);
-    CHECK(!ended && fabsf(got - want) < 1e-4f && fabs(per - exp2(got)) < 1e-4 && o[LOCO_OBS - 1] == got, "cadence 1: eight steps ease the rate to log2 %.4f (%.4f), clip time %.4f steps per step", want, got, per);
+    CHECK(!ended && fabsf(got - want) < 1e-4f && fabs(per - exp2(got)) < 1e-4 && o[LOCO_OBS_V3 - 1] == got, "cadence 1: eight steps ease the rate to log2 %.4f (%.4f), clip time %.4f steps per step", want, got, per);
     // The reference's in-place velocities scale with the rate; its travel speed is the clip's own.
     static b3Vec3 v1[LOCO_MAX_BODIES], a1[LOCO_MAX_BODIES], v2[LOCO_MAX_BODIES], a2[LOCO_MAX_BODIES];
     LocoAgent probe = w->ag[0]; float sp = w->ref[0].speed, k = exp2f(got);
@@ -652,6 +684,7 @@ int main(void) {
     test_raptor();
     test_heading_obs();
     test_cadence_speed();
+    test_target_obs();
     test_multiclip();
     return t_finish("test_loco", t0);
 }

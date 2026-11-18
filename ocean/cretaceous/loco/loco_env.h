@@ -14,8 +14,18 @@
 //     else is in the animal's own heading frame, so without those two it
 //     cannot tell that a shove has turned it: runs 4 to 6p took the hit and
 //     walked on 30 to 60 degrees off. They are also the steering command.
-//     One more float (the last) is the step rate the policy has set, as
-//     log2 (0: the clip's own pace; see cadence below).
+//     One more float is the step rate the policy has set, as log2 (0: the
+//     clip's own pace; see cadence below).
+//     Last, the target pose (LOCO_TARGET_OBS floats per body slot): where
+//     the reference has each body one policy step from now, laid out like
+//     the body block's first nine floats (position from the pelvis, two
+//     rotation columns) and in the animal's own heading frame, so target
+//     minus body is the correction still to make, a turn included. The
+//     pelvis slot's height is the target pelvis height. With it the policy
+//     is told the pose to reach, not left to recall a clip from its phase
+//     and speed (Bergamin et al. 2019, DReCon: the policy sees the
+//     animation system's pose and needs no phase), so it can be asked to
+//     follow motion it was not trained on.
 //   Action (LOCO_MAX_DOF floats, the unused tail of it ignored): per joint
 //     an offset added to the clip's pose at this instant (residual control):
 //     three for a ball joint (a rotation vector in the joint frame), one for
@@ -87,7 +97,9 @@
 #define LOCO_BODY_OBS 15
 #define LOCO_OBS_V1 (LOCO_MAX_BODIES * LOCO_BODY_OBS + 4)   // before the heading floats (the checkpoints of runs 2 to 7)
 #define LOCO_OBS_V2 (LOCO_OBS_V1 + 2)   // with the heading floats, before the step rate (runs 8 to 10)
-#define LOCO_OBS (LOCO_OBS_V2 + 1)
+#define LOCO_OBS_V3 (LOCO_OBS_V2 + 1)   // with the step rate, before the target pose (runs 11 and 12)
+#define LOCO_TARGET_OBS 9
+#define LOCO_OBS (LOCO_OBS_V3 + LOCO_MAX_BODIES * LOCO_TARGET_OBS)
 #define LOCO_MAX_AGENTS 256
 #define LOCO_MAX_CLIPS 8
 
@@ -480,6 +492,15 @@ static void loco_observe_state(LocoWorld* w, const LocoAgent* a, float* o) {
     b3Vec3 f = lq_rot(lq_inv_mul(hd, loco_heading(rr[0])), lv(1, 0, 0));
     t[4] = -f.z; t[5] = f.x;
     t[6] = a->rate_log;
+    // The target pose: the reference one policy step on, in the animal's heading frame, from the reference's pelvis.
+    b3Vec3 tp[LOCO_MAX_BODIES]; loco_ref_agent(w, a, 1.0 / w->cfg.policy_hz, tp, rr, NULL, NULL);
+    float* g = o + LOCO_OBS_V3;
+    for (int b = 0; b < r->nbody; b++, g += LOCO_TARGET_OBS) {
+        b3Vec3 p = lq_inv_rot(hd, b3Sub(tp[b], tp[0]));
+        b3Quat lr = lq_inv_mul(hd, rr[b]);
+        b3Vec3 c0 = lq_rot(lr, lv(1, 0, 0)), c1 = lq_rot(lr, lv(0, 1, 0));
+        g[0] = p.x; g[1] = b ? p.y : tp[0].y; g[2] = p.z; g[3] = c0.x; g[4] = c0.y; g[5] = c0.z; g[6] = c1.x; g[7] = c1.y; g[8] = c1.z;
+    }
 }
 static void loco_observe(LocoWorld* w, int i, float* o) {
     loco_doll_get(&w->phys, i, w->pos, w->rot, w->vel, w->angvel);

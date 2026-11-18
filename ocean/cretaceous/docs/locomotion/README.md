@@ -277,6 +277,36 @@ but the body can cover ground at 8 m/s and stay up.
 **Run 12 (256x2, live):** run 11's settings with the speed term on the
 travel axis and `kernel 1`. Not evaluated yet.
 
+## The policy sees the target pose (2026-11-18)
+
+Until here the policy was told which clip (its speed) and where in the
+stride (the phase) and had to recall the pose from its weights: a new clip
+means retraining. DReCon (Bergamin, Clavet, Holden, Forbes, SIGGRAPH Asia
+2019) does it the other way: the game's animation system produces the pose
+it wants, that pose is the springs' target, and the policy sees it and adds
+balance corrections. No phase; any animation the system can produce is
+followed. Their best network is 2 layers of 128, queried at 30 Hz.
+
+The observation now ends with that pose: for every body, where the
+reference has it one policy step from now (position from the pelvis and two
+rotation columns, laid out like the body block, in the animal's own heading
+frame, so target minus body is the correction still to make). LOCO_OBS is
+574; checkpoints of runs 2 to 12 still load and act as before.
+
+Other things that reading turned up, not built:
+- **The reference should be physically right.** DeepMimic, AMP and DReCon
+  all start from motion capture, where the body travels as fast as its legs
+  carry it. The raptor's clips are slid at speeds their feet do not produce.
+- **Nothing limits effort here.** DReCon clamps each motor at 200 Nm on a
+  90 kg human; our springs have no cap and no energy cost (run 11 crossed
+  the ground at 8 m/s). Box3D reports a joint's constraint torque
+  (`b3Joint_GetConstraintTorque`), which an effort term could use. Fu et al.
+  (CoRL 2021) get walk, trot and gallop from a speed command plus an energy
+  cost alone.
+- **AMP** (Peng et al. 2021) is the published loose guide: a learned critic
+  scores whether motion looks like the clips, the task reward sets the
+  speed. It cannot leave the speed range of its data.
+
 ## The research, briefly
 
 **DeepMimic** (Peng, Abbeel, Levine, van de Panne, SIGGRAPH 2018,

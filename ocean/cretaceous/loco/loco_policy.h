@@ -9,7 +9,8 @@
 // buffer copied flat, in registration order:
 //   encoder (hidden x LOCO_OBS), no bias (hidden x LOCO_OBS_V1 in the checkpoints of runs 2 to 7,
 //     from before the observation's two heading floats, and hidden x LOCO_OBS_V2 in those of runs 8 to 10,
-//     from before its step rate: the runner feeds those the first floats they know)
+//     from before its step rate, and hidden x LOCO_OBS_V3 in those of runs 11 and 12, from before the target
+//     pose: the runner feeds those the first floats they know)
 //   decoder ((LOCO_MAX_DOF + 1) x hidden): action means, then the value
 //   decoder log std (LOCO_MAX_DOF)
 //   MinGRU layer l: (3 hidden x hidden), l = 0 .. layers - 1
@@ -27,7 +28,7 @@
 #include "loco_env.h"
 
 typedef struct LocoPolicy {
-    int hidden, layers, max_agents, obs;   // obs: the encoder's inputs, LOCO_OBS, LOCO_OBS_V2 or LOCO_OBS_V1
+    int hidden, layers, max_agents, obs;   // obs: the encoder's inputs, LOCO_OBS or an older version's (LOCO_OBS_V3, _V2, _V1)
     float *w, *enc, *dec, *gru[8];
     float *state, *x, *comb, *out, *y, *in;
 } LocoPolicy;
@@ -43,8 +44,8 @@ static void loco_policy_free(LocoPolicy* p) {
 // Takes ownership of n weights. NULL with a message when no (hidden, layers) fits n.
 static LocoPolicy* loco_policy_create(float* w, long n, int max_agents, char* err, size_t errn) {
     int fh = 0, fl = 0, fo = 0, fits = 0;
-    for (int v = 0; v < 3; v++) for (int h = 16; h <= 4096; h *= 2) for (int l = 1; l <= 8; l++) {
-        int obs = v == 0 ? LOCO_OBS : v == 1 ? LOCO_OBS_V2 : LOCO_OBS_V1;
+    for (int v = 0; v < 4; v++) for (int h = 16; h <= 4096; h *= 2) for (int l = 1; l <= 8; l++) {
+        int obs = v == 0 ? LOCO_OBS : v == 1 ? LOCO_OBS_V3 : v == 2 ? LOCO_OBS_V2 : LOCO_OBS_V1;
         if (loco_policy_count(h, l, obs) == n) { fh = h; fl = l; fo = obs; fits++; }
     }
     if (fits != 1) { snprintf(err, errn, "%ld weights fit no single (hidden, layers) of the loco net (obs %d, actions %d)", n, LOCO_OBS, LOCO_MAX_DOF); free(w); return NULL; }
