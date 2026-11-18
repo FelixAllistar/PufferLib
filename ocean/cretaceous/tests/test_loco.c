@@ -245,16 +245,33 @@ static void test_push(void) {
     free_world(w);
 }
 
+// The observation's last two floats: the way to the reference's heading.
+static void test_heading_obs(void) {
+    LocoWorld* w = make_world(FIXTURE, 1, 3);
+    CHECK(w != NULL, "heading world builds");
+    if (!w) return;
+    static float o[LOCO_OBS];
+    loco_reset_agent(w, 0, 0.3f); loco_observe(w, 0, o);
+    CHECK(fabsf(o[LOCO_OBS - 2]) < 1e-4f && fabsf(o[LOCO_OBS - 1] - 1) < 1e-4f, "at the reset the animal faces the reference's way (sin %.5f, cos %.5f)", o[LOCO_OBS - 2], o[LOCO_OBS - 1]);
+    // The same state turned 0.5 rad to its left: the reference's heading lies 0.5 rad to its right.
+    loco_doll_get(&w->phys, 0, w->pos, w->rot, w->vel, w->angvel);
+    b3Quat turn = lq_axis_angle(lv(0, 1, 0), 0.5f);
+    for (int b = 0; b < w->rig.nbody; b++) w->rot[b] = lq_mul(turn, w->rot[b]);
+    loco_observe_state(w, &w->ag[0], o);
+    CHECK(fabsf(o[LOCO_OBS - 2] + sinf(0.5f)) < 1e-3f && fabsf(o[LOCO_OBS - 1] - cosf(0.5f)) < 1e-3f, "turned 0.5 rad left, the way back reads -0.5 rad (sin %.4f, cos %.4f)", o[LOCO_OBS - 2], o[LOCO_OBS - 1]);
+    free_world(w);
+}
+
 // The CPU runner: a hand-made checkpoint (hidden 32, one layer) with zero
 // encoder and MinGRU weights and an all-ones decoder gives every action
 // hidden * 0.125 (h~ = 0.5, gate 0.5, h = 0.25, skip gate 0.5, x = 0).
 static void test_policy(void) {
-    int H = 32; long n = loco_policy_count(H, 1);
+    int H = 32; long n = loco_policy_count(H, 1, LOCO_OBS);
     float* wts = (float*)calloc((size_t)n, sizeof(float));
     float* dec = wts + (long)H * LOCO_OBS;
     for (long k = 0; k < (long)(LOCO_MAX_DOF + 1) * H; k++) dec[k] = 1.0f;
     char err[256]; LocoPolicy* p = loco_policy_create(wts, n, 2, err, sizeof err);
-    CHECK(p && p->hidden == H && p->layers == 1, "checkpoint size gives hidden 32, one layer");
+    CHECK(p && p->hidden == H && p->layers == 1 && p->obs == LOCO_OBS, "checkpoint size gives hidden 32, one layer");
     if (p) {
         static float obs[2 * LOCO_OBS], act[2 * LOCO_MAX_DOF];
         for (int k = 0; k < 2 * LOCO_OBS; k++) obs[k] = 0.1f * (k % 7);
@@ -269,11 +286,11 @@ static void test_policy(void) {
     // The runner's mean must sit within the policy's std of every sampled action on average.
     LocoPolicy* rp = loco_policy_load(POLICY_RUN2 ".bin", 1, err, sizeof err);
     FILE* tf = fopen(POLICY_RUN2 "_trace.bin", "rb");
-    CHECK(rp && tf, "run 2 checkpoint and trace load");
+    CHECK(rp && tf && rp->obs == LOCO_OBS_V1, "run 2 checkpoint (from before the heading floats) and trace load");
     if (rp && tf) {
         const float* logstd = rp->dec + (long)(LOCO_MAX_DOF + 1) * rp->hidden;
         static float o[LOCO_OBS], ta[LOCO_MAX_DOF + 1], ma[LOCO_MAX_DOF]; double z2 = 0; long nz = 0;
-        while (fread(o, 4, LOCO_OBS, tf) == LOCO_OBS && fread(ta, 4, LOCO_MAX_DOF + 1, tf) == LOCO_MAX_DOF + 1) {
+        while (fread(o, 4, LOCO_OBS_V1, tf) == LOCO_OBS_V1 && fread(ta, 4, LOCO_MAX_DOF + 1, tf) == LOCO_MAX_DOF + 1) {
             loco_policy_forward(rp, o, 1, ma);
             for (int k = 0; k < LOCO_MAX_DOF; k++) if (logstd[k] != 0) { float z = (ta[k] - ma[k]) / expf(logstd[k]); z2 += z * z; nz++; }
         }
@@ -390,7 +407,7 @@ static void multiclip_checks(const char* dino, const char* list, const float* sp
         loco_reset_agent(w, r % 4, -1); const LocoAgent* a = &w->ag[r % 4];
         if (a->clip >= 0 && a->clip < w->nref) picked[a->clip]++;
         loco_observe(w, r % 4, o);
-        obs_ok &= a->clip >= 0 && a->clip < nclip && fabsf(o[LOCO_OBS - 1] - 0.2f * speed[a->clip]) < 0.2f * 0.01f && o[LOCO_OBS - 1] == 0.2f * w->ref[a->clip].speed;
+        obs_ok &= a->clip >= 0 && a->clip < nclip && fabsf(o[LOCO_OBS_V1 - 1] - 0.2f * speed[a->clip]) < 0.2f * 0.01f && o[LOCO_OBS_V1 - 1] == 0.2f * w->ref[a->clip].speed;
     }
     bool all = true; for (int k = 0; k < nclip; k++) all &= picked[k] > 0;
     CHECK(all, "%s: 200 resets pick every clip (%d %d %d %d ...)", list, picked[0], picked[1], picked[2], picked[3]);
@@ -548,6 +565,7 @@ int main(void) {
     test_binding();
     test_config();
     test_raptor();
+    test_heading_obs();
     test_multiclip();
     return t_finish("test_loco", t0);
 }

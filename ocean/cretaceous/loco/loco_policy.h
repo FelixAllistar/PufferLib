@@ -7,7 +7,8 @@
 //
 // File layout (src/algo.cu weights_create, fp32): the trainer's parameter
 // buffer copied flat, in registration order:
-//   encoder (hidden x LOCO_OBS), no bias
+//   encoder (hidden x LOCO_OBS), no bias (hidden x LOCO_OBS_V1 in the checkpoints of runs 2 to 7,
+//     from before the observation's two heading floats: the runner feeds those the first LOCO_OBS_V1)
 //   decoder ((LOCO_MAX_DOF + 1) x hidden): action means, then the value
 //   decoder log std (LOCO_MAX_DOF)
 //   MinGRU layer l: (3 hidden x hidden), l = 0 .. layers - 1
@@ -25,39 +26,43 @@
 #include "loco_env.h"
 
 typedef struct LocoPolicy {
-    int hidden, layers, max_agents;
+    int hidden, layers, max_agents, obs;   // obs: the encoder's inputs, LOCO_OBS or LOCO_OBS_V1
     float *w, *enc, *dec, *gru[8];
-    float *state, *x, *comb, *out, *y;
+    float *state, *x, *comb, *out, *y, *in;
 } LocoPolicy;
 
 // A tensor's length rounded up to the trainer allocator's alignment (8 values).
 #define LOCO_POLICY_ALIGN(n) (((n) + 7L) / 8 * 8)
-static long loco_policy_count(int h, int l) { return (long)h * LOCO_OBS + (long)(LOCO_MAX_DOF + 1) * h + LOCO_MAX_DOF + (long)l * 3 * h * h; }
+static long loco_policy_count(int h, int l, int obs) { return (long)h * obs + (long)(LOCO_MAX_DOF + 1) * h + LOCO_MAX_DOF + (long)l * 3 * h * h; }
 
 static void loco_policy_free(LocoPolicy* p) {
     if (!p) return;
-    free(p->w); free(p->state); free(p->x); free(p->comb); free(p->out); free(p->y); free(p);
+    free(p->w); free(p->state); free(p->x); free(p->comb); free(p->out); free(p->y); free(p->in); free(p);
 }
 // Takes ownership of n weights. NULL with a message when no (hidden, layers) fits n.
 static LocoPolicy* loco_policy_create(float* w, long n, int max_agents, char* err, size_t errn) {
-    int fh = 0, fl = 0, fits = 0;
-    for (int h = 16; h <= 4096; h *= 2) for (int l = 1; l <= 8; l++) if (loco_policy_count(h, l) == n) { fh = h; fl = l; fits++; }
+    int fh = 0, fl = 0, fo = 0, fits = 0;
+    for (int v = 0; v < 2; v++) for (int h = 16; h <= 4096; h *= 2) for (int l = 1; l <= 8; l++) {
+        int obs = v ? LOCO_OBS_V1 : LOCO_OBS;
+        if (loco_policy_count(h, l, obs) == n) { fh = h; fl = l; fo = obs; fits++; }
+    }
     if (fits != 1) { snprintf(err, errn, "%ld weights fit no single (hidden, layers) of the loco net (obs %d, actions %d)", n, LOCO_OBS, LOCO_MAX_DOF); free(w); return NULL; }
     LocoPolicy* p = (LocoPolicy*)calloc(1, sizeof(LocoPolicy));
-    p->hidden = fh; p->layers = fl; p->max_agents = max_agents;
+    p->hidden = fh; p->layers = fl; p->obs = fo; p->max_agents = max_agents;
     // The MinGRU weights start after the log std's padding (see the layout above); the
     // buffer is grown to the padded length so the last layer's last values read as 0.
-    long gru0 = (long)fh * LOCO_OBS + (long)(LOCO_MAX_DOF + 1) * fh + LOCO_POLICY_ALIGN(LOCO_MAX_DOF);
+    long gru0 = (long)fh * fo + (long)(LOCO_MAX_DOF + 1) * fh + LOCO_POLICY_ALIGN(LOCO_MAX_DOF);
     long padded = gru0 + (long)fl * 3 * fh * fh;
     float* grown = (float*)realloc(w, sizeof(float) * padded);
     if (!grown) { free(w); free(p); snprintf(err, errn, "out of memory"); return NULL; }
     w = grown; memset(w + n, 0, sizeof(float) * (padded - n));
-    p->w = w; p->enc = w; p->dec = p->enc + (long)fh * LOCO_OBS;
+    p->w = w; p->enc = w; p->dec = p->enc + (long)fh * fo;
     float* g = w + gru0;
     for (int l = 0; l < fl; l++) { p->gru[l] = g; g += 3L * fh * fh; }
     p->state = (float*)calloc((size_t)fl * max_agents * fh, sizeof(float));
     p->x = (float*)calloc((size_t)max_agents * fh, sizeof(float)); p->out = (float*)calloc((size_t)max_agents * fh, sizeof(float));
     p->comb = (float*)calloc((size_t)max_agents * 3 * fh, sizeof(float)); p->y = (float*)calloc((size_t)max_agents * (LOCO_MAX_DOF + 1), sizeof(float));
+    p->in = (float*)calloc((size_t)max_agents * fo, sizeof(float));
     return p;
 }
 static LocoPolicy* loco_policy_load(const char* path, int max_agents, char* err, size_t errn) {
@@ -86,7 +91,9 @@ static inline float loco_lerp(float a, float b, float w) { float d = b - a; retu
 // One step for agents 0..n-1 (obs: n rows of LOCO_OBS): their mean actions into act (n rows of LOCO_MAX_DOF).
 static void loco_policy_forward(LocoPolicy* p, const float* obs, int n, float* act) {
     int H = p->hidden;
-    loco_mm(obs, n, LOCO_OBS, p->enc, H, p->x);
+    const float* in = obs;
+    if (p->obs != LOCO_OBS) { for (int k = 0; k < n; k++) memcpy(p->in + (long)k * p->obs, obs + (long)k * LOCO_OBS, sizeof(float) * p->obs); in = p->in; }
+    loco_mm(in, n, p->obs, p->enc, H, p->x);
     const float* x = p->x;
     for (int l = 0; l < p->layers; l++) {
         loco_mm(x, n, H, p->gru[l], 3 * H, p->comb);

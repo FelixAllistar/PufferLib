@@ -185,6 +185,14 @@ several clips, and the target speed tells it which.
   `--clip`, and `--clip-switch` and `--clip-blend`; the viewer shows the
   followed animal's clip and target speed. The training log gains
   `clip_speed`, the mean target speed, which shows the mix.
+- **Which way to face.** Runs 4 to 6p took a shove from the side and walked
+  on 30 to 60 degrees off their line, even with the heading reward: the
+  observation is all in the animal's own heading frame, so it could not see
+  that it had turned. Two floats were added at the end of the observation,
+  the sine and cosine of the yaw from the animal's heading to the
+  reference's. They are also the steering command for later (turn the
+  reference, the animal follows). Checkpoints from before (runs 2 to 7) still
+  load: the runner feeds them the observation without the two floats.
 - **Untrained so far.** Nothing has been trained this way yet.
 
 ## The research, briefly

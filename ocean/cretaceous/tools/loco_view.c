@@ -4,7 +4,7 @@
 // Run from the repository root.
 //   loco_view [--dino PATH] [--clip walk | --clip idle+walk+trot+run] [--agents 4] [--seed 1] [--policy CHECKPOINT.bin]
 //             [--clip-switch S] [--clip-blend S]
-//             [--passive-tail] [--tail-flex N] [--push-interval S --push-min V --push-max V]
+//             [--passive-tail [--passive-damping 0.4]] [--tail-flex N] [--push-interval S --push-min V --push-max V]
 //             [--size W H] [--record OUT.mp4 --seconds S]
 // Shoves (loco_env.h) show as a red arrow on the body hit, along the push.
 // With several clips the HUD names the followed animal's clip and target
@@ -56,6 +56,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(a, "--seed") && more) seed = (unsigned int)atoi(argv[++i]);
         else if (!strcmp(a, "--policy") && more) policy = argv[++i];
         else if (!strcmp(a, "--passive-tail")) c.gains.passive = true;
+        else if (!strcmp(a, "--passive-damping") && more) c.gains.passive_damping = (float)atof(argv[++i]);
         else if (!strcmp(a, "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
         else if (!strcmp(a, "--record") && more) record = argv[++i];
         else if (!strcmp(a, "--seconds") && more) seconds = (float)atof(argv[++i]);

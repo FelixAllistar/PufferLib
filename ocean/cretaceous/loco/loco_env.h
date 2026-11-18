@@ -9,7 +9,11 @@
 //     its origin relative to the pelvis and its rotation (6D: two columns),
 //     centre-of-mass velocity and angular velocity, all in the pelvis
 //     heading frame (yaw only); then the pelvis height, the clip phase
-//     (sin, cos) and the target speed.
+//     (sin, cos), the target speed, and the way to the reference's heading
+//     (sin, cos of the yaw from the animal's heading to it). Everything
+//     else is in the animal's own heading frame, so without those two it
+//     cannot tell that a shove has turned it: runs 4 to 6p took the hit and
+//     walked on 30 to 60 degrees off. They are also the steering command.
 //   Action (LOCO_MAX_DOF floats, the unused tail of it ignored): per joint
 //     an offset added to the clip's pose at this instant (residual control):
 //     three for a ball joint (a rotation vector in the joint frame), one for
@@ -55,7 +59,8 @@
 #include "loco_sim.h"
 
 #define LOCO_BODY_OBS 15
-#define LOCO_OBS (LOCO_MAX_BODIES * LOCO_BODY_OBS + 4)
+#define LOCO_OBS_V1 (LOCO_MAX_BODIES * LOCO_BODY_OBS + 4)   // before the heading floats (the checkpoints of runs 2 to 7)
+#define LOCO_OBS (LOCO_OBS_V1 + 2)
 #define LOCO_MAX_AGENTS 256
 #define LOCO_MAX_CLIPS 8
 
@@ -397,7 +402,7 @@ static float loco_reward(LocoWorld* w, LocoAgent* a) {
 }
 
 // Agent i's observation (LOCO_OBS floats) from its current state in w->pos...
-static void loco_observe_state(const LocoWorld* w, const LocoAgent* a, float* o) {
+static void loco_observe_state(LocoWorld* w, const LocoAgent* a, float* o) {
     const LocoRig* r = &w->rig; b3Quat hd = loco_heading(w->rot[0]); b3Vec3 pel = w->pos[0];
     memset(o, 0, sizeof(float) * LOCO_OBS);
     for (int b = 0; b < r->nbody; b++) {
@@ -414,6 +419,10 @@ static void loco_observe_state(const LocoWorld* w, const LocoAgent* a, float* o)
     float* t = o + LOCO_MAX_BODIES * LOCO_BODY_OBS; const LocoRef* R = &w->ref[a->clip];
     double ph = (fmod(a->t, (double)R->duration) / R->duration - w->phase_off[a->clip]) * 2.0 * M_PI;
     t[0] = pel.y; t[1] = (float)sin(ph); t[2] = (float)cos(ph); t[3] = 0.2f * R->speed;
+    // The reference's heading seen from the animal's: its forward in the animal's heading frame is (cos, 0, -sin) of the yaw to it.
+    b3Quat rr[LOCO_MAX_BODIES]; loco_ref_agent(w, a, 0, NULL, rr, NULL, NULL);
+    b3Vec3 f = lq_rot(lq_inv_mul(hd, loco_heading(rr[0])), lv(1, 0, 0));
+    t[4] = -f.z; t[5] = f.x;
 }
 static void loco_observe(LocoWorld* w, int i, float* o) {
     loco_doll_get(&w->phys, i, w->pos, w->rot, w->vel, w->angvel);

@@ -2,7 +2,7 @@
 // docs/locomotion/README.md). Run from the repository root.
 //   loco_play [--dino PATH] [--clip walk | --clip idle+walk+trot+run] [--agents 32] [--seconds 20] [--seed 1]
 //             [--clip-switch S] [--clip-blend S]
-//             [--substeps 4] [--passive-tail] [--policy CHECKPOINT.bin]
+//             [--substeps 4] [--passive-tail [--passive-damping 0.4]] [--policy CHECKPOINT.bin]
 //             [--hertz-leg 100] [--hertz-body 60] [--hertz-tail 40] [--damping 1] [--no-weld]
 //             [--push-interval S --push-min V --push-max V] [--tail-flex N] [--tail-stiffen X]
 //             [--rig] [--stability] [--baseline] [--bench] [--all]
@@ -133,6 +133,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(a, "--substeps") && more) c.substeps = atoi(argv[++i]);
         else if (!strcmp(a, "--policy") && more) policy = argv[++i];
         else if (!strcmp(a, "--passive-tail")) c.gains.passive = true;
+        else if (!strcmp(a, "--passive-damping") && more) c.gains.passive_damping = (float)atof(argv[++i]);
         else if (!strcmp(a, "--no-weld")) c.weld_range = 0;
         else if (!strcmp(a, "--tail-flex") && more) c.tail_flex = atoi(argv[++i]);
         else if (!strcmp(a, "--tail-stiffen") && more) c.gains.tail_stiffen = (float)atof(argv[++i]);

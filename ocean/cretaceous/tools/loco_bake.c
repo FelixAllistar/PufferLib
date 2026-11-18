@@ -5,8 +5,8 @@
 // like any other clip, at no runtime cost (no physics, no policy).
 // Run from the repository root.
 //   loco_bake --policy CKPT.bin --out OUT.dino [--dino IN.dino] [--clip walk]
-//             [--push 2.0] [--cycles 2] [--tail-flex N] [--passive-tail] [--selftest]
-// --tail-flex and --passive-tail must match the policy's training (config/cretaceous_loco.ini).
+//             [--push 2.0] [--cycles 2] [--tail-flex N] [--passive-tail [--passive-damping 0.4]] [--selftest]
+// --tail-flex, --passive-tail and --passive-damping must match the policy's training (config/cretaceous_loco.ini).
 // Clips written (their names replace same-named clips already in IN):
 //   <clip>_phys   one cycle of the policy's own version of the clip, looping
 //   hit_<side>_<k>  side front, back, left or right (where the blow comes
@@ -263,6 +263,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(a, "--selftest")) selftest = true;
         else if (!strcmp(a, "--tail-flex") && more) c.tail_flex = atoi(argv[++i]);
         else if (!strcmp(a, "--passive-tail")) c.gains.passive = true;
+        else if (!strcmp(a, "--passive-damping") && more) c.gains.passive_damping = (float)atof(argv[++i]);
         else { fprintf(stderr, "loco_bake: unknown argument %s (see the header of tools/loco_bake.c)\n", a); return 2; }
     }
     if (!selftest && (!policy || !out)) { fprintf(stderr, "loco_bake: needs --policy and --out (or --selftest)\n"); return 2; }
