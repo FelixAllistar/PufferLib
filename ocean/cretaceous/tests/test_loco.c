@@ -219,6 +219,23 @@ static void test_push(void) {
     for (int s = 0; s < 60; s++) { loco_step(w, NULL, NULL, NULL); for (int i = 0; i < 4; i++) started += w->ag[i].push_left > 0; }
     CHECK(started > 0, "random shoves happen with push_interval set (%d agent steps under a shove)", started);
     free_world(w);
+    // The curriculum: the PD baseline falls within a second or two, so its level stays at the bottom.
+    c.push_adapt = 0.05f; c.push_interval = 1;
+    w = (LocoWorld*)calloc(1, sizeof(LocoWorld));
+    if (!loco_world_init(w, &c, 5, err, sizeof err)) { CHECK(0, "curriculum world: %s", err); free(w); return; }
+    loco_reset_all(w);
+    for (int s = 0; s < 300; s++) loco_step(w, NULL, NULL, NULL);
+    CHECK(w->stats.falls > 0 && w->push_level < 0.05f, "falling animals keep the shoves gentle (level %.2f after %.0f falls)", w->push_level, w->stats.falls);
+    free_world(w);
+    // The heading term: at a perfect track (the reset state) the reward is the sum of the weights.
+    c = loco_default_config(); snprintf(c.dino, sizeof c.dino, "%s", FIXTURE); c.num_agents = 1; c.w_heading = 0.1f;
+    w = (LocoWorld*)calloc(1, sizeof(LocoWorld));
+    if (!loco_world_init(w, &c, 5, err, sizeof err)) { CHECK(0, "heading world: %s", err); free(w); return; }
+    loco_reset_agent(w, 0, 0.3f);
+    loco_doll_get(&w->phys, 0, w->pos, w->rot, w->vel, w->angvel); loco_ref_at(w, w->ag[0].t);
+    float r = loco_reward(w, &w->ag[0]);
+    CHECK(fabsf(r - 1.1f) < 1e-3f && fabsf(w->ag[0].r_heading - 1) < 1e-5f, "perfect track with the heading term: reward %.4f (weights sum 1.1)", r);
+    free_world(w);
 }
 
 // The CPU runner: a hand-made checkpoint (hidden 32, one layer) with zero

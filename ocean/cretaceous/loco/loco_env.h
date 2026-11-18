@@ -19,8 +19,11 @@
 //     DeepMimic's fixed 0.05) while action_scale caps the offset.
 //   Reward: DeepMimic's imitation reward, a weighted sum of
 //     exp(-k * error) for the joint rotations, joint angular velocities, end
-//     effectors (feet, head, tail tip) and the centre of mass's velocity.
-//     Exactly 1 when the body matches the clip.
+//     effectors (feet, head, tail tip) and the centre of mass's velocity,
+//     plus (reward_heading > 0) one for the pelvis's heading alone, which still
+//     points the way back when a shove has turned the animal so far that every
+//     other term reads 0. Exactly the sum of the weights when the body
+//     matches the clip.
 //   Episode: starts at a random phase of the clip in the clip's pose and
 //     velocities (reference state initialisation), ends when a body other
 //     than a foot touches the ground (early termination) or after
@@ -31,6 +34,11 @@
 //     push_min..push_max m/s. The reward stays the clip's, so the policy learns
 //     to take the hit and get back into its walk: the recoveries are motion the
 //     clips do not have (tools/loco_bake.c turns them into game clips).
+//     push_adapt > 0 grows the shoves with the policy: each world's level (0..1)
+//     sets the top of the range, push_min + level * (push_max - push_min); an
+//     episode that ends standing raises it by push_adapt, a fall lowers it by
+//     four times that, so it settles where about one episode in five falls.
+//     A fresh policy meets gentle shoves until it walks.
 #ifndef CRET_LOCO_ENV_H
 #define CRET_LOCO_ENV_H
 #include "loco_sim.h"
@@ -46,11 +54,13 @@ typedef struct LocoConfig {
     // Reward weights and scales (DeepMimic's: 0.65, 0.1, 0.15, 0.1; 2, 0.1, 40, 10; here k_ee is 10
     // for a 3 m animal, and the COM term compares velocities, see loco_com_vel).
     float w_pose, w_vel, w_ee, w_com, k_pose, k_vel, k_ee, k_com;
+    float w_heading, k_heading;   // the heading term (rad^2 scale); 0 weight: off
     LocoGains gains;
     float fall_height;     // also fallen when the pelvis is below this share of the clip's pelvis height
     float weld_range;      // joints the clips move less than this (rad) are welded (loco_rig.h); 0 keeps every joint
     int tail_flex;         // tail joints kept from the base, the rest welded into a rod (loco_rig.h); 0 keeps them all
     float push_interval, push_min, push_max, push_seconds;   // shoves: mean seconds between them (0: none), speed change (m/s), duration (s)
+    float push_adapt;      // shove curriculum step (0: the full range from the start)
 } LocoConfig;
 
 static LocoConfig loco_default_config(void) {
@@ -62,7 +72,8 @@ static LocoConfig loco_default_config(void) {
     c.w_pose = 0.65f; c.w_vel = 0.1f; c.w_ee = 0.15f; c.w_com = 0.1f;
     c.k_pose = 2.0f; c.k_vel = 0.1f; c.k_ee = 10.0f; c.k_com = 10.0f;
     c.gains = loco_default_gains(); c.fall_height = 0.5f; c.weld_range = LOCO_MIN_RANGE;
-    c.push_interval = 0; c.push_min = 0.5f; c.push_max = 1.5f; c.push_seconds = 0.1f;
+    c.push_interval = 0; c.push_min = 0.5f; c.push_max = 1.5f; c.push_seconds = 0.1f; c.push_adapt = 0;
+    c.w_heading = 0; c.k_heading = 1.0f;
     return c;
 }
 
@@ -70,12 +81,12 @@ static LocoConfig loco_default_config(void) {
 typedef struct LocoAgent {
     double t;              // clip time (s): the start phase plus the time since the reset
     float elapsed, ret, err_pose, err_ee; int steps; bool fallen;
-    float r_pose, r_vel, r_ee, r_com;   // last step's reward terms
+    float r_pose, r_vel, r_ee, r_com, r_heading;   // last step's reward terms
     float start_x;         // pelvis x at the reset
     int push_left, push_body; b3Vec3 push_force;   // the shove under way: physics steps left, body, force (N)
 } LocoAgent;
 
-typedef struct LocoStats { double episodes, falls, length, ret, distance, reward, pose_deg, ee_cm, steps; } LocoStats;
+typedef struct LocoStats { double episodes, falls, length, ret, distance, reward, pose_deg, ee_cm, steps, push_level; } LocoStats;
 
 typedef struct LocoWorld {
     LocoConfig cfg; LocoRig rig; LocoRef ref; LocoPhys phys;
@@ -83,6 +94,7 @@ typedef struct LocoWorld {
     LocoAgent ag[LOCO_MAX_AGENTS];
     LocoStats stats;
     float pelvis_h;        // the clip's mean pelvis height
+    float push_level;      // shove curriculum level 0..1 (push_adapt)
     // Scratch for one agent's state and its reference (model space).
     b3Vec3 pos[LOCO_MAX_BODIES], vel[LOCO_MAX_BODIES], angvel[LOCO_MAX_BODIES];
     b3Quat rot[LOCO_MAX_BODIES];
@@ -191,7 +203,8 @@ static void loco_push_maybe(LocoWorld* w, int i) {
     if (c->push_interval <= 0 || a->push_left > 0 || loco_randf(&w->rng) * c->push_interval * c->policy_hz >= 1.0f) return;
     int nb = w->rig.nbody < 3 ? w->rig.nbody : 3;   // pelvis, spine, chest: the first bodies of every table
     int b = (int)(loco_randf(&w->rng) * nb); if (b >= nb) b = nb - 1;
-    float ang = 2.0f * (float)M_PI * loco_randf(&w->rng), sp = c->push_min + (c->push_max - c->push_min) * loco_randf(&w->rng);
+    float top = c->push_adapt > 0 ? w->push_level : 1.0f;
+    float ang = 2.0f * (float)M_PI * loco_randf(&w->rng), sp = c->push_min + (c->push_max - c->push_min) * top * loco_randf(&w->rng);
     loco_push(w, i, b, lv(sp * cosf(ang), 0, sp * sinf(ang)), c->push_seconds);
 }
 static void loco_reset_all(LocoWorld* w) { for (int i = 0; i < w->cfg.num_agents; i++) loco_reset_agent(w, i, -1); }
@@ -240,9 +253,10 @@ static float loco_reward(LocoWorld* w, LocoAgent* a) {
         ee += lv_len2(b3Sub(es, er));
     }
     float ec = lv_len2(b3Sub(loco_com_vel(w, w->rot, w->vel, w->angvel, false), loco_com_vel(w, w->rrot, w->rvel, w->rangvel, true)));
-    a->r_pose = expf(-c->k_pose * ep); a->r_vel = expf(-c->k_vel * ev); a->r_ee = expf(-c->k_ee * ee); a->r_com = expf(-c->k_com * ec);
+    float eh = lq_angle(hs, hr); eh *= eh;
+    a->r_pose = expf(-c->k_pose * ep); a->r_vel = expf(-c->k_vel * ev); a->r_ee = expf(-c->k_ee * ee); a->r_com = expf(-c->k_com * ec); a->r_heading = expf(-c->k_heading * eh);
     a->err_pose += sqrtf(ep / r->nbody); a->err_ee += sqrtf(ee / (r->nee > 0 ? r->nee : 1));
-    return c->w_pose * a->r_pose + c->w_vel * a->r_vel + c->w_ee * a->r_ee + c->w_com * a->r_com;
+    return c->w_pose * a->r_pose + c->w_vel * a->r_vel + c->w_ee * a->r_ee + c->w_com * a->r_com + c->w_heading * a->r_heading;
 }
 
 // Agent i's observation (LOCO_OBS floats) from its current state in w->pos...
@@ -307,6 +321,8 @@ static void loco_step(LocoWorld* w, const float* const* act, float* reward, floa
             st->episodes += 1; st->falls += a->fallen; st->length += a->elapsed; st->ret += a->ret;
             st->distance += w->pos[0].x - a->start_x;
             st->pose_deg += a->err_pose / a->steps * (180.0 / M_PI); st->ee_cm += a->err_ee / a->steps * 100.0;
+            if (c->push_adapt > 0) w->push_level = fminf(fmaxf(w->push_level + (a->fallen ? -4.0f : 1.0f) * c->push_adapt, 0.0f), 1.0f);
+            st->push_level += w->push_level;
             loco_reset_agent(w, i, -1);
         }
     }
@@ -330,10 +346,10 @@ static uint64_t loco_hash(const LocoWorld* w) {
 #define LOCO_KEYS(X) \
     X(num_agents, num_agents, int) X(policy_hz, policy_hz, int) X(sim_hz, sim_hz, int) X(substeps, substeps, int) \
     X(episode_seconds, episode_seconds, float) X(action_scale, action_scale, float) X(action_unit, action_unit, float) X(lane, lane, float) \
-    X(w_pose, reward_pose, float) X(w_vel, reward_vel, float) X(w_ee, reward_ee, float) X(w_com, reward_com, float) \
+    X(w_pose, reward_pose, float) X(w_vel, reward_vel, float) X(w_ee, reward_ee, float) X(w_com, reward_com, float) X(w_heading, reward_heading, float) X(k_heading, k_heading, float) \
     X(k_pose, k_pose, float) X(k_vel, k_vel, float) X(k_ee, k_ee, float) X(k_com, k_com, float) \
     X(gains.leg, hertz_leg, float) X(gains.body, hertz_body, float) X(gains.tail, hertz_tail, float) \
     X(gains.passive_tail, hertz_passive_tail, float) X(gains.damping, damping, float) X(gains.passive_damping, damping_passive_tail, float) X(gains.tail_stiffen, tail_stiffen, float) \
     X(gains.friction, friction, float) X(gains.passive, passive_tail, bool) X(fall_height, fall_height, float) X(weld_range, weld_range, float) X(tail_flex, tail_flex, int) \
-    X(push_interval, push_interval, float) X(push_min, push_min, float) X(push_max, push_max, float) X(push_seconds, push_seconds, float)
+    X(push_interval, push_interval, float) X(push_min, push_min, float) X(push_max, push_max, float) X(push_seconds, push_seconds, float) X(push_adapt, push_adapt, float)
 #endif
