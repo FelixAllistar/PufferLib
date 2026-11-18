@@ -25,6 +25,12 @@
 //     velocities (reference state initialisation), ends when a body other
 //     than a foot touches the ground (early termination) or after
 //     episode_seconds.
+//   Shoves (off unless push_interval > 0): every push_interval seconds on
+//     average a horizontal push in a random direction hits the pelvis, spine
+//     or chest for push_seconds, sized to change the whole animal's speed by
+//     push_min..push_max m/s. The reward stays the clip's, so the policy learns
+//     to take the hit and get back into its walk: the recoveries are motion the
+//     clips do not have (tools/loco_bake.c turns them into game clips).
 #ifndef CRET_LOCO_ENV_H
 #define CRET_LOCO_ENV_H
 #include "loco_sim.h"
@@ -43,6 +49,7 @@ typedef struct LocoConfig {
     LocoGains gains;
     float fall_height;     // also fallen when the pelvis is below this share of the clip's pelvis height
     float weld_range;      // joints the clips move less than this (rad) are welded (loco_rig.h); 0 keeps every joint
+    float push_interval, push_min, push_max, push_seconds;   // shoves: mean seconds between them (0: none), speed change (m/s), duration (s)
 } LocoConfig;
 
 static LocoConfig loco_default_config(void) {
@@ -54,6 +61,7 @@ static LocoConfig loco_default_config(void) {
     c.w_pose = 0.65f; c.w_vel = 0.1f; c.w_ee = 0.15f; c.w_com = 0.1f;
     c.k_pose = 2.0f; c.k_vel = 0.1f; c.k_ee = 10.0f; c.k_com = 10.0f;
     c.gains = loco_default_gains(); c.fall_height = 0.5f; c.weld_range = LOCO_MIN_RANGE;
+    c.push_interval = 0; c.push_min = 0.5f; c.push_max = 1.5f; c.push_seconds = 0.1f;
     return c;
 }
 
@@ -63,6 +71,7 @@ typedef struct LocoAgent {
     float elapsed, ret, err_pose, err_ee; int steps; bool fallen;
     float r_pose, r_vel, r_ee, r_com;   // last step's reward terms
     float start_x;         // pelvis x at the reset
+    int push_left, push_body; b3Vec3 push_force;   // the shove under way: physics steps left, body, force (N)
 } LocoAgent;
 
 typedef struct LocoStats { double episodes, falls, length, ret, distance, reward, pose_deg, ee_cm, steps; } LocoStats;
@@ -169,6 +178,21 @@ static void loco_reset_agent(LocoWorld* w, int i, float phase) {
     memset(a, 0, sizeof *a);
     a->t = t; a->start_x = w->rpos[0].x;
 }
+// Starts a shove on agent i: body b's force for the push's duration changes the
+// whole animal's velocity by dv (m/s, the impulse spread over the duration).
+static void loco_push(LocoWorld* w, int i, int b, b3Vec3 dv, float seconds) {
+    LocoAgent* a = &w->ag[i]; int n = (int)lroundf(seconds * w->cfg.sim_hz); if (n < 1) n = 1;
+    a->push_body = b; a->push_left = n; a->push_force = b3MulSV(w->rig.total_mass * w->cfg.sim_hz / n, dv);
+}
+// A random shove for agent i when one is due (none while one is under way).
+static void loco_push_maybe(LocoWorld* w, int i) {
+    const LocoConfig* c = &w->cfg; LocoAgent* a = &w->ag[i];
+    if (c->push_interval <= 0 || a->push_left > 0 || loco_randf(&w->rng) * c->push_interval * c->policy_hz >= 1.0f) return;
+    int nb = w->rig.nbody < 3 ? w->rig.nbody : 3;   // pelvis, spine, chest: the first bodies of every table
+    int b = (int)(loco_randf(&w->rng) * nb); if (b >= nb) b = nb - 1;
+    float ang = 2.0f * (float)M_PI * loco_randf(&w->rng), sp = c->push_min + (c->push_max - c->push_min) * loco_randf(&w->rng);
+    loco_push(w, i, b, lv(sp * cosf(ang), 0, sp * sinf(ang)), c->push_seconds);
+}
 static void loco_reset_all(LocoWorld* w) { for (int i = 0; i < w->cfg.num_agents; i++) loco_reset_agent(w, i, -1); }
 
 // Mass-weighted velocity of the centre of mass of a state. A velocity, not a
@@ -250,12 +274,17 @@ static void loco_observe(LocoWorld* w, int i, float* o) {
 static void loco_step(LocoWorld* w, const float* const* act, float* reward, float* terminal) {
     const LocoConfig* c = &w->cfg; int n = c->num_agents, k = c->sim_hz / c->policy_hz;
     float h = 1.0f / c->sim_hz; b3Quat dev[LOCO_MAX_BODIES];
-    for (int i = 0; i < n; i++) w->ag[i].fallen = false;
+    for (int i = 0; i < n; i++) { w->ag[i].fallen = false; loco_push_maybe(w, i); }
     for (int s = 0; s < k; s++) {
         for (int i = 0; i < n; i++) {
-            loco_ref_sample(&w->ref, w->ag[i].t + (s + 1) * h, NULL, w->rrot, NULL, NULL);
+            LocoAgent* a = &w->ag[i];
+            loco_ref_sample(&w->ref, a->t + (s + 1) * h, NULL, w->rrot, NULL, NULL);
             loco_targets(w, w->rrot, act ? act[i] : NULL, dev);
             loco_doll_targets(&w->phys, i, dev);
+            if (a->push_left > 0) {   // Box3D clears forces after every step
+                b3Body_ApplyForceToCenter(w->phys.doll[i].body[a->push_body], a->push_force, true);
+                a->push_left--;
+            }
         }
         b3World_Step(w->phys.world, h, c->substeps);
         for (int i = 0; i < n; i++) if (!w->ag[i].fallen && loco_doll_fallen(&w->phys, i)) w->ag[i].fallen = true;
@@ -304,5 +333,6 @@ static uint64_t loco_hash(const LocoWorld* w) {
     X(k_pose, k_pose, float) X(k_vel, k_vel, float) X(k_ee, k_ee, float) X(k_com, k_com, float) \
     X(gains.leg, hertz_leg, float) X(gains.body, hertz_body, float) X(gains.tail, hertz_tail, float) \
     X(gains.passive_tail, hertz_passive_tail, float) X(gains.damping, damping, float) X(gains.passive_damping, damping_passive_tail, float) \
-    X(gains.friction, friction, float) X(gains.passive, passive_tail, bool) X(fall_height, fall_height, float) X(weld_range, weld_range, float)
+    X(gains.friction, friction, float) X(gains.passive, passive_tail, bool) X(fall_height, fall_height, float) X(weld_range, weld_range, float) \
+    X(push_interval, push_interval, float) X(push_min, push_min, float) X(push_max, push_max, float) X(push_seconds, push_seconds, float)
 #endif

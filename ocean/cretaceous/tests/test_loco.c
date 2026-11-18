@@ -175,6 +175,32 @@ static void test_determinism(void) {
     CHECK(a != c, "another seed, another run");
 }
 
+// A shove: twin worlds, one pushed along +x by 1 m/s over 0.1 s; after it the
+// pushed animal's centre of mass moves about 1 m/s faster (the feet's friction
+// and the springs take some). Random shoves (push_interval) start and end.
+static void test_push(void) {
+    LocoWorld* a = make_world(FIXTURE, 1, 3); LocoWorld* b = make_world(FIXTURE, 1, 3);
+    CHECK(a && b, "push worlds build");
+    if (!a || !b) { free_world(a); free_world(b); return; }
+    loco_reset_agent(a, 0, 0.0f); loco_reset_agent(b, 0, 0.0f);
+    loco_push(b, 0, 0, lv(1, 0, 0), 0.1f);
+    for (int s = 0; s < 3; s++) { loco_step(a, NULL, NULL, NULL); loco_step(b, NULL, NULL, NULL); }
+    loco_doll_get(&a->phys, 0, a->pos, a->rot, a->vel, a->angvel); loco_doll_get(&b->phys, 0, b->pos, b->rot, b->vel, b->angvel);
+    b3Vec3 va = loco_com_vel(a, a->rot, a->vel, a->angvel, false), vb = loco_com_vel(b, b->rot, b->vel, b->angvel, false);
+    float dx = vb.x - va.x, dz = vb.z - va.z;
+    CHECK(dx > 0.7f && dx < 1.1f && fabsf(dz) < 0.2f, "a 1 m/s shove: COM %.2f m/s faster along x, %.2f across", dx, dz);
+    CHECK(b->ag[0].push_left <= 0, "the shove has ended after its 0.1 s");
+    free_world(a); free_world(b);
+    LocoConfig c = loco_default_config();
+    snprintf(c.dino, sizeof c.dino, "%s", FIXTURE); c.num_agents = 4; c.push_interval = 0.2f;
+    LocoWorld* w = (LocoWorld*)calloc(1, sizeof(LocoWorld)); char err[256];
+    if (!loco_world_init(w, &c, 5, err, sizeof err)) { CHECK(0, "push world: %s", err); free(w); return; }
+    loco_reset_all(w); int started = 0;
+    for (int s = 0; s < 60; s++) { loco_step(w, NULL, NULL, NULL); for (int i = 0; i < 4; i++) started += w->ag[i].push_left > 0; }
+    CHECK(started > 0, "random shoves happen with push_interval set (%d agent steps under a shove)", started);
+    free_world(w);
+}
+
 // The CPU runner: a hand-made checkpoint (hidden 32, one layer) with zero
 // encoder and MinGRU weights and an all-ones decoder gives every action
 // hidden * 0.125 (h~ = 0.5, gate 0.5, h = 0.25, skip gate 0.5, x = 0).
@@ -325,6 +351,7 @@ int main(void) {
     test_stability();
     test_rsi_reward();
     test_determinism();
+    test_push();
     test_policy();
     test_binding();
     test_config();
