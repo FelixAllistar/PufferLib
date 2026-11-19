@@ -768,7 +768,7 @@ def placement(heights):
         if d > 40: continue          # beyond: the forest walls
         if HS.seg_dist(x, z, HS.LANE) < 4.2 + .02 * d: continue
         if x < x0 and abs(x - HS.CREEK_X) < 2.2: continue
-        r = 3.3 + .045 * d + (.0006 * d * d)
+        r = 4.2 + .05 * d + (.0006 * d * d)
         if not ok(x, z, r): continue
         grid.setdefault((int(math.floor(x / cell)), int(math.floor(z / cell))), []).append((x, z, r))
         pts.append((x, z, d))
@@ -820,12 +820,12 @@ def placement(heights):
     scatter("stump_0", 20, 1, 30, .8, 1.2); scatter("stump_1", 20, 1, 30, .8, 1.2)
     scatter("rock_0", 40, .5, 34, .5, 1.3); scatter("rock_1", 40, .5, 34, .5, 1.3); scatter("rock_2", 30, .5, 34, .6, 1.6)
     scatter("limbs_0", 70, .5, 30, .8, 1.3); scatter("limbs_1", 70, .5, 30, .8, 1.3)
-    scatter("fern_0", 300, .5, 26, .7, 1.3)
+    scatter("fern_0", 220, .5, 24, .7, 1.3)
     # small field stones half-sunk along the inside of the yard edge (visual only, <= 0.4 m)
     for k, nm in enumerate(("rock_0", "rock_1", "rock_2")):
         scatter(nm, 18, 0, 0, .22, .4, yoff=-.06, inside_edge=6.0, lane=2.6)
     scatter("goldenrod_0", 170, 0, 5, .8, 1.3, inside_edge=3.0, lane=2.8)
-    scatter("grass_0", 520, 0, 6, .7, 1.3, inside_edge=4.5, lane=2.4)
+    scatter("grass_0", 380, 0, 6, .7, 1.3, inside_edge=4.5, lane=2.4)
     print("scatter", counts)
     for (s, x, y, z, yaw, sc, fl) in inst:
         lines.append(f"i {s} {x:.2f} {y:.2f} {z:.2f} {yaw:.3f} {sc:.3f} {fl}")

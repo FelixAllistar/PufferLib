@@ -28,6 +28,7 @@ enum { HW_FLAG_SHADOW=1, HW_FLAG_EDGE=2 };
 static const char* const hw_texture_names[HW_TEXTURES]={"oak","poplar","sycamore","hemlock","pine","laurel","rock","log","impostor","wall"};
 typedef struct HwMesh {
     Model model; int texture; int bark,card; // mesh indices in model, -1 none
+    int band; // draw order: 0 lod0/scatter, 1 lod1, 2 impostor, 3 forest wall
     float radius,height; int tris;
 } HwMesh;
 typedef struct HwInstance { Matrix transform; Vector3 position; float scale,radius,height; short set; unsigned char flags; } HwInstance;
@@ -39,6 +40,7 @@ typedef struct SwatHollowWoods {
     Shader depth; int depth_attrib;
     int shader_locs[RL_MAX_SHADER_LOCATIONS];
     Matrix* lists[HW_MAX_MESHES]; int list_count[HW_MAX_MESHES],trunk_count[HW_MAX_MESHES];
+    float* depth_key[HW_MAX_MESHES]; int* sort_index; Matrix* sort_scratch;
     Vector3 eye; bool eye_known;
     int draws,tris; // last lit pass, for review tools
     float lod0,lod1; int no_far;
@@ -69,7 +71,8 @@ static int hw_mesh_find(const SwatHollowWoods* w,const char* name) {
 }
 static void hollow_woods_close(SwatHollowWoods* w) {
     if(!w)return;
-    for(int i=0;i<w->mesh_count;i++) { UnloadModel(w->meshes[i].model); free(w->lists[i]); }
+    for(int i=0;i<w->mesh_count;i++) { UnloadModel(w->meshes[i].model); free(w->lists[i]); free(w->depth_key[i]); }
+    free(w->sort_index); free(w->sort_scratch);
     for(int i=0;i<HW_TEXTURES;i++) { if(w->color[i].id)UnloadTexture(w->color[i]); if(w->normal[i].id)UnloadTexture(w->normal[i]); }
     if(w->atlas.id)UnloadTexture(w->atlas);
     if(w->depth.id && w->depth.id!=rlGetShaderIdDefault())UnloadShader(w->depth);
@@ -118,6 +121,7 @@ static SwatHollowWoods* hollow_woods_load(void) {
         for(int t=0;t<HW_TEXTURES && hw_texture_names[t];t++) if(!strcmp(tex,hw_texture_names[t])) m->texture=t;
         if(m->texture<0 || !w->color[m->texture].id){UnloadModel(m->model);ok=false;break;}
         m->radius=radius;m->height=height;m->tris=tris;
+        m->band=!strcmp(tex,"wall")?3:strstr(path,"_lod2")?2:strstr(path,"_lod1")?1:0;
         snprintf(w->mesh_names[w->mesh_count],sizeof(w->mesh_names[0]),"%s",path);
         w->mesh_count++;
     }
@@ -143,7 +147,11 @@ static SwatHollowWoods* hollow_woods_load(void) {
         }
     }
     UnloadFileText(placement);
-    for(int i=0;i<w->mesh_count && ok;i++) { w->lists[i]=malloc(sizeof(Matrix)*HW_MAX_INSTANCES); ok=w->lists[i]!=NULL; }
+    for(int i=0;i<w->mesh_count && ok;i++) {
+        w->lists[i]=malloc(sizeof(Matrix)*HW_MAX_INSTANCES); w->depth_key[i]=malloc(sizeof(float)*HW_MAX_INSTANCES);
+        ok=w->lists[i] && w->depth_key[i];
+    }
+    if(ok) { w->sort_index=malloc(sizeof(int)*HW_MAX_INSTANCES); w->sort_scratch=malloc(sizeof(Matrix)*HW_MAX_INSTANCES); ok=w->sort_index && w->sort_scratch; }
     if(ok) {
         w->depth=LoadShaderFromMemory(hw_depth_vs,hw_depth_fs);
         w->depth_attrib=GetShaderLocationAttrib(w->depth,"instanceTransform");
@@ -159,6 +167,17 @@ static SwatHollowWoods* hollow_woods_load(void) {
 
 #define HW_SCATTER_FAR 42.0f
 #define HW_SHRUB_FAR 75.0f
+static const float* hw_sort_keys;
+static int hw_sort_compare(const void* a,const void* b) {
+    float x=hw_sort_keys[*(const int*)a],y=hw_sort_keys[*(const int*)b];
+    return x<y?-1:x>y?1:(*(const int*)a-*(const int*)b);
+}
+static void hw_sort(SwatHollowWoods* w,int mesh,int n) {
+    for(int k=0;k<n;k++) w->sort_index[k]=k;
+    hw_sort_keys=w->depth_key[mesh]; qsort(w->sort_index,(size_t)n,sizeof(int),hw_sort_compare);
+    for(int k=0;k<n;k++) w->sort_scratch[k]=w->lists[mesh][w->sort_index[k]];
+    memcpy(w->lists[mesh],w->sort_scratch,sizeof(Matrix)*(size_t)n);
+}
 static void hw_lists_reset(SwatHollowWoods* w) { memset(w->list_count,0,sizeof(w->list_count)); memset(w->trunk_count,0,sizeof(w->trunk_count)); }
 
 static void hollow_woods_draw(const SwatEnvironmentArt* art,SwatHollowWoods* w,bool shadow,bool lit,Matrix scene) {
@@ -200,7 +219,9 @@ static void hollow_woods_draw(const SwatEnvironmentArt* art,SwatHollowWoods* w,b
         if(cutaway && (in->flags&HW_FLAG_SHADOW) && set[2]>=0) {
             if(w->list_count[mesh]+w->trunk_count[mesh]<HW_MAX_INSTANCES)
                 w->lists[mesh][HW_MAX_INSTANCES-1-w->trunk_count[mesh]++]=transform;
-        } else if(w->list_count[mesh]+w->trunk_count[mesh]<HW_MAX_INSTANCES) w->lists[mesh][w->list_count[mesh]++]=transform;
+        } else if(w->list_count[mesh]+w->trunk_count[mesh]<HW_MAX_INSTANCES) {
+            w->depth_key[mesh][w->list_count[mesh]]=d; w->lists[mesh][w->list_count[mesh]++]=transform;
+        }
     }
     SwatLightingProgram* p=lit?&art->lighting->mesh:NULL;
     Shader shader;
@@ -218,8 +239,15 @@ static void hollow_woods_draw(const SwatEnvironmentArt* art,SwatHollowWoods* w,b
     } else return; // unlit fallback: the woods need the lit program
     shader.locs=w->shader_locs;
     w->draws=w->tris=0;
-    for(int i=0;i<w->mesh_count;i++) {
+    // Near to far: lod0 and scatter, lod1, impostors, then the forest walls;
+    // each list front to back, so the software rasterizer's depth test
+    // rejects hidden card fragments before shading them.
+    int order[HW_MAX_MESHES],count=0;
+    for(int band=0;band<4;band++) for(int i=0;i<w->mesh_count;i++) if(w->meshes[i].band==band) order[count++]=i;
+    for(int o=0;o<count;o++) {
+        int i=order[o];
         int n=w->list_count[i],trunks=w->trunk_count[i];
+        if(n>1) hw_sort(w,i,n);
         if(!n && !trunks) continue;
         const HwMesh* m=&w->meshes[i];
         bool impostor=!strcmp(hw_texture_names[m->texture],"impostor") || !strcmp(hw_texture_names[m->texture],"wall");
