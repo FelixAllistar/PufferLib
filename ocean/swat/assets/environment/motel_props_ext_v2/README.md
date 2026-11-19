@@ -22,6 +22,7 @@ photos guided proportions only; nothing from them is in the assets.
 | BC2_PAYPHONE01.glb | pedestal payphone, faded yellow hood | 1,074 | dirty_concrete (grain) | Commons "Payphone Main St Moab UT 2025-05-16 11-54-11 1.jpg" by G. Edward Johnson (CC BY 4.0) |
 | BC2_NEWSBOX01.glb | row of four newspaper vending boxes | 960 | rusty_painted_metal (grain) | Commons "Group of Newspaper Vending Machines.jpg" by Twzink (CC0) |
 | BC2_TYRES01.glb | dumped tyre stacks with dry grass | 8,072 | dirty_concrete (grain) | Commons "Old tires stacked near a fence with grass growing on top.jpg" by Shixart1985 (CC BY 2.0) |
+| BC2_MATTRESS01.glb | discarded quilted single mattress | 1,328 | own quilt map (CC0), dirty_concrete (grain) | Commons "Discarded mattress by trash bin (18822330575).jpg" by Eric Fischer (CC BY 2.0) |
 
 Licence of the generated files: CC0 1.0 (original work; Poly Haven inputs are
 CC0). No brand logos, badges or real names.

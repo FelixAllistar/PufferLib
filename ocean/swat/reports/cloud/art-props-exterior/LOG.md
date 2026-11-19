@@ -156,3 +156,20 @@ by Shixart1985 (CC BY 2.0; copy in refs/tyres_ref.jpg).
 9. tyres game 3: moved to (-2.2, -11.4), east of the dumpster and clear of the annex door; final capture. Stop.
 
 Budget: 8,072 triangles, 2 materials, shared grain; GLB ~0.45 MB.
+
+## Discarded mattress (BC2_MATTRESS01)
+
+Reference: https://commons.wikimedia.org/wiki/File:Discarded_mattress_by_trash_bin_(18822330575).jpg
+by Eric Fischer (CC BY 2.0; copy in refs/mattress_ref.jpg). The hexagonal
+quilting map is drawn by the script (original).
+
+1. mattress iter 1: bevelled slab with procedural hex quilting and white piping, propped on its long edge; camera behind the face; closer: baseline
+2. mattress iter 2: camera to the quilted face, ticking darker; closer: yes
+3. mattress iter 3: camera mirrored so it leans the ref's way, piping 12 -> 8 mm; closer: yes
+4. mattress iter 4: quilt cells 0.16 -> 0.11 m, softer stitches, thicker (0.20 m) with rounder edges; closer: yes
+5. mattress iter 5: greyer navy ticking, grime towards the ground edge; closer: yes (small)
+6. mattress iter 6: more face sag; closer: no visible change, not kept. Stop.
+7. mattress game 1: leaning on the dumpster's east end: top edge cut into the lid; closer: n/a
+8. mattress game 2: moved 0.45 m east so it rests against the dumpster; closer: yes. Stop.
+
+Budget: 1,328 triangles, 2 materials, 256 px quilt PNG + 256 px grain; GLB ~0.1 MB.
