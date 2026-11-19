@@ -70,3 +70,25 @@ is at the end of this file.
 14. Fault: past 30 m sunlit high slopes read as a pale sandy felt (`s2a`'s upper slope, `p3`). Change:
     scree mottled at 1-6 m by boulders and their shadows from 15-40 m out. Reverted: no visible change
     in `s2a` (that slope is mostly rock, lit nearly head-on) or `mtS`, and little in `p3`.
+
+Checks after pass 14 (all against `cret/hc`, round 1 merged, same machine):
+- World shots `ridge`, `canopy`, `aerial`, `coast`, `river`, `ground`, `skyh`, `gup` at 960x540: the
+  lowland views are unchanged; `ridge` and `skyh` (sheets) show the mountains as before from afar, with
+  the tree islands where the last lone trees stood.
+- Bake (`terrashade --relief`, 4 CPU cores, no cache): 25.1 s, against 25.2 s for round 1's.
+- Trees on the island 183,574 to 184,215; tree meshes untouched (699,508 mesh tris over 112 variants).
+- `make test`, line by line: as on `cret/hc` here. test_sim 2 and test_net_codec 3 failures and
+  animcheck (no props or models in the cloud); camprobe 205 violation frames and ecoprobe 126 of 146,
+  the same numbers as `cret/hc` gives in this sandbox. Everything else passes.
+  `tools/web_shader_check.py terrain`: compiles as GLSL ES 3.00.
+
+Sheets (round 1 left, this branch right, 1280x720 renders; `ridge`, `skyh` 960x540): `af1` talus 2 m up,
+`af4` across a steep slope, `c2` a face from its foot, `c3` a rock slope 2 m up, `tl2`, `tl3`, `tl6` at
+the tree line (tl6 30 m up), `s2a` the second summit, `mtS`, `mtW` the main summit from 420 m and 350 m.
+
+Cameras: CRET_SHOT_CAM="af1:4416:3780:2:-1.57:0.12:70;af2:4330:3616:2:0.0:0.05:70;af4:4500:3560:2:-2.4:0.0:70;
+mtS:4416:4500:420:-1.57:-0.22:60;mtW:3500:3616:350:0.0:-0.18:60;p3:2896:2560:3:-1.57:0.1:70;
+tl1:4416:3950:3:-1.57:0.15:70;tl2:4200:3800:3:-0.8:0.1:70;tl3:4460:3930:1.6:-1.2:0.05:65;
+tl6:4700:3900:30:-2.3:-0.25:60;s2a:5088:3200:2:-1.57:0.12:70;s2b:5000:3088:2:0.0:0.05:70;
+c1:4182:3376:2:-0.12:0.3:70;c2:3537:2807:2:-2.63:0.3:70;c3:4230:5353:2:-2.42:0.3:70;
+c4:5020:3899:2:-2.95:0.3:70;c5:3054:2222:2:3.11:0.3:70" (at most 16 per capture).
