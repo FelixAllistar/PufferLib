@@ -19,3 +19,8 @@ brief's world shots; renders at 960x540 on Mesa llvmpipe.
    `terrain.fs` soil greys toward a stony grey-brown from 360-500 m; `terra.c` the summit ramp gives
    less soil (0.2) and some scree instead. Kept: `alp2` streaks are grey-tan stony ground, `mtD`'s high
    blotches calmer.
+6. Fault: the lower slopes are open parkland, not forest. Cause: the scatter keeps a tree with a chance
+   of its layer's density squared, so a stand split half conifer, half broadleaf had half the stems of a
+   pure one. Change: `terra.c` raises both canopy layers by 1/sqrt(c^2 + (1-c)^2), so a stand's stems
+   do not depend on its mix. Kept: the valley forests in `mtE` and `mtA` close up. Cost: 164,025 trees
+   on the island to 214,970 (+31% instances; meshes unchanged).

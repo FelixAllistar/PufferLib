@@ -1222,6 +1222,12 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float conshare = clampf(0.55f + 0.5f * (clump - clump2) - 0.35f * riparian + 0.2f * sstep(0.3f, 0.7f, slope), 0.1f, 0.9f);
         // At the tree line conifers go highest, the broadleaf groves stop below them; scrub carries on
         // a little higher as a low thicket, then thins out.
+        // The scatter keeps a tree with a chance that goes as its layer's density squared
+        // (render/veg_place.h), so two layers sharing a stand half and half would carry half the stems
+        // of a pure stand and every mixed forest read as open parkland. Both are raised so the stand's
+        // stems do not depend on its mix.
+        float mixfix = 1.0f / sqrtf(conshare * conshare + (1 - conshare) * (1 - conshare));
+        forest *= mixfix;
         v[TERRA_VEG_CONIFER] = forest * conshare * sstep(0.0f, 8.0f, temp) * (1 - sstep(tline - 30, tline + 50, h));
         v[TERRA_VEG_BROADLEAF] = forest * (1 - conshare) * sstep(12.0f, 18.0f, temp) * (1 - sstep(tline - 90, tline, h));
         v[TERRA_VEG_CYCAD] = grow * sstep(0.55f, 0.2f, moist) * sstep(16.0f, 22.0f, temp) * (0.3f + 0.4f * n2) * (1 - alpine);
