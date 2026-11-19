@@ -25,7 +25,10 @@ const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
 const float BED_PALE = 1.1;   // brightest the bedrock skin's tones lift the ground before easing (main)
 const float STONY_SOIL = 0.6;   // bare soil above the tree line, darkened (main)
 const float FR_CELL = 0.9;   // fractured rock: mean plate size (m)
-const float SCREE_COPY = 0.5;   // scale of scree's second copy (sample_mat): stones twice the size
+const float SCREE_COPY = 0.5;
+// Dry country per unit luminance (round 3, dry): golden straw of the dry grassland, its olive where the
+// drainage keeps it green, and the near-desert's warm red-brown earth, darker than the straw.
+const vec3 DRY_STRAW = vec3(1.62, 1.28, 0.64), DRY_OLIVE = vec3(1.2, 1.18, 0.62), DRY_EARTH = vec3(1.42, 0.98, 0.72) * 0.86;   // scale of scree's second copy (sample_mat): stones twice the size
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
 // under a Cretaceous canopy (photo sources are mostly brown leaf litter).
@@ -269,6 +272,7 @@ void main() {
     float recolor_near = mix(0.1, 0.8, smoothstep(8.0, 70.0, dist));
     float stony = 0.85 * smoothstep(360.0, 500.0, p.y + 60.0 * (texture(t_noise, p.xz / 190.0 + 0.37).r - 0.5));
     vec3 albedo = vec3(0.0), n = vec3(0.0); float rough = 0.0, wt = 0.0, mao = 0.0;
+    vec4 shv = vec4(0.0);   // the drawn share (after the height blend) of rock, scree, bare soil and sand
     for (int j = 0; j < 4; j++) {
         if (hsum[j] < 0.0) continue;
         int k = id[j];
@@ -283,9 +287,10 @@ void main() {
         // Talus: the voids between the blocks are deep and dark (the photo's gaps are mid-grey fines).
         // From its height map, near only; past 60-150 m the mips average it away.
         if (k == 1) al *= mix(mix(0.4, 1.0, smoothstep(0.2, 0.42, mats[j].height)), 1.0, smoothstep(60.0, 150.0, dist));
+        shv += vec4(k == 0, k == 1, k == 2, k == 6) * b;
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
-    albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
+    albedo /= max(wt, 1e-4); shv /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
     // Large-scale tint: drier/redder patches, greener under canopy.
     vec4 misc = texture(t_misc, uv);
     float canopy = misc.a;
@@ -308,10 +313,14 @@ void main() {
     {
         vec4 bio = texture(t_biome, uv) * (1.0 - clamp(w[0] + w[1], 0.0, 1.0)); float bl = dot(albedo, vec3(0.3, 0.59, 0.11));   // not on rock or scree
         albedo = mix(albedo, bl * vec3(1.32, 0.86, 0.6), bio.r * 0.8);   // red-brown, a little darker than the soil
-        // Bare earth in dry country (the near-desert scrub, terra.c) stays earth: red-brown and darker
-        // than the straw of the dry grass round it.
-        float earth = clamp(w[2] * 1.4 - 0.2, 0.0, 1.0);
-        albedo = mix(albedo, bl * mix(vec3(1.65, 1.35, 0.78) * 0.98, vec3(1.45, 1.0, 0.68) * 0.92, earth), bio.g * 0.8);
+        // The near-desert's bare earth is warm red-brown, well apart from the golden straw (they read as one
+        // cream from the air); its pans and washes (sand) are left to their own tints below.
+        // The shares are of the drawn material (the height blend), not the splat weights: a stony flat drawn
+        // as stones took the straw tint of the soil under it.
+        float earth = clamp(shv.z * 1.3, 0.0, 1.0);
+        albedo = mix(albedo, bl * mix(DRY_STRAW, DRY_EARTH, earth), texture(t_biome, uv).g * 0.8 * (1.0 - clamp(shv.x + shv.y + shv.w, 0.0, 1.0)));
+        // Stony flats in dry country are desert pavement: stones darkened and reddened by varnish, not grey talus.
+        albedo = mix(albedo, albedo * vec3(1.3, 1.02, 0.8), texture(t_biome, uv).g * shv.y);
     }
     // Far forest. Between distant crowns the ground is the shaded floor, and
     // past the impostor range the terrain is the canopy: coloured by the
@@ -396,15 +405,24 @@ void main() {
     }
     // Rock reads grey-brown, not orange: desaturate the source photo.
     // Dry grassland seen from afar is straw too, not the green understorey painted above (not on rock or sand).
+    // Dry country from afar is not one cream (round 3, dry): the grass is golden straw, olive where the
+    // drainage keeps it greener, mottled by its tussocks; the near-desert's bare earth is red-brown and
+    // darker, with pale pans and washes and dark stony flats (scree) in it.
     {
-        float dryf = texture(t_biome, uv).g * (1.0 - clamp(w[0] + w[1] + w[6], 0.0, 1.0)) * smoothstep(20.0, 90.0, dist) * (1.0 - 0.6 * clamp(w[2] * 1.4 - 0.2, 0.0, 1.0));
+        float dg = texture(t_biome, uv).g, far_ = smoothstep(20.0, 90.0, dist);
+        float bare = clamp(shv.x + shv.y + shv.w, 0.0, 1.0), earth = clamp(shv.z * 1.3, 0.0, 1.0);
+        float dryf = dg * (1.0 - bare) * far_ * (1.0 - earth);
         float dl = dot(albedo, vec3(0.3, 0.59, 0.11));
-        albedo = mix(albedo, max(dl, 0.045) * vec3(1.55, 1.3, 0.72) * 1.25, dryf * 0.85);
+        float tus = smoothstep(0.35, 0.65, noise_qp(p.xz, 17.0, 0.83).b);
+        vec3 straw = mix(DRY_STRAW, DRY_OLIVE, clamp(damp * 1.2 + 0.25 * tus, 0.0, 1.0)) * mix(0.82, 1.08, tus);
+        albedo = mix(albedo, max(dl, 0.045) * straw * 1.12, dryf * 0.85);
+        albedo = mix(albedo, max(dl, 0.04) * DRY_EARTH, dg * (1.0 - bare) * earth * far_ * 0.6);
+        albedo = mix(albedo, dl * vec3(1.08, 1.0, 0.86), dg * shv.w * 0.7);   // pans and washes: pale grey-buff silt and sand, not beach gold
     }
     // Near-desert (bare earth in dry country): from afar the dwarf scrub dots the ground dark olive-grey
     // at a few metres, gathered in loose stands (the drawn plants end at the cover range).
     {
-        float de = texture(t_biome, uv).g * clamp(w[2] * 1.4 - 0.2, 0.0, 1.0) * (1.0 - clamp(w[0] + w[1], 0.0, 1.0));
+        float de = texture(t_biome, uv).g * clamp(shv.z * 1.3, 0.0, 1.0);
         if (de > 0.0) {
             float dots = noise_qp(p.xz, 3.1, 0.17).r * 0.75 + noise_qp(p.xz, 31.0, 0.53).g * 0.25;   // dots, gathered in loose stands
             float far_ = smoothstep(25.0, 80.0, dist) * (1.0 - smoothstep(1500.0, 3000.0, dist));
