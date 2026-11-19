@@ -397,9 +397,11 @@ typedef struct {
     float leaf_size, lod_size, curl, upbias, lobes, droop;   // droop: outer branches sag (m per m^2)
     float pad;                  // 0..1: foliage gathers on the outer part of each limb (podocarp pads)
     int lod_div;                // the reduced mesh keeps every lod_div-th card (0: 3)
+    float clump;                // weight of the leaf masses round each branch's outer part (0: leaves only along the twigs)
+    int twig_every;             // the full mesh draws every n-th twig (0: all)
 } Crown;
 static void crown_tree(Gen* g, const Crown* C, const Env* E) {
-    LeafPts L = {0}; float H = C->H;
+    LeafPts L = {0}; float H = C->H; int ntw = 0;
     // Stems.
     Path stems[6]; int ns = C->stems > 1 ? (C->stems < 6 ? C->stems : 6) : 1; float stem_v[6];
     for (int s = 0; s < ns; s++) {
@@ -463,6 +465,20 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
             grow(g, &Q, p, d2, len2, 4, fminf(r * 0.62f, 0.012f + 0.02f * len2), 0.008f, C->trop2, 0.6f, E, 1.5f, hw, fminf(hw + 0.3f, 1), 0, 0.55f);
             if (C->droop > 0) for (int k = 1; k < Q.n; k++) { float tq = (float)k / (Q.n - 1); Q.p[k].y -= C->droop * len2 * len2 * tq * tq * 0.15f; }
             if (!g->lod || Q.r[0] > 0.025f) bark(g, &Q, v1 * t, lb->ph, phs, 0);   // the reduced mesh drops the thinnest branches
+            // A mass of leaves round the branch's outer part, domed and open
+            // below: the crown reads as clouds of foliage with shade between,
+            // not as sprigs strung along the skeleton.
+            if (C->clump > 0) {
+                V3 cc; float hwc, wsc; path_at(&Q, 0.72f, &cc, NULL, NULL, &hwc, &wsc);
+                float R = clampf(0.32f * len2 + 0.3f, 0.5f, 0.12f * H); cc.y += 0.2f * R;
+                int np = 6 + (int)(R * R * 10);
+                for (int k = 0; k < np; k++) {
+                    V3 dir = vnorm(v3(grr(g, -1, 1), grr(g, -0.5f, 1), grr(g, -1, 1)));
+                    V3 q = vadd(cc, vmul(dir, R * grr(g, 0.5f, 1.0f)));
+                    float dep = env_depth(E, q); if (dep > 1.1f) continue;
+                    lp_add(&L, q, dir, (Wnd){fminf(hwc + 0.2f, 1), lb->ph, fminf(wsc + 0.3f, 1), phs, 0}, C->clump * (0.35f + sstep(0.3f, 0.9f, dep)) * (dir.y > -0.2f ? 1.0f : 0.5f));
+                }
+            }
             // Twigs; leaf points on the twigs and the outer part of the branch.
             for (float s3 = 0.15f * len2; s3 < len2; s3 += C->sp3 * grr(g, 0.7f, 1.3f)) {
                 float t3 = s3 / len2; V3 p3, d3; float r3, hw3, ws3; path_at(&Q, t3, &p3, &d3, &r3, &hw3, &ws3);
@@ -472,7 +488,8 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
                 float lt = clampf(env_dist(E, p3, dt) + 0.25f, 0.15f, C->twig_len) * grr(g, 0.6f, 1.0f);
                 Path T; grow(g, &T, p3, dt, lt, 2, fminf(r3 * 0.7f, 0.012f), 0.004f, C->trop3, 0.8f, NULL, 0, hw3, fminf(hw3 + 0.15f, 1), ws3, fminf(ws3 + 0.35f, 1));
                 tip_add(g, T.p[T.n - 1], vnorm(vsub(T.p[T.n - 1], T.p[T.n - 2])), (Wnd){T.hw[T.n - 1], lb->ph, T.ws[T.n - 1], phs, 0}, env_depth(E, T.p[T.n - 1]));
-                if (!g->lod) { int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &T, 3, 1, 0.12f, 0, lb->ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt; }
+                // Every other twig is drawn (C->twig_every): inside a full crown the rest are hidden by their leaves.
+                if (!g->lod && (ntw++ % (C->twig_every > 0 ? C->twig_every : 1)) == 0) { int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &T, 3, 1, 0.12f, 0, lb->ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt; }
                 for (float u = 0.3f; u <= 1.001f; u += 0.24f) {
                     V3 q, dq; float hq, wq; path_at(&T, u, &q, &dq, NULL, &hq, &wq);
                     float dep = env_depth(E, q);
@@ -687,19 +704,26 @@ static void crown_scale(Crown* C, float ref) {
     int n0 = C->nleaf; C->nleaf = (int)(n0 * k * k / sqrtf(k));
     C->lod_div = (int)(3.0f * C->nleaf / n0 + 0.5f);   // the reduced mesh keeps as many cards as before, k times longer
 }
+// Spends the twigs hidden in a full crown on leaves: every other twig is
+// drawn, and the full mesh carries more (the same) cards; the reduced mesh
+// keeps the same number of merged cards.
+static void crown_full(Crown* C, float more) {
+    int d = C->lod_div > 0 ? C->lod_div : 3;
+    C->twig_every = 2; C->nleaf = (int)(C->nleaf * more); C->lod_div = (int)(d * more + 0.5f);
+}
 static void gen_broadleaf(Gen* g, int s) {
     float H, r0; species_dims(VEG_BROADLEAF, g->variant, &H, &r0);
     Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.3f, 0.42f), .stems = 1, .leader = 0, .limbs_lo = 3, .limbs_hi = 5, .sp1 = 0.9f,
                .el1 = 0.7f, .sp2 = 0.5f + 0.03f * H, .sp3 = 0.26f, .ang2 = 0.95f, .ang3 = 0.9f, .trop1 = 0.06f, .trop2 = 0.05f, .trop3 = 0.15f,
                .twig_len = 0.7f, .leaf_layer = L_CL_LAUREL, .lod_layer = L_LEAF2, .nleaf = 1100, .leaf_size = 0.45f, .lod_size = 1.5f,
-               .curl = 0.35f, .upbias = 0.25f, .lobes = 0.25f, .droop = 0.0f};
+               .curl = 0.35f, .upbias = 0.25f, .lobes = 0.25f, .droop = 0.0f, .clump = 0.6f};
     float spread = 1.0f, cy = 0.6f, ry = 0.4f;
     if (s == 0) { C.leaf_layer = L_CL_MAGN; C.lod_layer = L_LEAF; C.leaf_size = 0.62f; C.lod_size = 1.9f; C.nleaf = 900; C.twig_len = 0.8f; }
     else if (s == 2) { C.leaf_layer = L_CL_HEART; C.lod_layer = L_LEAF3; C.stems = 2 + (int)grr(g, 0, 2.99f); C.fork = 0.3f; C.sp1 = 1.0f; C.el1 = 0.55f;
                        C.leaf_size = 0.38f; C.nleaf = 1000; spread = 0.72f; cy = 0.62f; ry = 0.4f; }
     else if (s == 3) { C.fork = 0.38f; C.nleaf = 420; C.sp2 = 0.5f; C.leaf_size = 0.38f; C.lod_size = 1.0f; spread = 0.85f; C.droop = 0.4f; }
     else { C.nleaf = 1100; C.leaf_size = 0.45f; spread = 0.95f; }
-    crown_scale(&C, s == 0 ? 10.5f : s == 2 ? 11.5f : s == 3 ? 5.5f : 9.0f);
+    crown_scale(&C, s == 0 ? 10.5f : s == 2 ? 11.5f : s == 3 ? 5.5f : 9.0f); crown_full(&C, 1.5f);
     Env E; float rx = H * 0.44f * spread * grr(g, 0.9f, 1.1f), rz = H * 0.44f * spread * grr(g, 0.9f, 1.1f);
     env_init(g, &E, v3(grr(g, -0.06f, 0.06f) * H, H * cy, grr(g, -0.06f, 0.06f) * H), v3(rx, H * ry, rz), 6, 0.16f);
     crown_tree(g, &C, &E);
@@ -1468,8 +1492,8 @@ static void gen_ginkgo(Gen* g) {
     float H, r0; species_dims(VEG_BROADLEAF, g->variant, &H, &r0);
     Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.22f, 0.3f), .stems = 1, .leader = 1, .sp1 = 0.9f, .el1 = 0.75f,
                .sp2 = 0.7f, .sp3 = 0.4f, .ang2 = 0.7f, .ang3 = 0.9f, .trop1 = 0.1f, .trop2 = 0.08f, .trop3 = 0.2f, .twig_len = 0.5f,
-               .leaf_layer = L_CL_GINKGO, .lod_layer = L_LEAF2, .nleaf = 520, .leaf_size = 0.42f, .lod_size = 1.3f, .curl = 0.25f, .upbias = 0.3f, .lobes = 0.15f, .droop = 0.0f};
-    crown_scale(&C, 12.5f);
+               .leaf_layer = L_CL_GINKGO, .lod_layer = L_LEAF2, .nleaf = 520, .leaf_size = 0.42f, .lod_size = 1.3f, .curl = 0.25f, .upbias = 0.3f, .lobes = 0.15f, .droop = 0.0f, .clump = 0.5f};
+    crown_scale(&C, 12.5f); crown_full(&C, 1.5f);
     Env E; env_init(g, &E, v3(0, H * 0.6f, 0), v3(H * 0.27f, H * 0.42f, H * 0.25f), 7, 0.3f);
     crown_tree(g, &C, &E);
 }
@@ -1479,8 +1503,8 @@ static void gen_plane(Gen* g) {
     float H, r0; species_dims(VEG_BROADLEAF, g->variant, &H, &r0);
     Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.3f, 0.38f), .stems = 1, .leader = 0, .limbs_lo = 3, .limbs_hi = 5, .sp1 = 0.9f, .el1 = 0.55f,
                .sp2 = 0.75f, .sp3 = 0.4f, .ang2 = 0.95f, .ang3 = 0.9f, .trop1 = 0.04f, .trop2 = 0.04f, .trop3 = 0.12f, .twig_len = 0.8f,
-               .leaf_layer = L_CL_PLANE, .lod_layer = L_LEAF3, .nleaf = 700, .leaf_size = 0.6f, .lod_size = 1.8f, .curl = 0.3f, .upbias = 0.2f, .lobes = 0.3f, .droop = 0.2f};
-    crown_scale(&C, 14.5f);
+               .leaf_layer = L_CL_PLANE, .lod_layer = L_LEAF3, .nleaf = 700, .leaf_size = 0.6f, .lod_size = 1.8f, .curl = 0.3f, .upbias = 0.2f, .lobes = 0.3f, .droop = 0.2f, .clump = 0.6f};
+    crown_scale(&C, 14.5f); crown_full(&C, 1.5f);
     Env E; env_init(g, &E, v3(0, H * 0.62f, 0), v3(H * 0.46f, H * 0.36f, H * 0.46f), 7, 0.18f);
     crown_tree(g, &C, &E);
 }
