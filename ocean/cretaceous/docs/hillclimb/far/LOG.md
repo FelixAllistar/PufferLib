@@ -81,3 +81,7 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
     and 1.12 of the full cover; the outline is the full crown's at 30 m. (Note: lodmatch moves by up to 4% from
     run to run when the shots before a tree change, through the camera's exposure; tones were fitted on runs of
     the same tree list.)
+13. Fault: under a stand at 10-40 m (`river`, `redwood`) some trunks are still pale columns. Change tried: the
+    stand shade from 8-30 m instead of 15-40 m. Reverted: the palm trunks and the far redwood trunks darkened a
+    little, but the palest ones (the ginkgo's and the plane's, their bark itself near white in the shade) did
+    not move; their tone belongs to the near track's bark, and the term reached into its range for no gain.
