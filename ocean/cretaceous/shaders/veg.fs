@@ -100,11 +100,11 @@ void main() {
             vec3 m = (v_world - v_base) * vec3(6.0, 3.0, 6.0);
             float n1 = 0.5 * (vnoise2(m.xy) + vnoise2(m.zy + 17.0)), n2 = 0.5 * (vnoise2(m.xy * 2.3 + 5.0) + vnoise2(m.zy * 2.3 + 31.0));
             float e = 0.012 + fwidth(n1) * 1.5;   // sharp jigsaw edges up close, soft once a patch is a few pixels
-            float pa = smoothstep(0.5 - e, 0.5 + e, n1 * 0.72 + n2 * 0.28), pb = smoothstep(0.55 - e, 0.55 + e, n2 * 0.65 + n1 * 0.35);
+            float pa = smoothstep(0.53 - e, 0.53 + e, n1 * 0.72 + n2 * 0.28), pb = smoothstep(0.55 - e, 0.55 + e, n2 * 0.65 + n1 * 0.35);
             float l = dot(albedo, vec3(0.3, 0.59, 0.11));
-            albedo = l * vec3(0.82, 0.8, 0.6);                        // old outer bark: olive-brown
-            albedo = mix(albedo, l * vec3(1.35, 1.42, 1.12), pb);       // grey-green
-            albedo = mix(albedo, l * vec3(2.2, 2.1, 1.7), pa * (1.0 - 0.5 * pb));   // fresh cream inner bark
+            albedo = l * vec3(0.85, 0.78, 0.55);                        // old outer bark: olive-brown
+            albedo = mix(albedo, l * vec3(1.42, 1.38, 1.02), pb);       // grey-green
+            albedo = mix(albedo, l * vec3(2.35, 2.05, 1.38), pa * (1.0 - 0.5 * pb));   // fresh cream inner bark
         } else if (tone == 2) {     // palm: horizontal leaf-base rings
             albedo *= 0.85 + 0.2 * smoothstep(0.0, 0.25, abs(fract(q.y * 6.0) - 0.5));
         }
