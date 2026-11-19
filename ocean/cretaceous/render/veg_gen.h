@@ -1874,6 +1874,25 @@ static void bark_relief_init(Gen* g, int kind, int sp) {
     if (vr(&r) < 0.5f) R->twist = -R->twist;
 }
 
+// A trunk that bows: the whole finished mesh is sheared sideways by a smooth curve of its height (a
+// sweep and a gentler S bend over the bottom two thirds, back to zero above), from its own seed, so
+// no random draw of the crown changes and the full and reduced meshes bow alike. amp: the sweep's
+// share of that height. Normals are left as they are (the curve turns them under 2 degrees).
+static void mesh_bow(MB* m, int kind, int variant, float amp) {
+    if (amp <= 0 || !m->nv) return;
+    VRng r = {hashu((uint32_t)kind * 0x2545f491u + (uint32_t)variant * 0x9e3779b9u + 0xb0bu)};
+    float H = m->height, yc = 0.66f * H; if (yc < 1) return;
+    float a1 = amp * vrr(&r, 0.5f, 1.0f) * yc, a2 = amp * vrr(&r, 0.25f, 0.6f) * yc;
+    V3 d1 = dir_az(vrr(&r, 0, 2 * VPI)), d2 = dir_az(vrr(&r, 0, 2 * VPI));
+    m->rad = 0;
+    for (int i = 0; i < m->nv; i++) {
+        float* p = m->v[i].p, t = clampf(p[1] / yc, 0, 1);
+        float s1 = a1 * sinf(VPI * t), s2 = a2 * sinf(2 * VPI * t);
+        p[0] += d1.x * s1 + d2.x * s2; p[2] += d1.z * s1 + d2.z * s2;
+        float rr = sqrtf(p[0] * p[0] + p[2] * p[2]); if (rr > m->rad) m->rad = rr;
+    }
+}
+
 // Builds one kind x variant (lod: the reduced mesh). The species comes from
 // the variant's slot (render/flora.h); slots of the same species are the
 // same plant from different seeds.
@@ -1923,6 +1942,10 @@ static void build_species(MB* m, int kind, int variant, int lod) {
     }
     add_fruit(&G, m->height);
     free(G.tip);
+    // Trunks bow a little (round 2): broadleaves most, the podocarp and cypress less, the straight-boled
+    // redwood and araucarias least.
+    if (kind == VEG_BROADLEAF) mesh_bow(m, kind, variant, sp == FL_UNDERSTOREY ? 0.06f : 0.045f);
+    else if (kind == VEG_CONIFER) mesh_bow(m, kind, variant, sp == FL_PODOCARP || sp == FL_CHEIROLEP ? 0.028f : 0.012f);
     // The reduced mesh merges every third card into one about three times as
     // long, three to four times the leaf area: its crown would bake much
     // darker than the full one (12% darker crowns in daylight, 40% on the
