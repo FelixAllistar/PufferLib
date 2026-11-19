@@ -37,3 +37,29 @@ Blender view `front` (motel_exterior_preview.py), eye (13.5,1.4,6.5) -> (0,1.7,0
 - engine e1: `exterior_capture --eye 13.5,1.4,6.5 --target 0,1.7,0 --fov 46`: overlay loads/draws; chain-link fence in the way, awning blown out white, ochre stripe of the old canopy deck bleeds through the sheet. 
 - engine e2: eye moved inside the fence (12,1.45,4.6); sheet albedo .70 -> .50. closer: yes
 - engine e3: sheet eave 2.60 -> 2.72 m (clears the old deck edge, no bleed), wall end 3.0 m, albedo .42; the bull-nose now drops to ~2.3 m like the reference awning edge. closer: yes
+
+### Item 2: walkway (ref: Motel in Barstow, Highsmith PD)
+
+Blender view `walkway`, eye (9,1.5,8.5) -> (-5,1.7,0), 48 deg.
+
+- iter 0: front-pass state at the old walkway camera. Reference: pale columns with curved brackets at the beam, a meter per unit, dark asphalt.
+- iter 1: camera matched to the reference (farther, shallower). closer: yes (comparable)
+- iter 2: preview ground value .16 -> .045 (asphalt); diagonal pipe braces -> 0.42 m solid quarter-round corbel brackets on both sides of each post. closer: yes
+- iter 3: per-room socket meter + disconnect + conduit to the soffit between door casing and window jamb. closer: yes (the reference's per-unit meters)
+- iter 4: post capital (two-step block) and base fillet. closer: marginal (too small at this distance)
+- iter 5: post sleeves/capitals/corbels teal -> cream (pale columns as in the reference). closer: yes
+- iter 6: beam teal -> cream. closer: no (beam is in shade); reverted, two weak iterations in a row -> stop.
+- engine e1: same camera; picnic table blocks the foreground.
+- engine e2: eye (6.5,1.5,6.0) -> (-6,1.7,0.3), plus the old ext2_gallery view: pale corbel columns, exposed rafters and the bull-nose read as a real covered walkway. closer: yes
+
+### Item 3: office (ref: Desert Hills Motel office, G. Edward Johnson, CC BY 4.0)
+
+Blender view `office`, eye (-15,1.5,6.5) -> (-8.5,2.3,-0.5), 60 deg (wide like the reference).
+
+- iter 0: small front gable (ridge 4.05 m) perched on the canopy over the office bay; the office still reads as just another bay.
+- iter 1: full-depth front-gable office roof (x -12.3..-8.0, z -6.3..+2.45) in red standing-seam metal with seams every 0.5 m, ridge cap, maroon eave fascia; office bay parapet, cooler and corrugated awning removed under it; camera matched. closer: yes (a distinct building like the reference)
+- iter 2: ridge 3.85 -> 3.55 m (21 deg pitch, the reference's low roof), eave fascia 0.30 -> 0.40 m. closer: yes
+- iter 3: maroon tie band across the gable front at eave level (the porte-cochere fascia that wraps the reference's front), OFFICE panel moved down into the gable. closer: yes
+- iter 4: maroon trim around the lobby glazing + dark sill strip. closer: slightly
+- engine e1: same camera + the old ext4 view: roof/fascia read orange-red (too light) and the glazing trim is missing (the lobby glass draws on its own path, never reaching the overlay hook).
+- engine e2: metal roof albedo .30 -> .17 (dark maroon like the reference), trim re-owned by the office walkway slab (tag 4). closer: yes

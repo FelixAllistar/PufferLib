@@ -35,7 +35,8 @@ P = dict(
     casing_d=0.065, lintel_h=0.16, pilaster_w=0.14, pilaster_d=0.05,
     joint=0.011, course=0.2032, unit=0.4064, joint_d=0.0025,
     gable_ridge=4.05, gable_eave=2.80, gable_front=2.40, gable_back=-1.30,
-    annex_parapet=0.55, cooler=True, parapet_mat='stucco',
+    office_full=True, office_eave=2.85, office_ridge=3.55, office_front=2.45, office_fascia='red', office_fascia_h=0.40, office_sign_y=2.92, office_tie=True, office_tie_h=0.32, office_trim=True,
+    annex_parapet=0.55, cooler=True, corbel=True, front_meter=True, capital=True, post_mat='cream', beam_mat='teal', parapet_mat='stucco',
     canopy_style='corrugated', sheet_wall_y=3.0, sheet_eave_y=2.72, sheet_eave_z=2.10,
     wave=0.068, wave_amp=0.016, bullnose=0.36, bullnose_drop=0.06, canopy_gutter=False, canopy_board=0.22,
 )
@@ -69,7 +70,7 @@ IRON = mat('ARCH_iron', (.03, .03, .03), .6, .5)
 GLASS = mat('ARCH_glass', (.36, .42, .40), .15, .0)
 SIGNW = mat('ARCH_sign_white', (.78, .76, .70), .5)
 SIGNR = mat('ARCH_sign_red', (.50, .05, .04), .45)
-METROOF = mat('ARCH_metal_roof', (.30, .08, .06), .5, .4)
+METROOF = mat('ARCH_metal_roof', (.17, .045, .035), .5, .4)
 SHEET = mat('ARCH_sheet', (.42, .42, .39), .5, .35)
 
 # ---------------------------------------------------------------- geometry
@@ -168,6 +169,7 @@ POSTS = dict(zip((-12, -8, -4, 0, 4, 8), range(114, 120)))
 fb, ft, fo, cp = P['fascia_bottom'], P['fascia_top'], P['fascia_out'], P['coping']
 PAR = {'stucco': STUCCO, 'teal': TEAL, 'cream': CREAM}[P['parapet_mat']]
 for cx in BAYS:
+    if cx == -10 and P['office_full']: continue
     g = obj(ROOFT[cx], roof=True); x0, x1 = cx - 2, cx + 2
     xa = x0 - (.15 + fo if cx == -10 else 0); xb = x1 + (.15 + fo if cx == 6 else 0)
     for z, s in ((-6.15, -1), (0.15, 1)):
@@ -219,7 +221,7 @@ def cooler(g, x, z, yaw=0.0):
 if P['cooler']:
     for cx in ROOMS:
         cooler(obj(ROOFT[cx], True), cx + .7, -2.0)
-    cooler(obj(ROOFT[-10], True), -10.6, -3.4)
+    if not P['office_full']: cooler(obj(ROOFT[-10], True), -10.6, -3.4)
 # TV antenna mast on two bays.
 for cx in (-6, 2):
     g = obj(ROOFT[cx], True); x, z = cx - 1.3, -5.3
@@ -281,7 +283,7 @@ def corrugated(g, xa, xb, cx):
         g.box((xa, fb_, cz - .005), (xb, fb_ + .03, cz + .012), CREAM)                # drip trim
     g.box((xa, 2.63, cz - .12), (xb, min(ye, 2.63 + .08), cz - .04), TEAL, skip=('-j',))
     for x, s_ in ((xa, -1), (xb, 1)):
-        if (s_ < 0 and cx != -10) or (s_ > 0 and cx != 6): continue
+        if (s_ < 0 and cx != (-6 if P['office_full'] else -10)) or (s_ > 0 and cx != 6): continue
         poly = [(x, 2.63, zw)] + [(x, q.y - .005, q.x) for q in prof] + [(x, 2.63, prof[-1].x)]
         g.face(poly, CREAM, out=(s_, 0, 0))
 
@@ -290,7 +292,9 @@ cfb, cft, cz = P['canopy_fascia_bottom'], P['canopy_fascia_top'], P['canopy_fasc
 for cx in BAYS:
     g = obj(CANOPY[cx], roof=True); x0, x1 = cx - 2, cx + 2
     xa = x0 - (.08 if cx == -10 else 0); xb = x1 + (.08 if cx == 6 else 0)
-    if P['canopy_style'] == 'corrugated':
+    if cx == -10 and P['office_full']:
+        pass  # the office roof covers this bay's walkway
+    elif P['canopy_style'] == 'corrugated':
         corrugated(g, xa, xb, cx)
     else:
         g.box((xa, cfb, cz - .04), (xb, cft, cz), TEAL)                               # deep fascia
@@ -306,7 +310,7 @@ for cx in BAYS:
         g.box((x - P['rafter_w'] / 2, 2.44 - P['rafter_h'], FACE), (x + P['rafter_w'] / 2, 2.44, cz - .04), CREAM, skip=('+j',))
     g.box((x0, 2.44 - P['rafter_h'] - .04, FACE), (x1, 2.44, FACE + .06), CREAM, skip=('+j',))
     bz = 1.77; bh, bw = P['beam_h'], P['beam_w']
-    g.box((xa, 2.44 - bh, bz - bw / 2), (xb, 2.44, bz + bw / 2), TEAL, skip=('+j',))
+    g.box((xa, 2.44 - bh, bz - bw / 2), (xb, 2.44, bz + bw / 2), {'teal': TEAL, 'cream': CREAM}[P['beam_mat']], skip=('+j',))
     g.box((xa, 2.44 - P['rafter_h'], cz - .10), (xb, 2.44, cz - .04), TEAL, skip=('+j',))  # rim joist
     if P['canopy_gutter']: kgutter(g, xa, xb, cft - .02, cz)
 for x, tag in ((-12, 114), (8, 119)) if P['canopy_gutter'] else ():  # downspouts down the end posts
@@ -316,17 +320,37 @@ for x, tag in ((-12, 114), (8, 119)) if P['canopy_gutter'] else ():  # downspout
     g.box((x - .14, -.08, z + .1), (x + .14, -.05, z + .5), CONC)
 
 # ------------------------------------------------ posts: sleeve, cap, knee braces
+POSTM = {'teal': TEAL, 'cream': CREAM}[P['post_mat']]
 pw = P['post_w'] / 2; ybeam = 2.44 - P['beam_h']
 for x, tag in POSTS.items():
     g = obj(tag); z = 1.77
-    g.box((x - pw, .02, z - pw), (x + pw, ybeam, z + pw), TEAL, skip=('+j', '-j'))
+    g.box((x - pw, .02, z - pw), (x + pw, ybeam, z + pw), POSTM, skip=('+j', '-j'))
     g.box((x - pw - .025, 0, z - pw - .025), (x + pw + .025, .14, z + pw + .025), CONC)   # concrete pier collar
-    g.box((x - pw - .015, ybeam - .03, z - pw - .015), (x + pw + .015, ybeam, z + pw + .015), TEAL)  # cap plate
+    g.box((x - pw - .015, ybeam - .03, z - pw - .015), (x + pw + .015, ybeam, z + pw + .015), POSTM)  # cap plate
+    if P['capital']:
+        g.box((x - pw - .035, ybeam - .13, z - pw - .035), (x + pw + .035, ybeam - .06, z + pw + .035), POSTM)
+        g.box((x - pw - .02, ybeam - .06, z - pw - .02), (x + pw + .02, ybeam - .03, z + pw + .02), POSTM)
+        g.box((x - pw - .02, .14, z - pw - .02), (x + pw + .02, .22, z + pw + .02), POSTM)   # base fillet
     b = P['brace']
     for s in (-1, 1):
         if (x == -12 and s < 0) or (x == 8 and s > 0): continue
-        a = (x + s * pw, ybeam - b, z); c = (x + s * (pw + b), ybeam, z)
-        g.cyl(a, c, .022, TEAL, 4)
+        if P['corbel']:
+            # Curved corbel bracket (quarter-round cut-out), 0.08 m thick.
+            # (h, dv): h out from the post face, dv down from the beam soffit
+            pts = [(0, 0), (b, 0), (b * .55, .06), (b * .25, b * .25), (.06, b * .55), (0, b)]
+            hw = .04
+            for zz in (z - hw, z + hw):
+                g.face([(x + s * (pw + h), ybeam - dv, zz) for h, dv in pts], POSTM, out=(0, 0, zz - z))
+            for k in range(len(pts)):
+                (h0, d0), (h1, d1) = pts[k], pts[(k + 1) % len(pts)]
+                q = [(x + s * (pw + h0), ybeam - d0, z - hw), (x + s * (pw + h1), ybeam - d1, z - hw),
+                     (x + s * (pw + h1), ybeam - d1, z + hw), (x + s * (pw + h0), ybeam - d0, z + hw)]
+                mid = Vector(((h0 + h1) / 2, -(d0 + d1) / 2)); ctr = Vector((b * .3, -b * .3))
+                o2 = mid - ctr
+                g.face(q, POSTM, out=(s * o2.x, o2.y, 0))
+        else:
+            a = (x + s * pw, ybeam - b, z); c = (x + s * (pw + b), ybeam, z)
+            g.cyl(a, c, .022, POSTM, 4)
 
 # ------------------------------------------------ front facades (sectioned)
 ph, pd = P['plinth_h'], P['plinth_d']
@@ -353,6 +377,15 @@ for cx, tag in FACADE.items():
     F.box(g, ac0, ac0 + .04, .12, .80, 0, .05, GALV); F.box(g, ac1 - .04, ac1, .12, .80, 0, .05, GALV)
     for u in (ac0 + .12, ac1 - .12):
         F.box(g, u - .02, u + .02, .02, .14, 0, .22, IRON)
+    # per-room electric meter (socket meter + base) with conduit to the soffit
+    if P['front_meter']:
+        mu = 1.565
+        F.box(g, mu - .09, mu + .09, 1.20, 1.52, 0, .09, GALV)
+        F.box(g, mu - .07, mu + .07, 1.29, 1.43, .09, .10, GALV)
+        F.tube(g, [(mu, 1.36, .10), (mu, 1.36, .16)], .065, GLASS, 10)
+        F.tube(g, [(mu, 1.52, .045), (mu, 2.43, .045)], .014, GALV, 6)
+        F.box(g, mu - .07, mu + .07, .95, 1.12, 0, .08, IRON)              # disconnect
+        F.tube(g, [(mu, 1.12, .04), (mu, 1.20, .04)], .012, GALV, 6)
     # pilasters at the party-wall lines
     F.box(g, 0, P['pilaster_w'] / 2, ph, 2.80, 0, P['pilaster_d'], STUCCO)
     F.box(g, 4 - P['pilaster_w'] / 2, 4, ph, 2.80, 0, P['pilaster_d'], STUCCO)
@@ -431,41 +464,65 @@ text_faces(g131, 'LAUNDRY', F, 2.0, 2.55, .03, .17, SIGNR, depth=.012)
 
 # ------------------------------------------------ annex roof parapet (own block)
 g = obj(128, roof=True); ah = P['annex_parapet']
-for lo, hi in (((-12.18, 2.78, -10.13), (-7.82, 3.02 + ah, -10.05)), ((-12.18, 2.78, -10.13), (-12.10, 3.02 + ah, -6.15)),
-               ((-7.90, 2.78, -10.13), (-7.82, 3.02 + ah, -6.15))):
+for lo, hi in (((-12.18, 2.78, -10.13), (-7.82, 3.02 + ah, -10.05)), ((-12.18, 2.78, -10.13), (-12.10, 3.02 + ah, -6.32)),
+               ((-7.90, 2.78, -10.13), (-7.82, 3.02 + ah, -6.32))):
     g.box(lo, hi, CREAM)
-for lo, hi in (((-12.21, 3.02 + ah, -10.16), (-7.79, 3.05 + ah, -10.0)), ((-12.21, 3.02 + ah, -10.16), (-12.05, 3.05 + ah, -6.15)),
-               ((-7.95, 3.02 + ah, -10.16), (-7.79, 3.05 + ah, -6.15))):
+for lo, hi in (((-12.21, 3.02 + ah, -10.16), (-7.79, 3.05 + ah, -10.0)), ((-12.21, 3.02 + ah, -10.16), (-12.05, 3.05 + ah, -6.32)),
+               ((-7.95, 3.02 + ah, -10.16), (-7.79, 3.05 + ah, -6.32))):
     g.box(lo, hi, GALV)
 g.cyl((-9.2, 3.02, -8.6), (-9.2, 3.9, -8.6), .06, GALV, 10)                         # water heater flue
 g.cyl((-9.2, 3.9, -8.6), (-9.2, 3.98, -8.6), .12, GALV, 10)
 g.box((-11.0, 3.02, -9.3), (-10.4, 3.25, -8.7), GALV)                               # dryer roof jack
 
-# ------------------------------------------------ office gable front (roof 3)
+# ------------------------------------------------ office roof (roof 3)
 g = obj(3, roof=True)
-x0, x1, xr = -12.25, -7.75, -10.0
-ye, yr, zf, zb = P['gable_eave'], P['gable_ridge'], P['gable_front'], P['gable_back']
-th = .12
+if P['office_full']:
+    x0, x1 = -12.30, -8.0; xr = (x0 + x1) / 2
+    ye, yr, zf, zb = P['office_eave'], P['office_ridge'], P['office_front'], -6.30
+else:
+    x0, x1, xr = -12.25, -7.75, -10.0
+    ye, yr, zf, zb = P['gable_eave'], P['gable_ridge'], P['gable_front'], P['gable_back']
+th = .10; FASC = {'teal': TEAL, 'red': METROOF}[P['office_fascia']]
+def roof_y(x): return ye + (yr - ye) * (1 - abs(x - xr) / (xr - x0))
 for s, xe in ((-1, x0), (1, x1)):
-    # roof plane (slab) from eave to ridge
     c = [[[(xe, ye + dy, z) for z in (zb, zf)] for dy in (0, th)], [[(xr, yr + dy, z) for z in (zb, zf)] for dy in (0, th)]]
     g.hexa(c, METROOF)
-    g.box((min(xe, xe - s * .05), ye - .18, zb), (max(xe, xe - s * .05), ye + th, zf), TEAL)  # eave fascia
+    fd = P['office_fascia_h']
+    g.box((min(xe, xe - s * .05), ye - fd, zb), (max(xe, xe - s * .05), ye + th + .01, zf), FASC)  # eave fascia
+    # standing seams every 0.5 m (down the slope)
+    k = 0
+    while zb + .25 + k * .5 < zf - .1:
+        z = zb + .25 + k * .5; k += 1
+        c = [[[(xe, ye + th + dy, zz) for zz in (z - .012, z + .012)] for dy in (0, .03)], [[(xr, yr + th + dy, zz) for zz in (z - .012, z + .012)] for dy in (0, .03)]]
+        g.hexa(c, METROOF, skip=('-j',))
+g.box((xr - .06, yr + th - .01, zb), (xr + .06, yr + th + .05, zf), METROOF)                 # ridge cap
 # gable infill (front, set back 0.25) and back
-for z, mm in ((zf - .25, CREAM), (zb + .05, STUCCO)):
-    g.face([(x0 + .05, ye, z), (x1 - .05, ye, z), (xr, yr - .02, z)], mm, out=(0, 0, 1 if z > 0 else -1))
-    g.face([(x0 + .05, ye, z), (x1 - .05, ye, z), (xr, yr - .02, z)], mm, out=(0, 0, -1 if z > 0 else 1))
-# vertical battens on the front gable and rake boards
+for z, mm, o in ((zf - .25, CREAM, 1), (zb + .05, STUCCO, -1)):
+    g.face([(x0 + .05, ye, z), (x1 - .05, ye, z), (xr, yr - .02, z)], mm, out=(0, 0, o))
+    g.face([(x0 + .05, ye, z), (x1 - .05, ye, z), (xr, yr - .02, z)], mm, out=(0, 0, -o))
+if P['office_full']:  # close the soffit line between the eave and the main roof/canopy
+    g.box((x0 + .05, 2.63, zf - .26), (x1 - .05, ye, zf - .24), CREAM)
 for i in range(1, 15):
-    x = x0 + .05 + i * (x1 - x0 - .1) / 15; yt = ye + (yr - ye) * (1 - abs(x - xr) / (xr - x0)) - .06
+    x = x0 + .05 + i * (x1 - x0 - .1) / 15; yt = roof_y(x) - .06
     g.box((x - .02, ye, zf - .25), (x + .02, yt, zf - .22), CREAM)
-for s, xe in ((-1, x0), (1, x1)):
-    c = [[[(xe, ye + dy, z) for z in (zf - .04, zf + .02)] for dy in (-.04, th + .02)], [[(xr, yr + dy, z) for z in (zf - .04, zf + .02)] for dy in (-.04, th + .02)]]
-    g.hexa(c, TEAL)
-g.box((x0 + .3, 2.63, zb), (x1 - .3, ye, zb + .06), STUCCO)                          # back closure above roof
+for s, xe in ((-1, x0), (1, x1)):  # rake boards
+    c = [[[(xe, ye + dy, z) for z in (zf - .04, zf + .02)] for dy in (-P['office_fascia_h'] * .6, th + .03)], [[(xr, yr + dy, z) for z in (zf - .04, zf + .02)] for dy in (-P['office_fascia_h'] * .6, th + .03)]]
+    g.hexa(c, FASC)
+if not P['office_full']:
+    g.box((x0 + .3, 2.63, zb), (x1 - .3, ye, zb + .06), STUCCO)                      # back closure above roof
 Fo = Frame((xr, 0, zf - .22), (1, 0, 0), (0, 0, 1))
-Fo.box(g, -1.05, 1.05, 3.02, 3.42, 0, .03, SIGNW)
-text_faces(g, 'OFFICE', Fo, 0, 3.09, .03, .30, SIGNR, depth=.02)
+sy = P['office_sign_y']
+Fo.box(g, -.85, .85, sy, sy + .30, 0, .03, SIGNW)
+text_faces(g, 'OFFICE', Fo, 0, sy + .05, .03, .22, SIGNR, depth=.02)
+if P['office_tie']:  # horizontal fascia band across the gable front at eave level
+    g.box((x0, ye - P['office_tie_h'], zf - .06), (x1, ye + .02, zf), FASC)
+if P['office_trim']:  # painted trim around the lobby glazing (owned by the office walkway slab, tag 4: the lobby glass draws on its own path)
+    g6 = obj(4); gx0, gx1, gy0, gy1, gz = -10.615, -8.075, .075, 2.365, .10
+    w = .09
+    g6.box((gx0 - w, gy0 - w, gz), (gx0, gy1 + w, gz + .035), FASC)
+    g6.box((gx1, gy0 - w, gz), (gx1 + w, gy1 + w, gz + .035), FASC)
+    g6.box((gx0 - w, gy1, gz), (gx1 + w, gy1 + w, gz + .035), FASC)
+    g6.box((gx0 - w, .0, gz), (gx1 + w, gy0, gz + .05), CONC_D)
 
 # ------------------------------------------------ section clipping
 SECTIONS = {}

@@ -24,8 +24,8 @@ ENV = os.path.join(HERE, '..', '..', 'assets', 'environment')
 KIT = os.path.join(ENV, 'motel_exterior')
 VIEWS = {
     'front':   ((13.5, 1.4, 6.5), (0.0, 1.7, 0.0), 46),
-    'walkway': ((9.5, 1.55, 4.2), (-6.0, 1.55, 0.6), 55),
-    'office':  ((-17.0, 1.6, 9.0), (-9.5, 2.0, 0.0), 50),
+    'walkway': ((9.0, 1.5, 8.5), (-5.0, 1.7, 0.0), 48),
+    'office':  ((-15.0, 1.5, 6.5), (-8.5, 2.3, -0.5), 60),
     'endwall': ((13.5, 1.7, -9.0), (8.0, 1.6, -2.5), 55),
     'rear':    ((-1.0, 1.6, -17.0), (-1.0, 1.7, -6.0), 55),
     'roof':    ((12.0, 4.6, 12.0), (-3.0, 2.8, -3.0), 50),
@@ -91,7 +91,7 @@ for p in json.load(open(os.path.join(KIT, 'placements.json')))['placements']:
 # Ground: parking surface at -0.08.
 bpy.ops.mesh.primitive_plane_add(size=200, location=(0, 0, -0.08))
 gm = bpy.data.materials.new('ground'); gm.use_nodes = True
-gm.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (.16, .16, .155, 1)
+gm.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (.045, .045, .043, 1)
 gm.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = .9
 bpy.context.object.data.materials.append(gm)
 
