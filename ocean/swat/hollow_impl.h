@@ -219,8 +219,8 @@ void swat_mission_build_hollow(SwatWorld* w) {
     hollow_gable(w,14,-6,14,0,UT,HOLLOW_RIDGE-UT); hollow_gable(w,22,-6,22,0,UT,HOLLOW_RIDGE-UT);
     hollow_roof(w,(b3Pos){18,UT,-6.4f},(b3Pos){18,HOLLOW_RIDGE,-3},4.3f,true,SWAT_STEEL);
     hollow_roof(w,(b3Pos){18,UT,.4f},(b3Pos){18,HOLLOW_RIDGE,-3},4.3f,true,SWAT_STEEL);
-    hollow_box(w,13.6f,2.55f,-8.1f,22.4f,2.62f,-6,SWAT_STEEL,0,SWAT_PART_SOLID);   // porch roof (tin)
-    for(int i=0;i<4;i++) hollow_box(w,14.05f+i*2.6f,F,-7.95f,14.2f+i*2.6f,2.55f,-7.8f,SWAT_WOOD,0,SWAT_PART_SUPPORT);
+    hollow_roof(w,(b3Pos){18,2.42f,-8.25f},(b3Pos){18,3.05f,-6.02f},4.4f,true,SWAT_STEEL); // porch shed roof (tin), down to the posts
+    for(int i=0;i<4;i++) hollow_box(w,14.05f+i*2.6f,F,-7.95f,14.2f+i*2.6f,2.45f,-7.8f,SWAT_WOOD,0,SWAT_PART_SUPPORT);
     // Field-stone gable chimney, stepped like the Wolcott farmhouse's: a broad
     // firebox base, shoulders at the first floor and a stack past the ridge.
     hollow_box(w,22.05f,0,-4.0f,23.15f,2.3f,-2.0f,SWAT_STONE,0,SWAT_PART_SOLID);

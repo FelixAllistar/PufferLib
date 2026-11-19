@@ -1,0 +1,17 @@
+{
+ "file": "washtub.glb",
+ "triangles": 116,
+ "materials": 1,
+ "bytes": 112324,
+ "sha256": "795e275a62a7eda6",
+ "min": [
+  -0.4,
+  0.0,
+  -0.36
+ ],
+ "max": [
+  0.4,
+  0.32,
+  0.36
+ ]
+}

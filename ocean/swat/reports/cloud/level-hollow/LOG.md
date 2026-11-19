@@ -118,3 +118,17 @@ fov 72.
 | 03 | Shadow-acne bands on the double-sided vault | Single-sided vault, crown 0.93 | Yes |
 | 04 | 2. The vault is darker than the walls | Lighter limewash grade | Slightly |
 | 05 | 2. Still dark: the vault normals faced up, away from the bulb | Faces flipped toward the bulb | Yes; stopped (matches) |
+
+### Main house, front and porch vs `porch_wilkins_farm_habs.jpg`
+- The reference is HABS WV-0465, Wilkins Farm House, Lost City WV: a porch
+  with a woodpile, public domain.
+- View: eye (18.2, 1.55, -13.5), target (18.2, 2.0, -6), fov 52.
+- The reference house is painted lap siding; ours stays unpainted boxed
+  boards, as the brief asks.
+
+| Iter | Biggest differences | Change | Closer? |
+|---|---|---|---|
+| 09 | 1. The reference porch roof is a sloped tin shed meeting the wall under the upper windows; ours is a flat thick slab that reads as a black bar. 2. Clean teal glass; the reference panes are dark. 3. The reference porch is cluttered (stacked wood, tubs, chairs); ours is empty. | (baseline for this view) | n/a |
+| 10 | 1. Porch roof | Sloped shed roof (collision too): 3.05 m at the wall down to 2.42 m over the posts. Posts and plate follow; the slab edge board is removed. | Yes |
+| 11 | 2/3. Glass and clutter | Filmed-over dark glass (Hollow only). Split wood stacked between the front doors (solid cover), a chair and a washtub on the porch. | Yes |
+| 12 | 3. Log ends read black | Pale end-grain caps on the porch and yard woodpiles | Yes; stopped (13 house iterations in total) |

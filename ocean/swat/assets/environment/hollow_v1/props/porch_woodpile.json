@@ -1,0 +1,17 @@
+{
+ "file": "porch_woodpile.glb",
+ "triangles": 1736,
+ "materials": 2,
+ "bytes": 197008,
+ "sha256": "232b69a381c6b42e",
+ "min": [
+  -0.76,
+  0.006,
+  -0.276
+ ],
+ "max": [
+  0.765,
+  0.804,
+  0.261
+ ]
+}

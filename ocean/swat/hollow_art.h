@@ -109,7 +109,14 @@ static int hollow_prop_row(const SwatObject* o) {
 // Box materials. Returns false to leave the object to the default path.
 static bool hollow_box_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
     const SwatHollowArt* h=art->hollow;
-    if(!h || o->material==SWAT_GLASS || (o->door && (o->latch_broken || o->cuts))) return false;
+    if(!h || (o->door && (o->latch_broken || o->cuts))) return false;
+    if(o->material==SWAT_GLASS) {
+        if(o->part==SWAT_PART_LIGHT || o->fractured || o->cuts) return false;
+        // Old, filmed-over window glass: dark and nearly opaque at dusk.
+        swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
+        DrawCubeV((Vector3){0},(Vector3){2*o->half.x,2*o->half.y,2*o->half.z},(Color){30,33,31,225});
+        return true;
+    }
     // Stepped gable fill (collision): the trim GLB draws the true triangle.
     if(o->material==SWAT_WOOD && o->part==SWAT_PART_SKIN && !o->wall_group && o->center.y>2.2f && !o->fractured && !o->cuts) return true;
     // Overwatch plinths (mission.c pattern): the tree stand model replaces the lane one.

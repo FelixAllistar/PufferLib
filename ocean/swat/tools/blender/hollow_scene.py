@@ -287,8 +287,7 @@ def house_trim(m):
     for k in range(5):
         p.add(bm_box((14.15 + k * 1.92, .14, -7.95), (.14, .14, .14)), st)
     # Porch: rail-less edge board, ceiling boards visible under the tin.
-    p.add(bm_box((18, 2.5, -7.0), (4.1, .015, 1.05)), m["grey"])
-    p.add(bm_box((18, 2.42, -8.05), (4.15, .09, .02)), g)
+    p.add(bm_box((18, 2.38, -7.88), (4.1, .07, .05)), g)                       # porch plate on the posts
     # Ridge cap and tin trims on the main roof; stovepipe through the lean-to.
     p.add(bm_box((18, RIDGE + .12, -3), (4.45, .05, .14)), m["tin"])
     for x in (13.75, 22.25):

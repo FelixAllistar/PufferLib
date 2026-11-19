@@ -282,11 +282,8 @@ def burn_barrel(m):
 @prop
 def woodpile(m):
     p = Part(); rng = np.random.default_rng(31)
-    for row in range(5):
-        for k in range(8):
-            z = -1.1 + k * .3 + rng.normal(0, .02)
-            for x in (-.22, .22):
-                p.add(bm_cyl((x + rng.normal(0, .02), .12 + row * .23, z), .1 + .02 * rng.random(), .4, 7, axis='x'), m["grey"])
+    for x in (-.22, .22):
+        log_stack(p, m, 5, 8, -1.1, .3, .12, .23, 'x', .4, rng, (x, 0))
     return p
 
 @prop
@@ -468,6 +465,33 @@ def tree_stand(m):
     for k in range(3):  # bare limbs
         a = 1.2 + k * 1.7
         p.add(bm_tube([(0, 4 + k * 1.5, .75), (2.2 * math.cos(a), 6 + k * 1.5, .75 + 2.2 * math.sin(a))], .07, 5, cap=False), m["grey"])
+    return p
+
+def log_stack(p, m, rows, cols, x0, dx, y0, dy, axis, length, rng, center=(0, 0)):
+    """Split logs: bark on the sides, pale end grain on the cut faces."""
+    end = mat("end_grain", (.42, .34, .24), .9)
+    for row in range(rows):
+        for k in range(cols):
+            r = .09 + .015 * rng.random(); a = x0 + k * dx + rng.normal(0, .015); y = y0 + row * dy
+            c = (a, y, center[1] + rng.normal(0, .02)) if axis == 'z' else (center[0] + rng.normal(0, .02), y, a)
+            p.add(bm_cyl(c, r, length, 7, axis=axis, cap=False), m["grey"])
+            for s in (-1, 1):
+                cap = (c[0], c[1], c[2] + s * length / 2) if axis == 'z' else (c[0] + s * length / 2, c[1], c[2])
+                p.add(bm_cyl(cap, r * .96, .01, 7, axis=axis), end)
+
+@prop
+def porch_woodpile(m):
+    p = Part(); rng = np.random.default_rng(32)
+    log_stack(p, m, 4, 7, -.66, .22, .1, .2, 'z', .46, rng)
+    return p
+
+@prop
+def washtub(m):
+    p = Part()
+    p.add(bm_cyl((0, .16, 0), .33, .32, 16, r2=.36, cap=False), m["rust"])
+    p.add(bm_cyl((0, .01, 0), .33, .02, 16), m["rust"])
+    for x in (-.37, .37):
+        p.add(bm_box((x, .28, 0), (.03, .015, .05)), m["rust"])
     return p
 
 if __name__ == "__main__":
