@@ -110,3 +110,15 @@ Choice: painted drywall (what the reference room has).
 - iter 6: wall normal 0.6 -> 0.35 (smooth paint). closer: no visible change. Stop.
 - engine 1: rooms 102/103/104. Diffs: 2 walls turn mustard/olive under the warm lamps; carpet a touch too dark; 3 ceiling dark speckled (item 10).
 - engine 2: walls (220,204,166), carpet (48,72,64). closer: yes - cream painted walls, dark teal-green carpet. Final.
+
+## 9. Ceiling (replaces the generated stained popcorn)
+Reference: "Day 125 of 365 - Popcorn Ceiling", jesse?, https://www.flickr.com/photos/32996142@N05/5722955541 (CC BY 2.0): acoustic popcorn spray under grazing light.
+
+- iter 1: white_rough_plaster. Diffs: 2 peeling plaster with brown stains, not popcorn at all; 3 relief scale wrong. closer: n/a
+- iter 2: source -> white_stucco_02 (fine sprayed texture) @0.9 m, flatten 0.8, normal 1.5. closer: yes (much)
+- iter 3: tile 0.6 m, normal 2.0: finer granules like the ref. closer: yes
+- iter 4: target (212,209,200) less warm. closer: marginal
+- iter 5: normal 3.0. closer: no visible change
+- iter 6: contrast 1.4. closer: no -> reverted. Stop.
+- engine 1: room, ceiling-up and reception views. Diffs: guest-room ceilings now clean off-white; the reception ceiling under its close lamp shows strong grazing relief (like the ref) but a bit dark.
+- engine 2: normal 3.0 -> 2.0. closer: yes. Final.
