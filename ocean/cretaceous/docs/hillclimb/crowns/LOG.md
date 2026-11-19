@@ -101,3 +101,8 @@ and the tree islands (16 m) (after only), 06 the Norfolk araucaria from under it
 conifer at 25 m, 08 the araucaria's trunk at 40 m, 09 the cheirolep at 3 m from a hatchling's eye
 (left: pass 8's finer cards, right: pass 15), 10 the cheirolep from 2 m under it (left: the start of the
 round, right: pass 15).
+
+Stopped after 16 passes (about 1 h 20 min of wall time; renders were quicker than planned once the
+warm-up was cut): the last open faults need other owners' files (tone tables, terra.c's island density)
+or did not move with mesh changes (passes 12, 14). From the summit view (`mtS`, 600 m off) the krummholz
+zone reads as scattered dark patches above the forest's edge, where tall trees stood before.
