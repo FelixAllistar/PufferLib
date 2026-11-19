@@ -29,3 +29,18 @@ Choice: painted stucco (what the reference has; matches the existing walls).
 - engine 1: rear/front captures matched to the ref angle. Diffs: 1 the motel rear faces away from the sun, so the comparable lit wall is the east end wall; 2 sunlit stucco blows out to white (engine exposure is brighter than the Blender AgX stand-in); 3 relief lumpy at grazing sun. Fix value.
 - engine 2: stucco target (166,163,156) -> (146,142,134). Diffs: 2 end wall now reads as the ref's sunlit weathered white; 3 normal relief too strong close up. closer: yes
 - engine 3: normal 1.4 -> 0.8. closer: yes (calmer close up, wide unchanged). Final.
+
+## 2. Parking-lot asphalt
+Reference (wide): "Johnson Park", dankeck, https://www.flickr.com/photos/140641142@N05/53548495024 (CC0 1.0): aged, oxidised low-traffic asphalt, eye ~0.5 m.
+Reference (close): "Asphalt Texture", włodi, https://www.flickr.com/photos/19716902@N00/2329018741 (CC BY 2.0).
+Base kept calm on purpose: cracks, patches, oil and tyre marks come from the existing decal pass.
+
+- iter 1: asphalt_04 @4 m, target (112,110,106). Diffs: 1 camera 1.4 m vs ref ~0.5 m; 2 pale, smooth, reads as concrete; 3 no aggregate. closer: n/a
+- iter 2: camera lowered to 0.5 m; target (100,97,92), normal 1.5. Diffs: 2 value ok but still concrete-smooth; 3 no aggregate. closer: yes
+- iter 3: source -> worn_asphalt @3 m. Diffs: 2 aggregate present; 3 stones too large and contrasty (gravel-like). closer: yes
+- iter 4: tile 3 -> 2 m (scan scale), contrast 0.7, saturation 0.4. Diffs: 2 ref warmer/browner grey; 3 ok. closer: yes
+- iter 5: target (110,105,96). Diffs: 2 ref shows broad lighter/darker oxidation patches; ours uniform. closer: yes
+- iter 6: flatten 0.6 -> 0.3, macro (0.18 @0.08/m, roughness 0.08). closer: no visible change in Blender (noise stand-in is weak); kept for the engine
+- iter 7: contrast 0.9. closer: no -> reverted. Stop.
+- engine 1: lot views from the road edge (eye 0.5 m), close and high. Diffs: 2 lot lighter and greyer than ref; 3 aggregate good, no tiling visible at 2 m thanks to the two-scale blend. Fix value.
+- engine 2: target (94,90,82). closer: yes - dark weathered asphalt with visible aggregate; patches/oil from decals. Final.
