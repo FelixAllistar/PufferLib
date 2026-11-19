@@ -106,3 +106,5 @@ Stopped after 16 passes (about 1 h 20 min of wall time; renders were quicker tha
 warm-up was cut): the last open faults need other owners' files (tone tables, terra.c's island density)
 or did not move with mesh changes (passes 12, 14). From the summit view (`mtS`, 600 m off) the krummholz
 zone reads as scattered dark patches above the forest's edge, where tall trees stood before.
+
+The report is the body of the last commit on cret/hc3-crowns (subject "cret cloud done: crowns").
