@@ -1396,6 +1396,23 @@ static void gen_palm(Gen* g, int s) {
     for (int k = 0; k < 9; k++) { float t = k / 8.0f; T.p[k] = vadd(v3(0, -0.2f + (H + 0.2f) * t, 0), vmul(dir_az(az0), bend * t * t)); T.r[k] = lerpf(r0, r0 * 0.75f, t) + 0.08f * expf(-t * 12); T.hw[k] = 0.25f * t * t; T.ws[k] = 0; }
     relief_trunk(g, &T, sides_for(g, r0) * (g->lod ? 1 : 2), fmaxf(1, roundf(r0 * 6)), 0.5f, 0);   // a root boss at the foot
     V3 top = T.p[8];
+    // (round 2) The fan palm keeps its old leaf bases ("boots") on the top metre or so of the trunk: split stubs
+    // standing up and out in a criss-cross, so the trunk does not run smooth into the crown. Full mesh only,
+    // on a stream forked on both meshes.
+    if (!feather) {
+        VRng sv = fork_in(g); int nb = g->lod ? 0 : 20 + (int)grr(g, 0, 8); float band = grr(g, 1.0f, 2.0f);
+        for (int k = 0; k < nb; k++) {
+            float h = grr(g, 0, 1), y = H - 0.25f - band * h, az = k * 2.39996f + grr(g, -0.3f, 0.3f), el = grr(g, 0.85f, 1.2f), L = grr(g, 0.35f, 0.55f) * (1 - 0.3f * h);
+            V3 c; float rr; path_at(&T, (y + 0.2f) / (H + 0.2f), &c, NULL, &rr, NULL, NULL);
+            V3 o = dir_az(az), b0 = vadd(c, vmul(o, rr * 0.85f)), d = vnorm(vadd(vmul(o, cosf(el)), v3(0, sinf(el), 0)));
+            Path P; P.n = 3;
+            for (int q = 0; q < 3; q++) { float t = q / 2.0f; P.p[q] = vadd(b0, vmul(d, L * t)); P.r[q] = lerpf(0.06f, 0.025f, t); P.hw[q] = 0.2f; P.ws[q] = 0; }
+            int bt = g->bark_tone; g->bark_tone = h > 0.5f ? 11 : bt;   // the lowest weathered grey
+            tube(g, &P, 4, 1, 0.3f, 0, 0, 0, L_BARK_PALM, 0, 0);
+            g->bark_tone = bt;
+        }
+        fork_out(g, sv);
+    }
     // Dead leaves hanging against the trunk.
     for (int f = 0; f < 3; f++) {
         float az = f * 2.1f + grr(g, 0, 1); g->dry = (int)grr(g, 200, 255);
