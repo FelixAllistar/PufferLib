@@ -486,3 +486,5 @@ motel-picnic-test: $(ENET_LIB) | $(BUILD)
 	ulimit -c 0; $(BUILD)/test_motel_picnic $(BUILD)/picnic-test.trace
 motel-picnic-art-test-build: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_picnic_art.c character_asset.c lighting.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_motel_picnic_art
+motel-site-dump: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/motel_site_dump.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/motel_site_dump
