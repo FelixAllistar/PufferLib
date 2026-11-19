@@ -24,6 +24,7 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
 const float BED_PALE = 1.1;   // brightest the bedrock skin's tones lift the ground before easing (main)
 const float STONY_SOIL = 0.6;   // bare soil above the tree line, darkened (main)
+const float FR_CELL = 0.9;   // fractured rock: mean plate size (m)
 const float SCREE_COPY = 0.5;   // scale of scree's second copy (sample_mat): stones twice the size
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
@@ -123,6 +124,30 @@ Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
         m.rough = b.x; m.ao = b.z;
     }
     return m;
+}
+
+// Fractured rock: a Voronoi pattern of plates (jittered cells), giving per point the distance to the
+// nearest crack (half the gap between the nearest two cell centres, along the line joining them) and
+// the nearest plate's own random values. q in cell units.
+vec2 fr_hash(vec2 c) {
+    uvec2 u = uvec2(ivec2(c) + 65536);
+    uint h = u.x * 1597334677u ^ u.y * 3812015801u; h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16;
+    return vec2(float(h & 0xffffu), float(h >> 16)) / 65535.0;
+}
+vec4 fracture(vec2 q) {
+    vec2 ic = floor(q), fq = q - ic;
+    vec2 best = vec2(0.0), bc = vec2(0.0); float d1 = 1e9;
+    for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+        vec2 c = vec2(x, y), o = c + 0.1 + 0.8 * fr_hash(ic + c) - fq; float d = dot(o, o);
+        if (d < d1) { d1 = d; best = o; bc = ic + c; }
+    }
+    float edge = 1e9;
+    for (int y = -2; y <= 2; y++) for (int x = -2; x <= 2; x++) {
+        vec2 c = vec2(x, y), o = c + 0.1 + 0.8 * fr_hash(ic + c) - fq;
+        vec2 dd = o - best; if (dot(dd, dd) < 1e-5) continue;
+        edge = min(edge, dot(0.5 * (best + o), normalize(dd)));
+    }
+    return vec4(edge, fr_hash(bc + 17.0), fr_hash(bc + 41.0).x);
 }
 
 #include "shadow.glsl"
@@ -483,6 +508,36 @@ void main() {
             float ledge = smoothstep(0.7, 0.9, n.y) * (1.0 - smoothstep(0.92, 0.98, N.y)) * rk;
             vec3 moss = mix(vec3(0.07, 0.085, 0.04), vec3(0.11, 0.1, 0.06), mz);
             albedo = mix(albedo, moss, ledge * smoothstep(0.35, 0.6, mz + 0.15 * cov.b) * 0.75);
+        }
+    }
+    // Fractured rock, near (under about 60 m): the rock is broken into plates of 0.4-1.5 m with a finer
+    // set of cracks inside the larger ones, each plate its own tone and tilted a little on its own, the
+    // cracks dark. Read triplanar (the planes facing x, y and z), so it holds on faces and flats alike.
+    // The heightfield (4 m) and the photo alone drew high rock as flat paint at a hatchling's eye.
+    {
+        float fr = float(u_detail > 0) * clamp(w[0] * 1.3, 0.0, 1.0) * (1.0 - smoothstep(25.0, 60.0, dist));
+        if (fr > 0.0) {
+            vec3 tw = pow(abs(N), vec3(4.0)); tw /= dot(tw, vec3(1.0)); tw = max(tw - 0.05, 0.0); tw /= dot(tw, vec3(1.0));
+            float px = max(0.004, dist * 0.0012);   // about a pixel (m)
+            vec3 fa = vec3(0.0), fn = vec3(0.0);
+            for (int j = 0; j < 3; j++) {
+                if (tw[j] <= 0.0) continue;
+                vec2 q = j == 0 ? p.zy : (j == 1 ? p.xz : p.xy);
+                vec3 au = j == 0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0), av = j == 1 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+                // Cracks wander (the cell space is warped) and some die out, so the plates are not a net.
+                vec2 qw = q / FR_CELL + (texture(t_noise, q / 2.3 + 0.31).rg - 0.5) * 0.9;
+                vec4 c1 = fracture(qw), c2 = fracture(qw / 0.37 + 7.3);
+                float e1 = c1.x * FR_CELL, e2 = c2.x * FR_CELL * 0.37;
+                float crack = (1.0 - smoothstep(0.012, 0.012 + 1.5 * px, e1)) * mix(0.35, 1.0, smoothstep(0.38, 0.55, texture(t_noise, q / 3.7 + 0.77).b));
+                float crack2 = (1.0 - smoothstep(0.006, 0.006 + 1.5 * px, e2)) * step(0.45, c1.w);   // only some plates are split again
+                float tone = mix(0.74, 1.22, c1.y) * mix(0.92, 1.08, c2.y);
+                vec3 a = albedo * tone * (1.0 - 0.65 * crack) * (1.0 - 0.45 * crack2);
+                // The plate's face tilts its own way, and bevels down into the crack at its edge.
+                vec3 tilt = (au * (c1.z - 0.5) + av * (c1.w - 0.5)) * 0.8 + (au * (c2.z - 0.5) + av * (c2.w - 0.5)) * 0.25;
+                fa += a * tw[j]; fn += tilt * tw[j] * (1.0 - crack);
+            }
+            albedo = mix(albedo, fa, fr);
+            n = normalize(n + fn * fr * (1.0 - smoothstep(10.0, 60.0, dist) * 0.5));
         }
     }
     // Wet banks near water.

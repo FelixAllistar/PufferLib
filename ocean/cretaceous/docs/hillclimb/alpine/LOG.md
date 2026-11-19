@@ -27,3 +27,11 @@ is at the end of this file.
    and bed terms, whose pale ends multiplied up to 1.8x, eased past 1.1x (`BED_PALE`; on its own that
    removed only a few blotches). Kept: the summit slopes read as one stone mass without the blotches;
    unchanged up close (`tl1`, `af1`).
+4. Fault: the rock photo's diagonal grain still reads as one direction of smear at 2-20 m (`af2`, `tl2`). Change: rock's macro copy turned 90 degrees instead of 37. Reverted: marginal; `tl2` turned crosshatched.
+5. Fault: within 30 m, rock slopes are flat paint (one photo on a 4 m heightfield) and still read as
+   smeared down the fall line at a grazing view (`af4`, `tl2`, `c3`). Change: `terrain.fs` fractured rock
+   under 25-60 m: a Voronoi pattern of plates (`FR_CELL` 0.9 m, so 0.4-1.5 m), some split again at
+   0.37x, each plate its own tone (0.74-1.22) and its own tilt of the shading normal, dark cracks, read
+   triplanar. A first version was a regular polygon net (crazy paving); the cell space is now warped by
+   noise so the cracks wander, and some fade out. Kept: `af4` reads as broken stone instead of smears,
+   `tl2` and `c3` as rock with joints and slabs. High and medium presets only.
