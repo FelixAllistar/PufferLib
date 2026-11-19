@@ -70,3 +70,68 @@ are not committed; only the derived, embedded PNGs are.
   The overridden 192 px placeholders stay resident (owned by their models), < 1 MiB.
 - Triangles: 1,968 unique dressing triangles; 6,244 drawn for all 55
   placements; the 8 library swatches (16 triangles) are never drawn.
+
+## Architecture overlay (`architecture_kit.glb`)
+
+A second, separate GLB layered on the same authoritative building, built by
+`tools/blender/motel_exterior_arch.py` from `sections.json` (dumped by
+`tools/motel_exterior_sections.c`: every motel instance and every wall skin
+section with its centre and fractured outline). Contents:
+
+- stucco parapets with a dark teal coping and skirt on the main roof;
+  rolled-roofing laps and patches; scuppers + conductor heads;
+- a corrugated sheet awning over the walkway (wall 3.0 m -> eave 2.72 m) that
+  rolls into a 0.36 m bull-nose; exposed rafters, ledger, rim joist and beam;
+- canopy posts sleeved to 0.17 m with capitals, base fillets, concrete pier
+  collars and quarter-round corbel brackets (pale cream);
+- front facades: 0.32 m plinth, door casings and head, window jambs and
+  precast lintel, AC sleeve collar with angle brackets, party-wall pilasters, a
+  socket meter + disconnect + conduit per room;
+- rear walls and the laundry annex: painted 8x16 in block coursing, small high
+  obscure bathroom windows with frames and sills, plumbing vent pipe, cleanout,
+  hose bib, eave conduit, downspouts, service mast/weatherhead, gas meter set;
+- end walls: light plinth, quoins, louvre vent, control joints, conduit,
+  disconnect; the east end gets a meter, a jelly-jar lamp and a hose bib;
+- roof: swamp coolers on stands with duct drops, plumbing vent stacks,
+  exhaust-fan caps, J-vents, two TV antenna masts;
+- office: a full-depth front-gable red standing-seam roof with a maroon
+  0.40 m fascia, a tie band across the front, an OFFICE panel and trim around
+  the lobby glazing;
+- laundry annex: its own 0.55 m cream parapet with coping, water-heater flue,
+  dryer roof jack, a door awning, a LAUNDRY sign and three dryer hoods.
+
+**Ownership and breach.** Wall geometry is clipped (Sutherland-Hodgman in 3D)
+into one piece per authoritative skin section, using the section's outline
+prism along the wall normal; the piece's origin is the section centre. The
+engine draws a piece only with the active, non-moving skin section whose
+centre matches (hash of the centre, 6 mm tolerance) and that is not opened
+by a breach or by cuts over more than 15% of its face. Faces outside every
+section (e.g. a mast above the wall top) stay whole on the nearest section.
+Roof, canopy, post, walkway and office pieces follow their owner object; roof
+and canopy pieces hide in the planning cutaway. While the overlay is active it
+replaces these exterior-kit pieces: front/rear gutters and caps, front/rear
+downspouts, post base plates and the canopy membrane. Nothing has a collider,
+navigation, cover, sight, acoustics or protocol representation.
+
+**Switch.** `SWAT_MOTEL_ARCHITECTURE=0` restores the previous look (the
+overlay also needs the exterior kit library, so `SWAT_MOTEL_EXTERIOR=0`
+disables both).
+
+**Budget.** 361 pieces / 670 meshes in one 15-material GLB, ~29k triangles
+(all drawn once; the corrugated awning is about half of them); no textures of
+its own (plain colours + the existing library maps), GLB 2.7 MB. The build is byte-reproducible. Software GL
+(llvmpipe, `performance_tool --motel --hidden --draw-only --frames 120`):
+total 205-209 ms -> 219-224 ms (+5%), draw CPU 47.6-49.0 -> 50.4-52.3 ms.
+
+**Rebuild.**
+
+```sh
+# after the exterior kit (needs the sections dump once per motel layout change)
+make -C ocean/swat exterior-capture   # (any target that builds the core)
+../../build/swat/motel_exterior_sections > assets/environment/motel_exterior/sections.json   # see the tool header
+blender -b --factory-startup --python-exit-code 1 -P tools/blender/motel_exterior_arch.py -- assets/environment/motel_exterior
+python3 tools/import_motel_exterior.py --arch
+```
+
+`tools/blender/motel_exterior_preview.py` renders the shell + both kits in
+Cycles from the review cameras used for the reference hill-climb.
