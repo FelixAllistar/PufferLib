@@ -1,0 +1,17 @@
+{
+ "file": "hollow_outbuildings_trim.glb",
+ "triangles": 3420,
+ "materials": 6,
+ "bytes": 895356,
+ "sha256": "18b04fefb2e89bdd",
+ "min": [
+  5.93,
+  0.0,
+  -8.75
+ ],
+ "max": [
+  41.1,
+  8.37,
+  12.03
+ ]
+}

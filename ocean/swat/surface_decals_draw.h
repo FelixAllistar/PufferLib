@@ -64,6 +64,7 @@ static Texture2D surface_decals_texture(const char* directory,const char* file) 
 // placement.txt); a missing directory simply leaves that level undecorated.
 static const char* surface_decals_directory(const SwatWorld* w) {
     if(w->motel)return "motel_decals";
+    if(w->hollow)return "hollow_decals";
     return NULL;
 }
 static bool surface_decals_load(SwatSurfaceDecals* d,const SwatWorld* w,int location) {
@@ -130,7 +131,7 @@ static void surface_decals_rebuild(SwatSurfaceDecals* d,const SwatWorld* w,uint3
 void swat_environment_surface_decals(const SwatEnvironmentArt* art,const SwatWorld* world) {
     SwatSurfaceDecals* d=art->surface_decals;
     if(!d || !art->lit || !art->lighting || !art->lighting->enabled)return;
-    int location=world->storefront?2:world->motel?1:0;
+    int location=world->hollow?3:world->storefront?2:world->motel?1:0;
     if(!d->set && !d->failed && !surface_decals_directory(world))return;
     if(location!=d->location || world->count!=d->world_count || (!d->ready && !d->failed))surface_decals_load(d,world,location);
     if(!d->ready)return;

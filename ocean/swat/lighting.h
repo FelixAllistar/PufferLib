@@ -101,7 +101,8 @@ typedef struct SwatLighting {
     int night_dynamic;              // cap on per-pixel exterior lights (SWAT_NIGHT_LIGHTS)
     SwatNightLight night_lights[SWAT_NIGHT_LIGHTS]; int night_light_count;
     int night_selected[SWAT_NIGHT_DYNAMIC]; float night_weight[SWAT_NIGHT_DYNAMIC]; int night_active;
-    bool night_world_motel,night_world_ready;
+    bool night_world_motel,night_world_ready,night_world_hollow;
+    bool hollow,hollow_saved_night; // The Hollow's fixed dusk (lighting.c hollow_mode)
     Texture2D night_pool,night_halo; Vector4 night_pool_bounds;
     // One-shot emissive override for the next art draw (curtains backlit by a
     // lit room, the roadside sign faces): source model and material mask.

@@ -1,0 +1,17 @@
+{
+ "file": "jar_shelf.glb",
+ "triangles": 912,
+ "materials": 2,
+ "bytes": 148516,
+ "sha256": "157c53431ceb74e3",
+ "min": [
+  -0.2,
+  0.0,
+  -1.6
+ ],
+ "max": [
+  0.2,
+  1.5,
+  1.6
+ ]
+}

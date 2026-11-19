@@ -1,0 +1,17 @@
+{
+ "file": "counter.glb",
+ "triangles": 72,
+ "materials": 3,
+ "bytes": 199904,
+ "sha256": "8b655f2dda6c3bd3",
+ "min": [
+  -0.31,
+  0.0,
+  -1.01
+ ],
+ "max": [
+  0.31,
+  0.905,
+  1.01
+ ]
+}

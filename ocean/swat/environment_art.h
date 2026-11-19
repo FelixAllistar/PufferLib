@@ -114,6 +114,7 @@ typedef struct SwatEnvironmentArt {
     float motel_surroundings_normal_scale[2][SWAT_ROOM101_MATERIALS];
     Model storefront[SWAT_STOREFRONT_ASSETS];
     Model props[SWAT_ENV_PROP_KINDS];
+    struct SwatHollowArt* hollow; // The Hollow's material sets and models (hollow_art.h).
     struct SwatMaterialsV3* materials_v3; // Scanned CC0 material set (materials_v3.h); SWAT_MATERIALS_V3=0 omits it.
 } SwatEnvironmentArt;
 

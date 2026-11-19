@@ -1,0 +1,17 @@
+{
+ "file": "hollow_cellar_trim.glb",
+ "triangles": 260,
+ "materials": 2,
+ "bytes": 445976,
+ "sha256": "5ce3bf2f15fe87ed",
+ "min": [
+  16.48,
+  0.4,
+  14.5
+ ],
+ "max": [
+  20.52,
+  0.93,
+  18.5
+ ]
+}

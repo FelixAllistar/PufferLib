@@ -1,0 +1,17 @@
+{
+ "file": "junk_car.glb",
+ "triangles": 484,
+ "materials": 4,
+ "bytes": 71292,
+ "sha256": "88743ac4a519dca9",
+ "min": [
+  -0.9,
+  0.008,
+  -2.22
+ ],
+ "max": [
+  0.9,
+  1.3,
+  2.2
+ ]
+}

@@ -123,6 +123,7 @@ typedef struct SwatWorld {
     SwatRubblePool* rubble;
     SwatWallSupport* support;
     bool motel,storefront;
+    bool hollow; // The Hollow (SWAT_HOLLOW): selects its presentation layer (hollow_art.h).
     b3MeshData* motel_meshes[SWAT_MOTEL_MESH_CAPACITY]; // Shared static collision from the mesh cache.
     b3MeshData* storefront_meshes[40];
     b3MeshData* fence_meshes[SWAT_FENCE_PART_CAPACITY];

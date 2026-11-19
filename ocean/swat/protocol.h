@@ -14,7 +14,11 @@ extern "C" {
 // command's view tick for lag compensation. The server answers with
 // SWAT_MSG_DELTA state packets against that revision. Replays are unchanged
 // in content, but the shared version refuses older files and peers.
-#define SWAT_NET_VERSION 54
+// 55: Briar Court court layout (MOTEL_LAYOUT.md). The motel map grows a
+// court layer (SWAT_MOTEL_COURT_*), and authored posts, wheel stops, sign,
+// fence, transformer, picnic table, staging and extraction move. Old maps,
+// replays and peers describe a different world, so they are refused.
+#define SWAT_NET_VERSION 55
 #define SWAT_NET_PACKET_MAX 2097152
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_SOUNDS 32

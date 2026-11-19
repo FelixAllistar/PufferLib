@@ -39,7 +39,7 @@ determinism-test: roles-benchmark training-benchmark
 	OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission annex --envs 1 --repeat 4 --decisions 3000 --check $(DETERMINISM)/roles-annex-repeat4.hashes
 	one=$$(OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission motel --envs 8 --threads 1 --decisions 500 | sed 's/.*checksum=//'); \
 	four=$$(OMP_NUM_THREADS=4 $(BUILD)/roles_benchmark --mission motel --envs 8 --threads 4 --decisions 500 | sed 's/.*checksum=//'); \
-	test "$$one" = d8582c7b && test "$$four" = d8582c7b && echo "PASS determinism motel threads: 1 and 4 threads match the recorded checksum"
+	test "$$one" = 600dd752 && test "$$four" = 600dd752 && echo "PASS determinism motel threads: 1 and 4 threads match the recorded checksum"
 	OMP_NUM_THREADS=1 $(BUILD)/training_benchmark --envs 4 --threads 1 --steps 600 | sed 's/.*checksum=\([0-9a-f]*\).*/\1/' | diff - $(DETERMINISM)/movement-envs4-steps600.checksums && echo "PASS determinism movement: five course checksums"
 lighting-bake: | $(BUILD)
 	$(CC) -O2 -std=c11 -I$(RAYLIB)/include lighting_bake.c -lm -o $(BUILD)/lighting_bake
@@ -156,7 +156,7 @@ motel-occupancy-completion-test: motel-completion-test-build
 	ulimit -c 0; $(BUILD)/test_motel_completion $(BUILD)/motel-mixed-hostile.sgrp combat interroom squad search seed=2026 occupancy=2 layout-seed=7
 net-probe: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) net_probe.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/net_probe
-test: surface-decals-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test
+test: hollow-test surface-decals-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test
 wall-support-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_wall_support.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_wall_support
 	$(BUILD)/test_wall_support $(BUILD)/wall-support-test.sgrp
@@ -486,3 +486,10 @@ motel-picnic-test: $(ENET_LIB) | $(BUILD)
 	ulimit -c 0; $(BUILD)/test_motel_picnic $(BUILD)/picnic-test.trace
 motel-picnic-art-test-build: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_picnic_art.c character_asset.c lighting.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_motel_picnic_art
+motel-site-dump: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/motel_site_dump.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/motel_site_dump
+
+.PHONY: hollow-test
+hollow-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_hollow.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_hollow
+	ulimit -c 0; $(BUILD)/test_hollow

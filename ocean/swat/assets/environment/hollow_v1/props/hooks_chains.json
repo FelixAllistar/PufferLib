@@ -1,0 +1,17 @@
+{
+ "file": "hooks_chains.glb",
+ "triangles": 942,
+ "materials": 3,
+ "bytes": 147784,
+ "sha256": "72ab2bf8166b154a",
+ "min": [
+  -1.4,
+  0.723,
+  -0.96
+ ],
+ "max": [
+  1.4,
+  2.15,
+  0.06
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "file": "clothesline.glb",
+ "triangles": 200,
+ "materials": 4,
+ "bytes": 279432,
+ "sha256": "3ad4b8c40ec9eb1a",
+ "min": [
+  -0.5,
+  0.0,
+  -3.05
+ ],
+ "max": [
+  0.5,
+  2.0,
+  3.05
+ ]
+}

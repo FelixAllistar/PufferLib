@@ -32,7 +32,7 @@ static Model reference(uint64_t mask){
 static Image frame(Camera3D camera,bool source,bool shadow,uint64_t submitted,Model*control){
  RenderTexture2D target=LoadRenderTexture(384,384);assert(target.id);before=sim.world;
  BeginTextureMode(target);ClearBackground(MAGENTA);BeginMode3D(camera);swat_lighting_begin(&light,&art,&sim.world,camera.position);
- if(source){SwatMotelInstance placement;int owner=SWAT_MOTEL_PICNIC_FIRST;while(owner<SWAT_MOTEL_OBJECTS&&!(submitted&(UINT64_C(1)<<(owner-SWAT_MOTEL_PICNIC_FIRST))))owner++;assert(owner<SWAT_MOTEL_OBJECTS&&swat_motel_picnic(&sim.world,owner,&placement));assert(location_mesh_draw(&art,&sim.world.objects[owner],&placement,control,&art.picnic_art->source,shadow,false,false,NULL));}
+ if(source){SwatMotelInstance placement;int owner=SWAT_MOTEL_PICNIC_FIRST;while(owner<SWAT_MOTEL_PICNIC_END&&!(submitted&(UINT64_C(1)<<(owner-SWAT_MOTEL_PICNIC_FIRST))))owner++;assert(owner<SWAT_MOTEL_PICNIC_END&&swat_motel_picnic(&sim.world,owner,&placement));assert(location_mesh_draw(&art,&sim.world.objects[owner],&placement,control,&art.picnic_art->source,shadow,false,false,NULL));}
  else for(int i=0;i<50;i++)if(submitted&(UINT64_C(1)<<i))assert(swat_environment_motel_draw(&art,&sim.world,&sim.world.objects[SWAT_MOTEL_PICNIC_FIRST+i],shadow,false));
  swat_lighting_end(&light,&art);EndMode3D();EndTextureMode();Image image=LoadImageFromTexture(target.texture);ImageFlipVertical(&image);UnloadRenderTexture(target);assert(!memcmp(&before,&sim.world,sizeof(before)));return image;
 }

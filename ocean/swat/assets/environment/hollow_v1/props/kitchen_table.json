@@ -1,0 +1,17 @@
+{
+ "file": "kitchen_table.glb",
+ "triangles": 220,
+ "materials": 2,
+ "bytes": 107416,
+ "sha256": "4c67d77822030133",
+ "min": [
+  -0.95,
+  0.0,
+  -0.8
+ ],
+ "max": [
+  0.5,
+  0.95,
+  0.8
+ ]
+}

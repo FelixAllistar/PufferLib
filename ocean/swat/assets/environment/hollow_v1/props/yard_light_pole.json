@@ -1,0 +1,17 @@
+{
+ "file": "yard_light_pole.glb",
+ "triangles": 104,
+ "materials": 4,
+ "bytes": 216016,
+ "sha256": "347d79e3e117029d",
+ "min": [
+  -0.98,
+  0.0,
+  -0.13
+ ],
+ "max": [
+  0.124,
+  7.2,
+  0.13
+ ]
+}

@@ -281,6 +281,8 @@ static bool room101_model_load(Model* model,float* scales,const char* file) {
 }
 #include "motel_interior_art.h"
 #include "motel_props_ext_v2_impl.h" // Exterior props v2 (SWAT_PROPS_EXT_V2).
+static void textured_box(Texture2D texture,const SwatObject* o,bool lit,Vector2 tile,int grain,bool metric);
+#include "hollow_art.h" // The Hollow (SWAT_HOLLOW_ART).
 #include "surface_decals_draw.h"
 static void picnic_art_load(SwatEnvironmentArt* art) {
     SwatPicnicArt* p=calloc(1,sizeof(*p));if(!p)return;art->picnic_art=p;
@@ -545,17 +547,19 @@ static void location_models_close(Model* models,int count) {
 void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWorld* world) {
     const char* enabled=getenv("SWAT_ENVIRONMENT_ART");
     if(!art->initialized || (enabled && !strcmp(enabled,"0"))) return;
-    int selected=world->storefront ? 2 : world->motel ? 1 : 0;
+    int selected=world->hollow ? 3 : world->storefront ? 2 : world->motel ? 1 : 0;
     if(art->location==selected) return;
     if(!art->bounds)art->bounds=calloc(1,sizeof(*art->bounds));
     clear_bounds(art->bounds);
     props_ext_v2_close(art);
+    hollow_art_close(art);
     room101_close(art);exterior_close(art);
     location_models_close(art->motel,SWAT_MOTEL_ASSETS);
     location_models_close(art->storefront,SWAT_STOREFRONT_ASSETS);
     mv3_close(art);
     art->location=selected;
     if(!selected) return;
+    if(selected==3) { hollow_art_load(art); return; }
     char path[4096];
     int location=selected-1;
     int missing=0;
@@ -668,6 +672,7 @@ void swat_art_model_close(Model model) {
 static void motel_props_v2_close(const SwatEnvironmentArt* art);
 void swat_environment_art_close(SwatEnvironmentArt* art) {
     props_ext_v2_close(art);
+    hollow_art_close(art);
     motel_props_v2_close(art);
     room101_close(art);exterior_close(art);
     free(art->door_art);art->door_art=NULL;
@@ -927,6 +932,7 @@ static bool material_door(const SwatEnvironmentArt* art,const SwatObject* o) {
 
 bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
     if(!o->active) return false;
+    if(art->hollow && hollow_box_draw(art,o)) return true;
     SwatEnvironmentSurface surface=swat_environment_surface(o);
     if(surface==SWAT_ENV_DOOR && art->door.meshCount) {
         bool damaged=o->latch_broken || o->cuts;
@@ -1373,6 +1379,7 @@ static bool window_fallback(const SwatObject* o,bool shadow) {
     rlEnd();rlSetTexture(0);rlPopMatrix();return true;
 }
 void swat_environment_motel_backdrop(const SwatEnvironmentArt* art,const SwatWorld* world,bool shadow) {
+    if(world->hollow) { hollow_scene_draw(art,shadow); return; }
     if(!world->motel)return;
     bool lit=!shadow && art->lighting && art->lighting->enabled && art->lighting->prepared;
     Matrix scene=shadow && art->lighting && art->lighting->shadow_restricted ?
@@ -1462,6 +1469,41 @@ static bool night_backlight(const SwatEnvironmentArt* art,const SwatWorld* world
     art->lighting->glow_tint=(Vector3){strength*1.0f*power,strength*.70f*power,strength*.42f*power};
     return true;
 }
+// Court layer (MOTEL_LAYOUT.md): closed guest-room bays drawn with the same
+// motel_v1 kit as Rooms 102-104 plus their template's exterior and
+// architecture overlay. Windows use the revised guest window with every cover
+// drawn; the closed rooms stay dark. Floors are never visible (the rooms are
+// sealed), so only their collision exists.
+static bool motel_court_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,const SwatMotelInstance* p,bool shadow,bool cutaway) {
+    if(!o->active || p->asset==4)return true;
+    // Cull the row with everything it repeats: a conservative world box around
+    // its placement (pieces reach a bay's parapet, coolers and awning), since
+    // overlay pieces only know the whole kit's bounds.
+    if(art->bounds && !(art->lighting && art->lighting->shadow_restricted && shadow)) {
+        float r=p->asset==14?3.5f:4.6f;
+        BoundingBox box={{(float)p->origin.x-r,-.5f,(float)p->origin.z-r},{(float)p->origin.x+r,p->asset==14?9.0f:5.0f,(float)p->origin.z+r}};
+        Matrix scene=MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection());
+        if(bounds_outside(art->bounds,box,scene))return true;
+    }
+    exterior_draw(art,world,o,shadow,cutaway);
+    if(p->asset==10 && art->motel_windows[0].meshCount) {
+        rlDisableBackfaceCulling();
+        for(int k=0;k<art->window_cover_count[0];k++)location_mesh_draw(art,o,p,&art->window_cover[0][k],&art->window_cover[0][k],shadow,cutaway,false,NULL);
+        rlEnableBackfaceCulling();
+        return location_mesh_draw(art,o,p,&art->motel_windows[0],&art->motel_windows[0],shadow,cutaway,false,NULL);
+    }
+    if(p->asset==14 && art->motel_roadside.meshCount) {
+        // The roadside sign's back-to-back twin: same accepted art and night glow.
+        bool lit_sign=art->lit && art->lighting && art->lighting->night && !shadow;
+        if(lit_sign){art->lighting->glow_source=&art->motel_roadside;art->lighting->glow_materials=3u<<5;
+            art->lighting->glow_tint=(Vector3){.55f,.50f,.42f};}
+        bool drawn=location_draw(art,o,p,&art->motel_roadside,shadow,cutaway,false);
+        if(lit_sign)art->lighting->glow_source=NULL;
+        return drawn;
+    }
+    if(!art->motel[p->asset].meshCount)return false;
+    return location_draw(art,o,p,&art->motel[p->asset],shadow,cutaway,false);
+}
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel)return false;
     // Enabled party walls use the original shared board/timber surfaces.
@@ -1479,6 +1521,8 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         rlPopMatrix();clear_surface(art);return true;
     }
     if(o->tag.index<1)return false;
+    SwatMotelInstance court;int court_template;
+    if(swat_motel_court(world,o->tag.index,&court,&court_template))return motel_court_draw(art,world,o,&court,shadow,cutaway);
     if(swat_motel_windows_revised(world)){
         int bay=swat_motel_window_index(o->tag.index),parent=swat_motel_window_part_parent(world,o->tag.index);
         if(bay>=0){

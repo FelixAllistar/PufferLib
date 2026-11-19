@@ -1,7 +1,10 @@
 // Dump the authoritative motel instances and wall skin sections as JSON for
 // the exterior architecture overlay builder (tools/blender/motel_exterior_arch.py).
 // Read-only: builds the ordinary motel mission world (layout seed 42) and
-// prints object boxes; nothing is changed.
+// prints object boxes; nothing is changed. Instances are the 5.0 authored
+// placements the overlay is built against: owners the court layout moved
+// (posts, stops, sign, fence) and the court rows ("court", with their template
+// owner) repeat that art at draw time (swat_motel_art_frame, MOTEL_LAYOUT.md).
 //   motel_exterior_sections > assets/environment/motel_exterior/sections.json
 #include "sim.h"
 #include "motel.h"
@@ -15,7 +18,7 @@ int main(void) {
     const SwatWorld* w=&sim->world;
     printf("{\n \"schema\": \"swat_motel_sections_v1\",\n \"instances\": [\n");
     for(int i=1;i<=SWAT_MOTEL_INSTANCES && i<w->count;i++) {
-        const SwatMotelInstance* p=swat_motel_instance(i-1);const SwatMotelAsset* a=swat_motel_asset(p->asset);
+        const SwatMotelInstance* p=swat_motel_authored_instance(i-1);const SwatMotelAsset* a=swat_motel_asset(p->asset);
         const SwatObject* o=&w->objects[i];
         printf("  {\"tag\": %d, \"asset\": \"%s\", \"origin\": [%.4f, %.4f, %.4f], \"scale\": [%.4f, %.4f, %.4f], \"yaw\": %.6f, \"wall_group\": %d, \"active\": %d}%s\n",
             i,a?a->file:"",p->origin.x,p->origin.y,p->origin.z,p->scale.x,p->scale.y,p->scale.z,p->yaw,o->wall_group,o->active,i<SWAT_MOTEL_INSTANCES?",":"");
@@ -29,6 +32,13 @@ int main(void) {
             n++?",\n":"",i,owner,o->wall_group,o->center.x,o->center.y,o->center.z,o->half.x,o->half.y,o->half.z,o->yaw,
             o->corners[0][0],o->corners[0][1],o->corners[1][0],o->corners[1][1],o->corners[2][0],o->corners[2][1],o->corners[3][0],o->corners[3][1]);
     }
-    printf("\n ]\n}\n");
+    printf("\n ],\n \"court\": [\n");
+    for(int i=SWAT_MOTEL_COURT_FIRST;i<SWAT_MOTEL_COURT_END && i<w->count;i++) {
+        SwatMotelInstance p;int template_owner;if(!swat_motel_court(w,i,&p,&template_owner))continue;
+        const SwatMotelAsset* a=swat_motel_asset(p.asset);
+        printf("  {\"tag\": %d, \"asset\": \"%s\", \"origin\": [%.4f, %.4f, %.4f], \"scale\": [%.4f, %.4f, %.4f], \"yaw\": %.6f, \"template\": %d}%s\n",
+            i,a?a->file:"",p.origin.x,p.origin.y,p.origin.z,p.scale.x,p.scale.y,p.scale.z,p.yaw,template_owner,i+1<SWAT_MOTEL_COURT_END?",":"");
+    }
+    printf(" ]\n}\n");
     swat_sim_close(sim);free(sim);return 0;
 }

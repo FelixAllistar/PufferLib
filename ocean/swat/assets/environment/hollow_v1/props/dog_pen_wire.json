@@ -1,0 +1,17 @@
+{
+ "file": "dog_pen_wire.glb",
+ "triangles": 1194,
+ "materials": 5,
+ "bytes": 191748,
+ "sha256": "d447e599ad9db108",
+ "min": [
+  -1.504,
+  0.0,
+  -1.504
+ ],
+ "max": [
+  1.504,
+  1.78,
+  1.504
+ ]
+}

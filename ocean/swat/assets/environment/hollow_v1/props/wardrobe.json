@@ -1,0 +1,17 @@
+{
+ "file": "wardrobe.glb",
+ "triangles": 68,
+ "materials": 3,
+ "bytes": 199860,
+ "sha256": "b5abdd649cb92e05",
+ "min": [
+  -0.4,
+  0.0,
+  -0.25
+ ],
+ "max": [
+  0.4,
+  1.8,
+  0.28
+ ]
+}
