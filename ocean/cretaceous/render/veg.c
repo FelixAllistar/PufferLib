@@ -464,9 +464,10 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
         [L_CYCAD] = {0.026f, 0.066f, 0.028f}, [L_ARAU] = {0.03f, 0.072f, 0.034f}, [L_SPRAY] = {0.045f, 0.098f, 0.036f},
         [L_PODO] = {0.024f, 0.056f, 0.026f}, [L_LEAF] = {0.045f, 0.095f, 0.03f}, [L_LEAF2] = {0.032f, 0.075f, 0.026f},
         [L_LEAF3] = {0.048f, 0.1f, 0.034f}, [L_PALM] = {0.05f, 0.098f, 0.04f}, [L_SHRUB] = {0.036f, 0.08f, 0.028f},
-        [L_BARK] = {0.085f, 0.068f, 0.052f}, [L_BARK_CON] = {0.11f, 0.062f, 0.042f}, [L_BARK_PALM] = {0.09f, 0.076f, 0.058f},
-        [L_BARK_FERN] = {0.055f, 0.04f, 0.028f}, [L_BARK_ARAU] = {0.1f, 0.075f, 0.058f}, [L_BARK_PODO] = {0.12f, 0.075f, 0.055f},
-        [L_BARK_GINKGO] = {0.1f, 0.088f, 0.072f}, [L_BARK_PLANE] = {0.13f, 0.12f, 0.095f},
+        // Bark: the mean albedo of each species' bark (the scans' furrow shade, baked in by fetch_foliage.sh, only adds contrast).
+        [L_BARK] = {0.14f, 0.125f, 0.105f}, [L_BARK_CON] = {0.17f, 0.088f, 0.056f}, [L_BARK_PALM] = {0.11f, 0.094f, 0.072f},
+        [L_BARK_FERN] = {0.06f, 0.044f, 0.03f}, [L_BARK_ARAU] = {0.13f, 0.095f, 0.072f}, [L_BARK_PODO] = {0.15f, 0.095f, 0.068f},
+        [L_BARK_GINKGO] = {0.14f, 0.125f, 0.1f}, [L_BARK_PLANE] = {0.19f, 0.18f, 0.145f},
         [L_GRASS] = {0.046f, 0.102f, 0.027f}, [L_SEDGE] = {0.04f, 0.09f, 0.033f}, [L_REED] = {0.056f, 0.098f, 0.034f},
     };
     const float* t = T[layer];

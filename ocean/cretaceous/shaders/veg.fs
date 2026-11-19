@@ -10,9 +10,10 @@ flat in float v_bark;
 // Bark tone per species on top of the per-species bark layer (photo or
 // painted, already coloured): default, tree fern, palm, conifer, cycad,
 // angiosperm, then (render/veg_gen.h) twig, frond rachis, cone, crozier,
-// untinted (fruit, flowers, fungi: their own atlas colours), dead wood.
-const vec3 BARK[12] = vec3[12](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8, 0.68), vec3(0.88, 0.84, 0.8), vec3(0.78, 0.72, 0.62), vec3(0.85, 0.78, 0.68),
-                               vec3(0.8, 0.72, 0.6), vec3(0.78, 0.86, 0.52), vec3(0.85, 0.62, 0.42), vec3(0.72, 0.64, 0.46), vec3(1.0), vec3(1.0));
+// untinted (fruit, flowers, fungi: their own atlas colours), dead wood, plane (mottled, below).
+// Conifers and angiosperms are 1: their bark layers are by species and already carry its colour.
+const vec3 BARK[13] = vec3[13](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8, 0.68), vec3(1.0), vec3(0.78, 0.72, 0.62), vec3(1.0),
+                               vec3(0.8, 0.72, 0.6), vec3(0.78, 0.86, 0.52), vec3(0.85, 0.62, 0.42), vec3(0.72, 0.64, 0.46), vec3(1.0), vec3(1.0), vec3(1.0));
 uniform sampler2DArray t_atlas;
 uniform int u_bake;
 uniform float u_edge_fade;   // 1: leaf cards erode away edge on and glow by their own normal (render/veg_look.h VEG_LOOK_EDGE)
@@ -63,7 +64,7 @@ void main() {
         albedo = mix(albedo, mix(straw, dead, smoothstep(0.5, 1.0, dry)), smoothstep(0.0, 0.5, dry));
     } else {
         int tone = int(v_bark + 0.5);
-        albedo *= BARK[clamp(tone, 0, 11)];
+        albedo *= BARK[clamp(tone, 0, 12)];
         // Dead wood: bark weathers grey and pale, with dark checks along the grain.
         if (tone == 11) albedo = mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 0.3) * vec3(1.18, 1.14, 1.08) * (0.8 + 0.2 * smoothstep(0.1, 0.3, abs(fract(v_uv.x * 9.0 + sin(v_uv.y * 3.0) * 0.3) - 0.5)));
         // Trunk surface patterns from the tube uv (u around, v along, in m).
@@ -80,6 +81,15 @@ void main() {
             vec2 f = fract(g) - 0.5;
             float scar = smoothstep(0.22, 0.12, length(f * vec2(1.0, 1.6))), fine = clamp(1.0 - 3.0 * max(fwidth(g.x), fwidth(g.y)), 0.0, 1.0);
             albedo *= mix(1.0, mix(1.0, 0.62, scar) * (0.88 + 0.24 * fract(q.x * 37.0 + sin(q.y * 23.0))), fine) * mix(0.86, 1.0, fine);
+        } else if (tone == 12) {    // plane: bark shed in plates, a camouflage of cream, grey-green and fawn patches
+            // In metres round the plant (no seam where u wraps), stretched along the trunk; two octaves of
+            // 15-40 cm patches with sharp edges. They stay as large shapes at a distance, as on a real plane.
+            vec3 m = (v_world - v_base) * vec3(4.0, 2.2, 4.0);
+            float n1 = 0.5 * (vnoise2(m.xy) + vnoise2(m.zy + 17.0)), n2 = 0.5 * (vnoise2(m.xy * 2.3 + 5.0) + vnoise2(m.zy * 2.3 + 31.0));
+            float pa = smoothstep(0.5, 0.54, n1 * 0.7 + n2 * 0.3), pb = smoothstep(0.56, 0.6, n2 * 0.65 + n1 * 0.35);
+            float l = dot(albedo, vec3(0.3, 0.59, 0.11));
+            albedo = mix(albedo, l * vec3(1.75, 1.72, 1.45), pa);    // fresh cream inner bark
+            albedo = mix(albedo, l * vec3(1.15, 1.2, 0.95), pb * (1.0 - pa));   // grey-green
         } else if (tone == 2) {     // palm: horizontal leaf-base rings
             albedo *= 0.85 + 0.2 * smoothstep(0.0, 0.25, abs(fract(q.y * 6.0) - 0.5));
         }
@@ -99,7 +109,7 @@ void main() {
         vec2 tl = mt.xy * 2.0 - 1.0; float tn = length(tl);
         tl *= min(mix(LEAF_TILT_BARK, LEAF_TILT_GAIN, v_leaf), 0.9 / max(tn, 1e-4));
         N = detail_normal(N, tl, dpx, dpy, dux, duy);
-        albedo *= 1.0 - 0.5 * smoothstep(0.12, 0.7, tn);
+        albedo *= 1.0 - 0.5 * smoothstep(0.12, 0.7, tn) * mix(0.35, 1.0, v_leaf);   // bark scans carry their furrow shade already
     }
     veg_trans = u_leaf_detail.y > 0.0 ? mt.b : 1.0;   // a thin blade lets all of it through, as before; veins and stems less
     if (u_bake == 1) {
