@@ -1301,6 +1301,10 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
             w[TERRA_MAT_FOREST] += open * d * 0.75f * scrubg;
             dpan = pan; dwash = wash; dpave = pave;
         }
+        {   // the strand behind the beach (vegetation below): sandy ground with litter under the groves
+            float strand = sstep(0.06f, 0.25f, coast[i] + 0.06f * n2) * (1 - sstep(10.0f, 22.0f, h)) * (1 - clampf(beach, 0, 1)) * (1 - sstep(0.3f, 0.6f, slope)) * (1 - riparian);
+            w[TERRA_MAT_SAND] += open * strand * (0.55f + 0.4f * n3); w[TERRA_MAT_FOREST] *= 1 - 0.5f * strand; w[TERRA_MAT_MUD] *= 1 - strand;
+        }
         w[TERRA_MAT_MOSS] += open * canopy * wetfor * 0.85f * sstep(-0.15f, 0.25f, n3 + 0.4f * n2);   // moss carpets in patches between the litter
         float tot = 0; for (int k = 0; k < TERRA_MAT_COUNT; k++) { w[k] = fmaxf(w[k], 0); w[k] *= w[k]; tot += w[k]; }
         if (tot < 1e-6f) { w[TERRA_MAT_DIRT] = 1; tot = 1; }
@@ -1334,7 +1338,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         v[TERRA_VEG_TREEFERN] = grow * fmaxf(sstep(0.7f, 0.95f, moist) * sstep(0.0f, 3.0f, curv[i]), 0.55f * wetfor * sstep(-0.2f, 0.3f, n2)) * sstep(15.0f, 20.0f, temp) * (1 - alpine) * (1 - nearface);
         // Horsetails: a dense strip at the water's edge (the nearest few metres), patchy brakes over the rest of a
         // flat bank and floodplain.
-        v[TERRA_VEG_HORSETAIL] = (1 - sstep(0.1f, 0.3f, slope)) * fmaxf(sstep(0.1f, 0.14f, wet[i]), 0.7f * sstep(0.4f, 0.9f, riparian) * sstep(0.1f, 0.4f, n2 + 0.3f * n3)) * (wetcell ? 0.3f : 1.0f);
+        v[TERRA_VEG_HORSETAIL] = (1 - sstep(0.1f, 0.3f, slope)) * fmaxf(sstep(0.1f, 0.14f, wet[i]), 0.7f * sstep(0.4f, 0.9f, riparian) * sstep(0.1f, 0.4f, n2 + 0.3f * n3)) * (wetcell ? 0.3f : 1.0f) * (1 - clampf(beach * 1.5f, 0, 1));   // not where a river crosses the beach
         v[TERRA_VEG_PALM] = grow * sstep(0.2f, 0.6f, coast[i] * 2) * (1 - sstep(8.0f, 30.0f, h)) * sstep(20.0f, 24.0f, temp) * (0.3f + 0.7f * clump2);
         // The tree line is not an edge: above it a few stunted outlying conifers stand alone or in small
         // clumps for another 60-140 m (more in the hollows), among thickets of scrub.
@@ -1352,6 +1356,19 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
             v[TERRA_VEG_CONIFER] = fmaxf(v[TERRA_VEG_CONIFER], grow * d * 0.3f * wline * sstep(0.0f, 0.3f, n3));
             v[TERRA_VEG_CYCAD] = lerpf(v[TERRA_VEG_CYCAD], grow * (0.22f * cl + 0.15f * wline) * bare_, d);   // sparse: a cycad here and there in the scrub
             v[TERRA_VEG_SHRUB] = lerpf(v[TERRA_VEG_SHRUB], grow * fminf(0.6f * (0.45f + 0.55f * cl) + 0.35f * wline, 0.85f) * bare_, d);
+        }
+        // The strand: behind the beach, on low ground near the sea (not cliffs), the forest gives way over
+        // 40-80 m to an open belt of palms in groves and salt-hardy scrub on sandy ground (the splat above),
+        // before the coastal forest closes behind it.
+        {
+            float strand = sstep(0.06f, 0.25f, coast[i] + 0.06f * n2) * (1 - sstep(10.0f, 22.0f, h)) * (1 - clampf(beach, 0, 1)) * (1 - sstep(0.3f, 0.6f, slope)) * (1 - riparian) * grow;
+            if (strand > 0) {
+                float grove = sstep(-0.05f, 0.3f, n2 + 0.5f * (clump2 - 0.5f));
+                v[TERRA_VEG_PALM] = fmaxf(v[TERRA_VEG_PALM], strand * (0.25f + 0.6f * grove) * sstep(18.0f, 22.0f, temp));
+                v[TERRA_VEG_SHRUB] = fmaxf(v[TERRA_VEG_SHRUB], strand * (0.45f + 0.3f * (1 - grove)));
+                v[TERRA_VEG_BROADLEAF] *= 1 - 0.8f * strand; v[TERRA_VEG_TREEFERN] *= 1 - strand;
+                v[TERRA_VEG_CONIFER] *= 1 - 0.5f * strand; v[TERRA_VEG_FERN] *= 1 - 0.6f * strand;
+            }
         }
         if (sea[i] || h < 0.3f) for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = 0;
         for (int k = 0; k < TERRA_VEG_COUNT; k++) m->veg[i * TERRA_VEG_COUNT + k] = (uint8_t)(255 * clampf(v[k], 0, 1));

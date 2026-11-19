@@ -56,3 +56,9 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
    brakes over the rest of a flat bank. Kept: `wetl` has a green riparian corridor (broadleaves, tree ferns, a
    horsetail fringe) through the dry country, `river` keeps its horsetail edge without sand, horsetails on the
    island 25,166 to 6,275. `rivG` stands in a brake at the water's edge.
+8. Fault: the beach meets the forest with nothing between, and (from pass 7) where a river crosses the beach its
+   horsetail strip stood on the sand. Change: `terra.c` a strand belt behind the beach on low ground near the sea:
+   palms in groves, salt-hardy scrub, sandy ground, broadleaves, ferns and tree ferns thinned; horsetails kept off
+   the beach. Kept, small: `coast` has scrub on the sand by the river mouth instead of a horsetail wall; the belt is
+   narrow on this island, where most low coastal ground is already beach (the bake's berm and `world.c`'s big
+   beaches), so `beach` and `cstA` change little. Palms 995 to 1,061, shrubs 88,063 to 93,220.
