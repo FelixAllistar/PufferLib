@@ -17,6 +17,7 @@ photos guided proportions only; nothing from them is in the assets.
 |---|---|---|---|---|
 | BC2_PICKUP01.glb | late-1960s pickup, faded blue | 3,520 | dirty_concrete (grain) | Commons "Chevrolet c10 pickup argentina.jpg" (public domain) |
 | BC2_VAN01.glb | mid-1960s forward-control panel van, warm grey | 3,728 | dirty_concrete (grain) | Commons "1965 Ford Econoline HD Van (54486012308).jpg" by Mustang Joe (CC0) |
+| BC2_PALM01.glb | desert fan palm with dead-frond skirt, ~12 m | 7,722 | palm_tree_bark, dirty_concrete (grain) | Commons "Washingtonia filifera- oasis.jpg" by Thayne Tuason (CC BY 4.0) |
 
 Licence of the generated files: CC0 1.0 (original work; Poly Haven inputs are
 CC0). No brand logos, badges or real names.

@@ -67,3 +67,22 @@ panel van, warm grey, no badges or lettering.
 11. van game 4: paint (0.42,0.40,0.37), now the ref's warm grey; closer: yes. Stop.
 
 Budget: 3,728 triangles, 5 materials, shared 512 px grain; GLB ~220 KB.
+
+## Desert fan palm (BC2_PALM01)
+
+Reference: https://commons.wikimedia.org/wiki/File:Washingtonia_filifera-_oasis.jpg
+by Thayne Tuason (CC BY 4.0; copy in refs/palm_ref.jpg). Tall Washingtonia
+with a skirt of dead fronds: the tall element the skyline was missing.
+
+1. palm iter 1: trunk, dead-frond skirt bell, 30 solid fans; camera too far; crown tiny ball; closer: baseline
+2. palm iter 2: camera to the ref's worm's-eye (6 m, 20 mm), leaf r 0.85 -> 1.4, petiole 1.5, skirt r 1.15; closer: yes (but a solid green blob)
+3. palm iter 3: fans rebuilt as a short web plus separate pointed segments with gaps; closer: yes (now reads as a fan palm)
+4. palm iter 4: crown scaled up (leaf r 2.0, petiole 2.0) and raised 0.6 m above the skirt; closer: yes
+5. palm iter 5: skirt flared (r 1.35 top), longer (4.6 m), thicker trunk; closer: no (still a clean cup), kept for proportions
+6. palm iter 6: 40 leaves, short petioles, elevation span 135 deg (lower leaves droop): crown filled but too narrow; closer: mixed
+7. palm iter 7: petiole 1.6 and leaf r 2.3 with 40 leaves: wide, full crown; closer: yes
+8. palm iter 8: skirt hem raggeder (1.2 m), deeper ridges, greyer-brown; closer: yes (small)
+9. palm game 1: four palms (beside the sign, both street verges, west verge); skirt a pale tan tube and leaves too cyan in engine; closer: n/a
+10. palm game 2: skirt (0.40,0.35,0.29), leaves (0.42,0.49,0.36), dead fans darker; closer: yes. Stop.
+
+Budget: 7,722 triangles (two-sided leaves), 3 materials, palm_tree_bark + grain 512 px; GLB ~0.45 MB.

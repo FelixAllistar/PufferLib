@@ -2,15 +2,20 @@
 // assets/environment/motel_props_ext_v2/placements.json. Presentation only.
 #ifndef SWAT_MOTEL_PROPS_EXT_V2_DATA_H
 #define SWAT_MOTEL_PROPS_EXT_V2_DATA_H
-#define SWAT_PE2_PROPS 2
-#define SWAT_PE2_PLACEMENTS 2
+#define SWAT_PE2_PROPS 3
+#define SWAT_PE2_PLACEMENTS 6
 typedef struct SwatPe2Placement { int prop; float x,y,z,yaw,scale; bool shadow; } SwatPe2Placement;
 static const char* const swat_pe2_props[SWAT_PE2_PROPS]={
     "BC2_PICKUP01",
     "BC2_VAN01",
+    "BC2_PALM01",
 };
 static const SwatPe2Placement swat_pe2_placements[SWAT_PE2_PLACEMENTS]={
     {0,17.500f,-0.080f,15.600f,1.57080f,1.000f,true}, // BC2_PICKUP01 front bay row
     {1,-20.600f,-0.080f,-6.000f,0.00000f,1.000f,true}, // BC2_VAN01 west bays, backed in
+    {2,13.600f,-0.080f,9.600f,0.34907f,1.000f,true}, // BC2_PALM01 beside roadside sign
+    {2,5.600f,-0.080f,30.000f,2.44346f,0.880f,true}, // BC2_PALM01 street verge east of driveway
+    {2,-11.000f,-0.080f,29.500f,4.36332f,1.120f,true}, // BC2_PALM01 street verge west
+    {2,-27.500f,-0.080f,-14.000f,1.30900f,0.950f,true}, // BC2_PALM01 west verge
 };
 #endif
