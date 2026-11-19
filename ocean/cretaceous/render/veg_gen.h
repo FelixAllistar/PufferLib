@@ -1488,6 +1488,17 @@ static void gen_herb(Gen* g) {
         if (gr(g) < 0.8f) flower(g, top, vnorm(v3(grr(g, -0.3f, 0.3f), 1, grr(g, -0.3f, 0.3f))), grr(g, 0.035f, 0.05f), col, 5, 0.3f, SKIN_YELLOW, 0.009f, w);
         else ball(g, top, v3(0, 1, 0), 0.009f, 1.3f, SKIN_GREEN, 5, 3, w);   // a bud
     }
+    // (round 2: the clump read as a few bare sticks) The full mesh adds a rosette of broad basal leaves and a
+    // second, smaller leaf on each stem node, on its own stream (the reduced mesh, seen from 25 m, is unchanged).
+    if (!g->lod) {
+        VRng sv = fork_in(g); int nb = 9 + (int)grr(g, 0, 5);
+        for (int k = 0; k < nb; k++) {
+            float a = k * 2.39996f + gr(g), L = grr(g, 0.13f, 0.22f), ph = gr(g);
+            V3 d = vnorm(vadd(dir_az(a), v3(0, grr(g, 0.25f, 0.7f), 0))), b0 = vmul(dir_az(a), grr(g, 0.0f, 0.1f));
+            card(g, b0, d, vnorm(vcross(v3(0, 1, 0), d)), L, L * grr(g, 0.7f, 0.95f), L_GUNNERA, 0, 0, 1, 1, 2, -0.5f, (Wnd){0.1f, ph, 0.3f, gr(g), 0});
+        }
+        fork_out(g, sv);
+    }
 }
 // One gunnera leaf: a thick, prickly stalk rising at e and arching, the blade cupped up from its end.
 static void gunnera_leaf(Gen* g, float a, float L, float e, float R, float ph, int sides) {
