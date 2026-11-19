@@ -650,7 +650,9 @@ void swat_art_model_close(Model model) {
     if(model.meshCount || model.materialCount) UnloadModel(model);
 }
 
+static void motel_props_v2_close(const SwatEnvironmentArt* art);
 void swat_environment_art_close(SwatEnvironmentArt* art) {
+    motel_props_v2_close(art);
     room101_close(art);exterior_close(art);
     free(art->door_art);art->door_art=NULL;
     surface_decals_release(art->surface_decals);free(art->surface_decals);art->surface_decals=NULL;
@@ -1387,6 +1389,7 @@ void swat_environment_motel_backdrop(const SwatEnvironmentArt* art,const SwatWor
 }
 static int sedan_triangle_owner(int triangle){return swat_motel_roadside_triangle(0,triangle);}
 static int shelter_triangle_owner(int triangle){return swat_motel_roadside_triangle(1,triangle);}
+#include "motel_props_interior_v2_data.h"
 // Interior pass pieces supported by this object (motel_interior_art.h).
 static void motel_interior_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     const SwatMotelInteriorArt* a=art->motel_interior;
@@ -1643,6 +1646,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     }
     exterior_draw(art,world,o,shadow,cutaway);
     motel_interior_draw(art,world,o,shadow,cutaway);
+    motel_props_v2_draw(art,world,o,shadow,cutaway);
     if(o->tag.index>SWAT_MOTEL_INSTANCES)return motel_wall_draw(art,world,o,shadow,cutaway);
     const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
     if(o->door && (o->latch_broken || o->cuts) && art->motel[p->asset].meshCount) {
