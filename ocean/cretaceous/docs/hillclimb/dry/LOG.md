@@ -69,3 +69,9 @@ plain (Atriplex vesicaria, SW Queensland), Atriplex glauca up close, a cracked r
     little darker, its low points (the cracks, from its height map) darkened to under half within 40-120 m, and
     the dry tint of pans is a pale grey-brown clay. Kept: `pG` reads as cracked clay with deep dark cracks and
     polygons of 20-40 cm; `pA` and `dAir` slightly greyer. Still paler than the reference.
+12. Fault: at a hatchling's eye (`dW`, 0.9 m) the dwarf shrubs are bright lime-olive mounds. Change: their
+    leaves back on the dark podocarp cluster texture (which the dry-country leaf tint should turn dark
+    olive-grey). Reverted: `dW` and `dPan` do not change. Beyond a few metres the reduced mesh draws them with the
+    shared shrub card, and in dry country the plant shader's leaf tint and green leaf ambient (veg_light.glsl,
+    the colour track's) set their colour whatever the texture or frond dryness; a grey dwarf shrub needs a
+    change there.
