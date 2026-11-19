@@ -3,7 +3,7 @@
 #include "veg_light.glsl"
 in vec3 v_world, v_normal, v_base, v_rel;
 in vec2 v_uv;
-in float v_ao, v_leaf, v_hue, v_fade, v_w, v_var;
+in float v_ao, v_leaf, v_hue, v_fade, v_w, v_var, v_tone, v_relh;
 in vec3 v_cell;
 flat in float v_layer;
 flat in float v_bark;
@@ -57,6 +57,7 @@ void main() {
         if (v_leaf > 0.5 && length(v_world - u_cam) < 0.6) discard;   // only leaves right at the lens (the camera boom stops at trunks)
     }
     vec3 albedo = a.rgb * mix(vec3(1.0), vec3(1.0 + 0.14 * v_hue, 1.0 + 0.05 * v_hue, 1.0 - 0.12 * v_hue) * (u_bake == 1 ? vec3(1.0) : stand_tint(v_base.xz)), v_leaf);
+    albedo *= mix(1.0, v_tone, v_leaf);   // the reduced mesh's leaf tone against the full mesh (veg.c LOD_TONE)
     if (v_leaf > 0.5) {
         // attr.w on leaves is frond dryness: old fronds yellow, then brown.
         float dry = v_bark / 255.0, l = dot(albedo, vec3(0.3, 0.59, 0.11));
@@ -157,7 +158,8 @@ void main() {
         albedo *= 1.0 - 0.5 * smoothstep(0.12, 0.7, tn) * mix(0.35, 1.0, v_leaf);   // bark scans carry their furrow shade already
     }
     if (bump != vec2(0.0)) N = detail_normal(N, clamp(bump, -0.75, 0.75), dpx, dpy, dux, duy);
-    veg_trans = u_leaf_detail.y > 0.0 ? mt.b : 1.0;   // a thin blade lets all of it through, as before; veins and stems less
+    veg_trans = u_leaf_detail.y > 0.0 ? mt.b : 1.0;
+    veg_relh = v_relh;   // a thin blade lets all of it through, as before; veins and stems less
     if (u_bake == 1) {
         o = vec4(albedo, 1.0); o_n = vec4(N * 0.5 + 0.5, v_ao);
         return;

@@ -1,5 +1,7 @@
 #version 330
 #include "depth.glsl"
+// Far stands: per-tree spread of leaf tone and hue past 30-80 m (main; the same in veg_imp.vs).
+const float VEG_FAR_TONE = 0.32, VEG_FAR_HUE = 1.6;
 layout(location = 0) in vec3 a_pos;
 layout(location = 1) in vec2 a_uv;
 layout(location = 2) in vec4 a_normal;   // xyz normal (bent for foliage), w crown occlusion
@@ -7,7 +9,7 @@ layout(location = 3) in vec4 a_attr;     // layer, wind weight along the plant (
 layout(location = 7) in vec4 a_wind;     // limb phase, sub-branch weight, sub-branch phase, leaf flutter (0..1; render/veg_gen.h)
 layout(location = 4) in vec4 i_ps;       // position, scale
 layout(location = 5) in vec4 i_rot;      // cos yaw, sin yaw, hue, phase
-layout(location = 6) in vec4 i_extra;    // fade, -, bend (0 rigid .. 1 grass; ground cover only), plant height (m)
+layout(location = 6) in vec4 i_extra;    // fade, leaf tone - 1 (reduced tree meshes: veg.c LOD_TONE), bend (0 rigid .. 1 grass; ground cover only), plant height (m)
 uniform mat4 u_viewproj;
 uniform float u_time;
 uniform int u_bake;
@@ -21,7 +23,7 @@ uniform vec4 u_trample;
 out vec3 v_world, v_normal, v_base;
 out vec3 v_rel;    // position relative to the camera: card normals from its screen derivatives (common.glsl veg_card_normal)
 out vec2 v_uv;
-out float v_ao, v_leaf, v_hue, v_fade, v_w, v_var;
+out float v_ao, v_leaf, v_hue, v_fade, v_w, v_var, v_tone, v_relh;
 out vec3 v_cell;   // the fade key's lattice: 12.5 cm cells of the plant's own mesh, offset per plant (veg.fs veg_fade_key)
 flat out float v_bark;
 flat out float v_layer;
@@ -96,7 +98,12 @@ void main() {
     vec3 wp = wl + i_ps.xyz;
     v_normal = n;
     v_world = wp; v_rel = wp - u_cam; v_base = i_ps.xyz; v_uv = a_uv; v_layer = a_attr.x;
-    v_ao = a_normal.w; v_leaf = a_attr.z; v_bark = a_attr.w; v_hue = i_rot.z; v_fade = i_extra.x;
+    v_ao = a_normal.w; v_leaf = a_attr.z; v_bark = a_attr.w; v_hue = i_rot.z; v_fade = i_extra.x; v_tone = u_bake == 1 ? 1.0 : 1.0 + i_extra.y;
+    v_relh = clamp(lp.y / max(i_extra.w, 0.5), 0.0, 1.0);   // up the plant (veg_light.glsl veg_relh)
+    // Far stands (trees, past 30-80 m): each tree a little lighter or darker and its hue spread wider, so a
+    // forest seen across a valley is a mottle of crowns, not one flat green. veg_imp.vs does the same.
+    float fw = u_bake == 0 && bend <= 0.0 ? smoothstep(30.0, 80.0, distance(i_ps.xyz, u_cam)) : 0.0;
+    v_tone *= 1.0 + VEG_FAR_TONE * (fract(i_rot.w * 7.123) * 1.5 - 1.0) * fw;   // -32% .. +16%: more darker crowns than lighter v_hue *= 1.0 + VEG_FAR_HUE * fw;
     // Per-leaf variation: a hash of the mesh-space cell (about 40 cm), so
     // neighbouring leaves and fronds differ a little and no two plants match.
     vec3 hc = floor(a_pos * 2.5) + i_rot.w * 7.0;

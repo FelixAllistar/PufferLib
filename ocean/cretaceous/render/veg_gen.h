@@ -659,7 +659,11 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
             }
         }
     }
-    leaf_cards(g, &L, C->nleaf, E->c, C->leaf_layer, C->leaf_size, 1.0f, C->curl, C->upbias, 2, C->lod_layer, C->lod_size, C->lod_div > 0 ? C->lod_div : 3);
+    // (The magnolia's, laurel's and ginkgo's reduced crowns take 10-18% shorter merged cards: at full length
+    // they overhung the crown and drew it 12-32% larger than the full mesh at 30 m, so it swelled where the
+    // reduced mesh took over.)
+    leaf_cards(g, &L, C->nleaf, E->c, C->leaf_layer, C->leaf_size, 1.0f, C->curl, C->upbias, 2, C->lod_layer,
+               C->lod_size * (g->species == FL_MAGNOLIA ? 0.82f : g->species == FL_LAUREL ? 0.88f : g->species == FL_GINKGO ? 0.9f : 1.0f), C->lod_div > 0 ? C->lod_div : 3);
     free(L.a);
 }
 
@@ -1095,9 +1099,11 @@ static void gen_araucaria(Gen* g, bool umbrella) {
             if (!umbrella && g->lod) {   // reduced: the tier as fronds (L_ARAU is a whole pinnate spray) along the branch, 1.2 m each
                 VRng s2 = fork_in(g);
                 int fi = 0;
-                for (float s = 0.1f * bl; s < bl * 0.95f; s += 1.15f, fi++) {
+                for (float s = 0.1f * bl; s < bl * 0.95f; s += 1.0f, fi++) {
                     float t = s / bl; V3 p, dp; float hw; path_at(&P, t, &p, &dp, NULL, &hw, NULL);
-                    float L1 = fminf(1.25f, bl * 0.97f - s + 0.3f), wd = 2.0f * lerpf(0.75f, 0.42f, t) * fminf(1, 0.45f + bl / 4);
+                    // (1 m apart and 2.7 times the sprays' width: at 1.15 m and 2 times the reduced tiers drew as
+                    // broken dashes with sky between, 70% of the full crown's cover at 30 m.)
+                    float L1 = fminf(1.25f, bl * 0.97f - s + 0.3f), wd = 2.7f * lerpf(0.75f, 0.42f, t) * fminf(1, 0.45f + bl / 4);
                     V3 flat = vnorm(vcross(dp, v3(0, 1, 0)));
                     card(g, vsub(p, vmul(dp, 0.1f)), dp, vrot(flat, dp, grr(g, -0.15f, 0.15f) + ((fi + b) & 1 ? 0.42f : -0.42f)), L1, wd, L_ARAU, 0, 0, 1, 1, 1, 0, (Wnd){hw, ph, 0, gr(g), 0});
                 }
@@ -1172,7 +1178,7 @@ static void gen_metasequoia(Gen* g) {
         lp_add(&L, q, dir_ae(u * 40, -0.2f), (Wnd){hq, 0, 0.3f, 0, 0}, 1.5f);
     }
     // Sprays leave their shoots on every roll, mostly lying flat in the layer.
-    leaf_cards(g, &L, age == 2 ? 6600 : 5400, v3(0, H * 0.5f, 0), L_CL_SPRAY, 0.72f, 0.85f, 0.35f, 0.05f, 1, L_CL_SPRAY, age == 2 ? 2.1f : 1.9f, age == 2 ? 11 : 8);
+    leaf_cards(g, &L, age == 2 ? 6600 : 5400, v3(0, H * 0.5f, 0), L_CL_SPRAY, 0.72f, 0.85f, 0.35f, 0.05f, 1, L_CL_SPRAY, age == 2 ? 2.1f : age == 0 ? 1.6f : 1.9f, age == 2 ? 11 : 8);   // (the young tree's shorter crown: 1.9 m cards drew it 24% fatter than its full mesh)
     free(L.a);
 }
 // Cycad crown on top of a trunk at `top`.
