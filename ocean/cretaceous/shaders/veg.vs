@@ -103,7 +103,7 @@ void main() {
     // Far stands (trees, past 30-80 m): each tree a little lighter or darker and its hue spread wider, so a
     // forest seen across a valley is a mottle of crowns, not one flat green. veg_imp.vs does the same.
     float fw = u_bake == 0 && bend <= 0.0 ? smoothstep(30.0, 80.0, distance(i_ps.xyz, u_cam)) : 0.0;
-    v_tone *= 1.0 + VEG_FAR_TONE * (fract(i_rot.w * 7.123) * 2.0 - 1.0) * fw; v_hue *= 1.0 + VEG_FAR_HUE * fw;
+    v_tone *= 1.0 + VEG_FAR_TONE * (fract(i_rot.w * 7.123) * 1.5 - 1.0) * fw;   // -32% .. +16%: more darker crowns than lighter v_hue *= 1.0 + VEG_FAR_HUE * fw;
     // Per-leaf variation: a hash of the mesh-space cell (about 40 cm), so
     // neighbouring leaves and fronds differ a little and no two plants match.
     vec3 hc = floor(a_pos * 2.5) + i_rot.w * 7.0;

@@ -70,3 +70,8 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
     seam is gone, far stands in `val3` and `skyh` have crowns with shade inside them; pixels against the full
     mesh fell a little (redwood 1.26 -> 1.15 at 150 m); every impostor within 2.5% of the full mesh but the palm
     (1.06).
+11. Fault: pass 6's spread lit a third of the crowns 50-200 m out to a lime glare (`mid`): the lightest end
+    (+32%) on a light broadleaf crown is brighter than any crown in the reference valley. Change: the spread
+    runs from -32% to +16%, more darker crowns than lighter. Kept: `mid`, `val3` and `hill` keep the mottle of
+    single crowns without the lime ones and read darker and richer, as the reference does; the levels still
+    agree (the same factor on every level of a tree).

@@ -46,7 +46,7 @@ void main() {
     v_world = wp; v_base = base; v_fade = fade; v_hue = i_rot.z; v_rot = i_rot.xy;
     v_tone = u_imp_tone[clamp(int(i_extra.y + 0.5) / u_views, 0, 63)];
     float fw = smoothstep(30.0, 80.0, d);   // far stands: as veg.vs
-    v_tone *= 1.0 + VEG_FAR_TONE * (fract(i_rot.w * 7.123) * 2.0 - 1.0) * fw; v_hue *= 1.0 + VEG_FAR_HUE * fw;
+    v_tone *= 1.0 + VEG_FAR_TONE * (fract(i_rot.w * 7.123) * 1.5 - 1.0) * fw;   // -32% .. +16%: more darker crowns than lighter v_hue *= 1.0 + VEG_FAR_HUE * fw;
     vec4 clip = u_viewproj * vec4(wp, 1.0);
     v_w = clip.w; gl_Position = scene_clip(clip);
 }
