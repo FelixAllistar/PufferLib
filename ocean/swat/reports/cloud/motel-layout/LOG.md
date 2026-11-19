@@ -113,3 +113,46 @@ walkway toward the rear wing); engine camera `--eye -10.6,1.55,27 --target
 - Not changed: junipers (no CC0 shrub in the kit; presentation-only planting
   on the walkway would be walked through) and the awning brightness (tuned by
   the architecture pass against its own references).
+
+## Verification
+
+- `make -C ocean/swat test -j4`: pass, 3 m 28 s, 637 PASS lines (same count
+  as 5.0). Includes the full player-input mission runs (`motel-completion-test`:
+  front, combat, exterior breach, inter-room and squad variants; plus the
+  squad-search, squad-equipment, occupancy, moving-cover and room-search runs),
+  each from planning/staging through arrests, evacuation and regroup to the
+  debrief, with exact replay, save/resume and fresh replicas.
+- Determinism: `SWAT_NET_VERSION` 55; motel traces re-recorded, annex traces
+  match unchanged (and match a version-54 build), motel thread checksum
+  600dd752 at 1 and 4 threads, movement checksums unchanged.
+- Captures (`xvfb-run -a`, before = origin/5.0 build, after = this branch):
+  `sheet_topdown_ref_before_after.jpg` (orthographic top-down),
+  `sheet_street_ref_before_after.jpg`, `sheet_court_ref_before_after.jpg`,
+  `sheet_night_before_after.jpg` (SWAT_TIME=night), `sheet_exterior_views_before_after.jpg`
+  (exterior_capture views 0-7), `sheet_props_surroundings_before_after.jpg`
+  (props_ext_v2_capture, surroundings_capture), `sheet_slice_staging_before_after.jpg`
+  (slice_capture shot 8). Switch smoke test: SWAT_MOTEL_EXTERIOR=0, and
+  SWAT_MOTEL_ARCHITECTURE=0 SWAT_MATERIALS_V3=0 SWAT_PROPS_EXT_V2=0
+  SWAT_PROPS_INTERIOR_V2=0, both render the court.
+- Frame cost (`performance_tool --motel --hidden --draw-only --frames 120`,
+  llvmpipe, alternating runs): total 194-198 ms before vs 249-266 ms after
+  (about +30 %); draw CPU 45-47 ms vs 86-91 ms. The default camera sees the
+  whole court, so the per-row frustum cull added for court rows does not help
+  it; shadow maps are cached and were not the cost. The cost is the 15 closed
+  bays' kit meshes plus their cloned overlay pieces (one draw each).
+
+## What still looks wrong
+
+- Closed rooms have no room-number plaques (only 101-104 have number art).
+- Court walls get no scattered grime decals (their collision boxes include
+  trim and openings, so scatter skips them), so they read slightly cleaner
+  than Rooms 101-104 up close.
+- Every closed bay repeats one of three templates (Rooms 102-104), so the
+  rooftop clutter repeats along the wings.
+- Doors stay 1.08 x 2.19 m (MOTEL_LAYOUT.md section 6).
+- The road and verge were not moved: the court mouth sits 6 m behind the kerb
+  across a sand verge rather than at the sidewalk.
+- Presentation-only parked vehicles have no collision.
+- Some fixed review cameras from earlier passes (surroundings `05_edge_west`,
+  props v2 `01_lot_east`/`02_lot_west`) now sit against or inside the new wings.
+- Frame cost +30 % on software GL at the overview camera.
