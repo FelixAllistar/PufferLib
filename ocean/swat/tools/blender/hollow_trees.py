@@ -715,6 +715,9 @@ def forest_walls(atlas_out, order, meta):
     return extra
 
 # ------------------------------------------------------------------ placement
+YARD_KEEP_OUT = [(13.0, 23.0, -9.0, 4.2), (31.0, 42.0, -9.2, 4.8), (23.5, 27.5, 2.5, 6.5), (5.5, 9.0, 1.5, 5.5),
+                 (15.5, 20.5, 3.4, 12.5), (-1.6, 2.1, -4.6, 6.6), (26.5, 30.5, -12.5, -8.5), (-6.0, 2.0, -22.0, -15.5)]
+
 def placement(heights):
     import hollow_scene as HS
     rng = np.random.default_rng(2026)
@@ -805,6 +808,8 @@ def placement(heights):
                 # a strip just inside the yard edge (dead stems, grass)
                 e = min(x - x0, x1 - x, z - z0, HS.BANK_Z - z) if z < HS.BANK_Z else 99
                 if not (inside_edge > 0 and 0 <= e < inside_edge): continue
+                # keep clear of buildings, the cellar approach, the bus, the dog pen and the berm
+                if any(a0 <= x <= a1 and b0 <= z <= b1 for (a0, a1, b0, b1) in YARD_KEEP_OUT): continue
             elif not (dmin <= d <= dmax): continue
             if HS.seg_dist(x, z, HS.LANE) < lane: continue
             put(name, x, z, rng.uniform(0, 6.3), rng.uniform(smin, smax), 0)
@@ -816,7 +821,10 @@ def placement(heights):
     scatter("rock_0", 40, .5, 34, .5, 1.3); scatter("rock_1", 40, .5, 34, .5, 1.3); scatter("rock_2", 30, .5, 34, .6, 1.6)
     scatter("limbs_0", 70, .5, 30, .8, 1.3); scatter("limbs_1", 70, .5, 30, .8, 1.3)
     scatter("fern_0", 300, .5, 26, .7, 1.3)
-    scatter("goldenrod_0", 260, 0, 5, .8, 1.3, inside_edge=3.0, lane=2.8)
+    # small field stones half-sunk along the inside of the yard edge (visual only, <= 0.4 m)
+    for k, nm in enumerate(("rock_0", "rock_1", "rock_2")):
+        scatter(nm, 18, 0, 0, .22, .4, yoff=-.06, inside_edge=6.0, lane=2.6)
+    scatter("goldenrod_0", 170, 0, 5, .8, 1.3, inside_edge=3.0, lane=2.8)
     scatter("grass_0", 520, 0, 6, .7, 1.3, inside_edge=4.5, lane=2.4)
     print("scatter", counts)
     for (s, x, y, z, yaw, sc, fl) in inst:

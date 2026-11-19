@@ -165,7 +165,12 @@ static bool hollow_box_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
     if(id<0 || !h->maps[id].color.id) return false;
     const SwatSurfaceMaps* m=&h->maps[id];
     swat_lighting_surface(art->lighting,m->normal,m->roughness,(Vector3){0},(Vector2){0},false);
+    // Woods v2: the yard's one mud-and-leaves scan gets world-space macro
+    // variation (value, roughness) and a second rotated repeat, so it no
+    // longer reads as one uniform tile; the decals add paths, ruts and drifts.
+    if(id==HOLLOW_MAT_GROUND && h->woods) swat_lighting_surface_variation(art->lighting,false,(Vector2){0},(Vector4){.3f,.11f,.12f,0},(Vector4){.5f,.37f,0,0});
     textured_box(m->color,o,art->lit,m->tile,grain,true);
+    if(id==HOLLOW_MAT_GROUND && h->woods) swat_lighting_surface_variation(art->lighting,false,(Vector2){0},(Vector4){0},(Vector4){0});
     return true;
 }
 static Matrix hollow_prop_transform(const SwatHollowProp* p) {

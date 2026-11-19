@@ -245,9 +245,9 @@ def goldenrod(rng):
             nx, ny = x + L / steps * math.sin(ang), y - L / steps * math.cos(ang)
             pen.seg((x, y), (nx, ny), 3 * SS, col); x, y = nx, ny
         # spent plume: a fan of small grey-buff seed heads
-        for q in range(26):
+        for q in range(16):
             a = ang + rng.normal(0, .7); r = rng.uniform(6, 34) * SS
-            pen.ellipse((x + r * math.sin(a), y - r * math.cos(a)), 4 * SS, 6 * SS, a, jitter_rgb(rng, (146, 138, 122), 8))
+            pen.ellipse((x + r * math.sin(a), y - r * math.cos(a)), 3 * SS, 5 * SS, a, jitter_rgb(rng, (112, 104, 90), 8))
     return img
 
 def dead_grass(rng):
