@@ -638,7 +638,7 @@ static void add_fruit(Gen* g, float H) {
         switch (sp) {
         case FL_ARAUCARIA: case FL_UMBRELLA:   // big upright seed cones at the upper branch ends, pollen cones lower down
             if (t->wt > 0.55f && u < (sp == FL_UMBRELLA ? 0.18f : 0.3f)) {
-                float r = 0.075f * sz; ball(g, vadd(t->p, v3(0, r * 0.9f, 0)), vnorm(vadd(up, vmul(t->d, 0.3f))), r, 1.18f, u2 < 0.3f ? SKIN_GREEN : SKIN_CONE, 9, 6, t->w);
+                float r = 0.075f * sz; ball(g, vadd(t->p, v3(0, r * 0.9f, 0)), vnorm(vadd(up, vmul(t->d, 0.3f))), r, 1.18f, u2 < 0.3f ? SKIN_GREEN : SKIN_CONE, g->lod ? 6 : 9, g->lod ? 4 : 6, t->w);
             } else if (t->wt < 0.5f && u < 0.35f && !g->lod) { g->fine = 1; ball(g, vadd(t->p, vmul(t->d, 0.05f)), t->d, 0.016f * sz, 3.2f, SKIN_CONE, 5, 3, t->w); g->fine = 0; }
             break;
         case FL_PODOCARP:   // a dark seed on a swollen red receptacle, hanging from the outer shoots
@@ -820,8 +820,9 @@ static void gen_araucaria(Gen* g, bool umbrella) {
             float az = az0 + whorl * 0.7f + b * (2 * VPI / nbw) + grr(g, -0.15f, 0.15f), ph = gr(g);
             V3 d = dir_az(az);
             float bl = umbrella ? lerpf(1.4f, 4.6f, sqrtf(fmaxf(1 - hr * hr, 0))) * grr(g, 0.9f, 1.08f)
-                                : (0.6f + powf(1 - hr, 0.9f) * 0.27f * H) * grr(g, 0.85f, 1.1f);
+                                : (0.6f + powf(1 - hr, 0.9f) * 0.2f * H) * grr(g, 0.85f, 1.1f);
             bool dead = !umbrella && hr < 0.05f && gr(g) < 0.5f;
+            if (dead) bl *= 0.35f;   // a dead branch is a broken stub, not a whole bare limb
             int n = umbrella ? 8 : 6; Path P; P.n = n + 1;
             float el = umbrella ? lerpf(0.06f, 0.5f, hr) : lerpf(-0.06f, 0.4f, hr);
             for (int k = 0; k <= n; k++) {   // out nearly level, a sag, the tip turning up
@@ -844,11 +845,11 @@ static void gen_araucaria(Gen* g, bool umbrella) {
             // Branchlets: the same places on both meshes (one forked draw each);
             // the reduced mesh keeps every second or third, scaled up.
             VRng sv = fork_in(g);
-            float step = umbrella ? 0.3f : 0.22f, side = 1; int bi = 0;
+            float step = umbrella ? 0.3f : 0.2f, side = 1; int bi = 0;
             for (float s = (umbrella ? 0.24f : 0.1f + 0.15f * (1 - hr)) * bl; s < bl * 0.97f; s += step * grr(g, 0.85f, 1.15f), side = -side, bi++) {
                 float t = s / bl; V3 p, dp; float r, hw; path_at(&P, t, &p, &dp, &r, &hw, NULL);
                 V3 sd = vnorm(vcross(dp, v3(0, 1, 0))); float phs = gr(g);
-                int div = umbrella ? 3 : 4; bool keep = !g->lod || bi % div == 0; float big = g->lod ? (umbrella ? 1.7f : 2.0f) : 1;
+                int div = umbrella ? 3 : 5; bool keep = !g->lod || bi % div == 0; float big = g->lod ? (umbrella ? 1.7f : 2.4f) : 1;
                 Wnd w = {hw, ph, 0, phs, 0}; VRng s2 = fork_in(g);
                 if (umbrella) {
                     // The branch itself is clothed in scale leaves: a sleeve of crossed rope cards along it, and
@@ -858,23 +859,32 @@ static void gen_araucaria(Gen* g, bool umbrella) {
                     float ll = grr(g, 0.7f, 1.15f) * (1 - 0.35f * t);
                     if (keep) rope_cluster(g, p, dd, ll * (g->lod ? 1.5f : 1.0f), w);
                 } else {
-                    // Norfolk: pinnate sprays in the tier's plane, alternate, swept forward and drooping a
-                    // little, as a pair of cards rolled +-40 degrees about the spray, so the tier reads flat
-                    // from above and below and still has some depth from the side.
-                    float a = grr(g, 0.8f, 1.1f);
-                    V3 dd = vnorm(vadd(vadd(vmul(dp, cosf(a)), vmul(sd, side * sinf(a))), v3(0, -0.12f + 0.1f * t, 0)));
-                    float ll = lerpf(0.9f, 0.45f, t) * grr(g, 0.85f, 1.1f) * fminf(1, 0.45f + bl / 4);
-                    if (keep) {   // the reduced mesh: one card per kept branchlet, rolled either way in turn
-                        V3 flat = vnorm(vcross(dd, v3(0, 1, 0))); float roll = grr(g, -0.15f, 0.15f);
-                        for (int k = -1; k <= 1; k += 2) {
-                            if (g->lod && ((bi / div) & 1) != (k > 0)) continue;
-                            card(g, vsub(p, vmul(dd, 0.04f * big)), dd, vrot(flat, dd, roll + k * 0.7f), ll * big, ll * 0.85f * big, L_ARAU, 0, 0, 1, 1, 1, 0, w);
-                        }
+                    // Norfolk: pinnate sprays in the tier's plane, opposite, swept forward and drooping a
+                    // little, each one card rolled 25 degrees one way or the other in turn, so the tier is a
+                    // dense flat frond from above and below and still has some depth from the side.
+                    for (int sn = -1; sn <= 1; sn += 2) {
+                        float a = grr(g, 0.8f, 1.1f);
+                        V3 dd = vnorm(vadd(vadd(vmul(dp, cosf(a)), vmul(sd, sn * sinf(a))), v3(0, -0.15f + 0.12f * t, 0)));
+                        float ll = lerpf(0.95f, 0.5f, t) * grr(g, 0.85f, 1.1f) * fminf(1, 0.45f + bl / 4);
+                        V3 flat = vnorm(vcross(dd, v3(0, 1, 0))); float roll = grr(g, -0.15f, 0.15f) + (((bi + (sn > 0)) & 1) ? 0.45f : -0.45f);
+                        if (!g->lod)   // the reduced mesh lays whole fronds along the branch instead (below)
+                            card(g, vsub(p, vmul(dd, 0.04f * big)), dd, vrot(flat, dd, roll), ll * big, ll * 0.85f * big, L_ARAU, 0, 0, 1, 1, 1, 0, w);
                     }
                 }
                 fork_out(g, s2);
             }
-            if (!umbrella) { VRng s2 = fork_in(g); rope_card(g, P.p[n], vnorm(vadd(vsub(P.p[n], P.p[n - 1]), v3(0, 0.1f, 0))), 0.45f, (Wnd){P.hw[n], ph, 0, gr(g), 0}); fork_out(g, s2); }
+            if (!umbrella && g->lod) {   // reduced: the tier as fronds (L_ARAU is a whole pinnate spray) along the branch, 1.2 m each
+                VRng s2 = fork_in(g);
+                int fi = 0;
+                for (float s = 0.1f * bl; s < bl * 0.95f; s += 1.15f, fi++) {
+                    float t = s / bl; V3 p, dp; float hw; path_at(&P, t, &p, &dp, NULL, &hw, NULL);
+                    float L1 = fminf(1.25f, bl * 0.97f - s + 0.3f), wd = 2.0f * lerpf(0.75f, 0.42f, t) * fminf(1, 0.45f + bl / 4);
+                    V3 flat = vnorm(vcross(dp, v3(0, 1, 0)));
+                    card(g, vsub(p, vmul(dp, 0.1f)), dp, vrot(flat, dp, grr(g, -0.15f, 0.15f) + ((fi + b) & 1 ? 0.42f : -0.42f)), L1, wd, L_ARAU, 0, 0, 1, 1, 1, 0, (Wnd){hw, ph, 0, gr(g), 0});
+                }
+                fork_out(g, s2);
+            }
+            if (!umbrella) { VRng s2 = fork_in(g); if (!g->lod) rope_card(g, P.p[n], vnorm(vadd(vsub(P.p[n], P.p[n - 1]), v3(0, 0.1f, 0))), 0.45f, (Wnd){P.hw[n], ph, 0, gr(g), 0}); fork_out(g, s2); }
             fork_out(g, sv);
         }
         h += umbrella ? grr(g, 0.85f, 1.15f) : grr(g, 0.9f, 1.3f) * lerpf(1.0f, 0.7f, hr);
