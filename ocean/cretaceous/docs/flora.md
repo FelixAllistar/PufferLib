@@ -305,12 +305,21 @@ How a kind's plants become a community (`render/flora.h`):
   the desert's clearing).
 - **Dead wood in old stands.** An old-stand noise (180 m) marks about a fifth
   of the forest as old: there standing dead trees appear (`VEG_SNAG`: a dead
-  conifer with a broken top and whorl stubs, a broken conifer, a dead
+  araucaria, 18-27 m with its plated bark and whorls of level branch stubs,
+  a broken conifer, a dead
   broadleaf with bare forks, a leaning broken trunk; weathered grey bark), up
   to about 13 per hectare, and logs and stumps are about 2.5 times as common
   as in young stands (the same mean over the island; `render/props_place.c`).
   Bracket fungi grow on stumps and mushrooms beside stumps and logs near the
   camera.
+- **Krummholz at the tree line** (`render/veg_place.h` `veg_krummholz`, meshes in
+  `render/veg_gen.h` `gen_krummholz`, the crowns hill-climb). The last conifers are stunted and
+  wind-shaped: from 375 m a conifer becomes, with a chance that grows with height, a flagged tree island
+  (a 4.5-7.5 m mother stem leaning downwind, limbs only on its lee side and grey dead stubs on the
+  windward one, over a dense skirt, with two or three younger layered stems downwind of it) or, from
+  about 415 m and at most one in four, a low cushion a metre or so high trimmed by the wind; from about
+  440 m there is no full-height tree. Each faces the prevailing wind. A cheirolep and a podocarp (snow
+  totara, Podocarpus nivalis, forms such mats) of each form, in VEG_SNAG's spare slots 4-7.
 - **Sward**: on moss ground and under forest litter, clubmoss mats and moss
   cushions replace part of the fern and forb tufts.
 

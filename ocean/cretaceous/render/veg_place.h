@@ -159,9 +159,10 @@ static inline float vp_clump(const TerraMap* m, float x, float z) {
 // From the bake's nominal tree line (terra.c TREELINE, 380 m; the last full trees stand at about 420 m)
 // a conifer turns, with a chance that grows with its height, into a flagged tree (4.5-7.5 m, limbs only on
 // the lee side over a dense skirt), and from about 415 m some into a low mat trimmed by the wind (at most
-// 45%: the flagged trees are what reads from afar); from 440 m none is a full tree. They are built leaning and flagged toward their +x and turned to face downwind (terra.c's default
-// prevailing wind, 0.6 rad: the tree islands' scrub skirts reach the same way). Kept as standing-tree
-// slots 4-7 (VEG_SNAG's spare variants): a cheirolep and a podocarp (snow totara-like) of each form.
+// a quarter: the flagged tree islands are what reads from afar); from 440 m none is a full tree. The
+// meshes lean and flag toward their +x, and each is turned to face downwind (terra.c's default prevailing
+// wind, 0.6 rad: the tree islands' scrub skirts reach the same way). Kept as standing-tree slots 4-7
+// (VEG_SNAG's spare variants): a cheirolep and a podocarp (snow totara-like) of each form.
 #define VEG_KRUMM_LO 375.0f
 #define VEG_KRUMM_HI 455.0f
 static inline void veg_krummholz(VegInstance* in) {
@@ -171,7 +172,7 @@ static inline void veg_krummholz(VegInstance* in) {
     float u = vp_r(&r), m = vp_r(&r);
     if (u > fminf(1.0f, 1.3f * t)) return;   // some full trees still stand in the lowest shelter
     int podo = flora_species(VEG_CONIFER, in->variant) == FL_PODOCARP || (flora_species(VEG_CONIFER, in->variant) != FL_CHEIROLEP && vp_r(&r) < 0.5f);
-    int mat = m < (t - 0.5f) * 0.9f;   // mats from halfway up, nearly half of them at the top
+    int mat = m < (t - 0.55f) * 0.6f;   // mats from halfway up, a quarter of them at the top
     in->kind = VEG_SNAG; in->variant = (uint16_t)(4 + (mat ? 2 : 0) + podo);
     in->yaw = 0.6f + vp_rr(&r, -0.3f, 0.3f); in->scale = vp_rr(&r, 0.8f, 1.2f);
 }
