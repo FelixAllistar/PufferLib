@@ -35,3 +35,11 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
    about 20 m, a half at 26 m, nothing past 40 m), in the bake and in the habitat derived at load. Kept: horsetail
    stands line the water in `wetl` and `river`, river planes and redwoods stand on the bank, the bank canopy opens to
    the water; 16,254 horsetails on the island.
+5. Fault: the open country made at load (`world.c` `grassland_build`) is all one straw-coloured grassland, with
+   straight lattice runs in its edges, and it runs into the near-desert so the two read as one beige country; there
+   is no fern prairie. Change: its noise is rotated and warped (no lattice edges) with a third, finer octave; the
+   open ground splits by the habitat's moisture into dry grassland (as before: straw, ferns thinned, grazing) and fern
+   prairie (trees gone, ferns kept and thickened, no straw tint): 9.9% of the land is open, 5.0% dry grassland and
+   4.9% fern prairie (`CRET_BIOME_DBG=1`). Kept: `airW` (420 m over the west coast) shows forest, green prairie and
+   straw grassland as three countries where before there were two; `prA` is a green meadow behind the beach. The
+   noise moved the open patches, so `grs` and `desA` now look at forest where they looked at grassland.

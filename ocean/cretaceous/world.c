@@ -305,9 +305,12 @@ void cret_prop_stream_free(CretPropStream* ps) {
 }
 
 // Open country. The baked island is closed forest almost everywhere (over nine tenths of the land under
-// a full canopy). Regions of gentle ground, picked by a smooth noise of GRASS_CELL m cells, become dry
-// grassland: nearly all their trees and most of their ferns go (map.veg, once, when the world loads),
-// the scrub stays. About a quarter of the land, in a few large pieces with soft edges.
+// a full canopy). Regions of gentle ground, picked by a smooth noise of GRASS_CELL m cells (on rotated,
+// warped axes, so their edges are not the lattice's straight runs), lose nearly all their trees (map.veg,
+// once, when the world loads); the scrub stays. About a quarter of the land, in a few large pieces with
+// soft edges. Where that ground is dry it is dry grassland (w->grassland: straw-coloured, most ferns gone,
+// good grazing); where it is moist it is fern prairie, a green sea of bracken and other ferns with a few
+// trees, so the two read as different country.
 #define GRASS_CELL 700.0f
 static float grass_hash(int ix, int iz, uint32_t salt) { uint32_t h = (uint32_t)ix * 73856093u ^ (uint32_t)iz * 19349663u ^ salt; h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return (h >> 8) * (1.0f / 16777216.0f); }
 static float grass_noise(float x, float z, float cell, uint32_t salt) {
@@ -513,26 +516,41 @@ float cret_world_gorge(const CretWorld* w, float x, float z) {
 }
 static void grassland_build(CretWorld* w) {
     TerraMap* m = &w->map; int n = m->n, h = n / 2; float c = m->cell;
-    w->grassland = calloc((size_t)h * h, 1); if (!w->grassland) return;
+    w->grassland = calloc((size_t)h * h, 1); float* open = calloc((size_t)h * h, sizeof(float)); if (!w->grassland || !open) { free(open); return; }
     for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) {
         int sx = 2 * x, sz = 2 * z; float px = sx * c, pz = sz * c, y = m->height[(size_t)sz * n + sx];
         if (y < 1.0f) continue;
         int xl = sx >= 2 ? sx - 2 : 0, xr = sx + 2 < n ? sx + 2 : n - 1, zl = sz >= 2 ? sz - 2 : 0, zr = sz + 2 < n ? sz + 2 : n - 1;
         float gx = (m->height[(size_t)sz * n + xr] - m->height[(size_t)sz * n + xl]) / ((xr - xl) * c), gz = (m->height[(size_t)zr * n + sx] - m->height[(size_t)zl * n + sx]) / ((zr - zl) * c);
         float slope = sqrtf(gx * gx + gz * gz);
-        float nz = 0.7f * grass_noise(px, pz, GRASS_CELL, 0x6ea55u) + 0.3f * grass_noise(px, pz, GRASS_CELL * 0.35f, 0x1234u);
+        float u = 0.80f * px + 0.60f * pz, q = -0.60f * px + 0.80f * pz;   // rotated, then warped by a 250 m noise
+        float wu = 90.0f * (grass_noise(px, pz, 250.0f, 0x51f1u) - 0.5f), wq = 90.0f * (grass_noise(px, pz, 250.0f, 0x7a3bu) - 0.5f);
+        float nz = 0.62f * grass_noise(u + wu, q + wq, GRASS_CELL, 0x6ea55u) + 0.26f * grass_noise(q - wq, u + wu, GRASS_CELL * 0.35f, 0x1234u)
+                 + 0.12f * grass_noise(u - wq, q + wu, GRASS_CELL * 0.12f, 0x9a1u);
         float g = (nz - 0.5f) / 0.08f; g = g < 0 ? 0 : g > 1 ? 1 : g; g = g * g * (3 - 2 * g);
         float flat = 1 - (slope - 0.3f) / 0.3f; flat = flat < 0 ? 0 : flat > 1 ? 1 : flat;
-        w->grassland[(size_t)z * h + x] = (uint8_t)(g * flat * 255 + 0.5f);
+        open[(size_t)z * h + x] = g * flat;
+        float moist = m->habitat ? m->habitat[((size_t)z * h + x) * TERRA_HAB_COUNT + TERRA_HAB_MOIST] / 255.0f : 0.4f;
+        float dry = (0.56f - moist) / 0.1f; dry = dry < 0 ? 0 : dry > 1 ? 1 : dry; dry = dry * dry * (3 - 2 * dry);
+        w->grassland[(size_t)z * h + x] = (uint8_t)(g * flat * dry * 255 + 0.5f);
     }
     for (int sz = 0; sz < n; sz++) for (int sx = 0; sx < n; sx++) {
-        float g = w->grassland[(size_t)(sz / 2 < h ? sz / 2 : h - 1) * h + (sx / 2 < h ? sx / 2 : h - 1)] / 255.0f; if (g <= 0) continue;
+        size_t j = (size_t)(sz / 2 < h ? sz / 2 : h - 1) * h + (sx / 2 < h ? sx / 2 : h - 1);
+        float g = open[j]; if (g <= 0) continue;
+        float dg = w->grassland[j] / 255.0f, prairie = g - dg;   // the dry part and the moist part
         uint8_t* v = m->veg + ((size_t)sz * n + sx) * TERRA_VEG_COUNT;
-        float trees = 1 - 0.94f * g, ferns = 1 - 0.75f * g;
+        float trees = 1 - 0.94f * g, ferns = (1 - 0.75f * dg) * (1 + 0.6f * prairie);
+        if (ferns > 1) { float f = v[TERRA_VEG_FERN] * ferns + 60.0f * prairie; v[TERRA_VEG_FERN] = (uint8_t)(f > 255 ? 255 : f); ferns = 1; }
         v[TERRA_VEG_CONIFER] = (uint8_t)(v[TERRA_VEG_CONIFER] * trees); v[TERRA_VEG_BROADLEAF] = (uint8_t)(v[TERRA_VEG_BROADLEAF] * trees);
         v[TERRA_VEG_TREEFERN] = (uint8_t)(v[TERRA_VEG_TREEFERN] * trees); v[TERRA_VEG_PALM] = (uint8_t)(v[TERRA_VEG_PALM] * trees);
         v[TERRA_VEG_FERN] = (uint8_t)(v[TERRA_VEG_FERN] * ferns); v[TERRA_VEG_HORSETAIL] = (uint8_t)(v[TERRA_VEG_HORSETAIL] * ferns);
     }
+    if (getenv("CRET_BIOME_DBG")) {
+        long land = 0; double o = 0, d = 0;
+        for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) { if (m->height[(size_t)(2 * z) * n + 2 * x] < 1) continue; land++; o += open[(size_t)z * h + x]; d += w->grassland[(size_t)z * h + x] / 255.0; }
+        fprintf(stderr, "open country %.1f%% of the land: dry grassland %.1f%%, fern prairie %.1f%%\n", 100 * o / land, 100 * d / land, 100 * (o - d) / land);
+    }
+    free(open);
 }
 float cret_world_grassland(const CretWorld* w, float x, float z) {
     if (!w->grassland) return 0;
