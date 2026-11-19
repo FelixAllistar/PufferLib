@@ -47,3 +47,6 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
 9. Fault: as pass 6, no reeds or horsetails where streams slow behind the beach. Change: horsetail clumps only (no
    mud) within 10 m of a stream from 0.35 W inland, emergent plants exempt from the wet-sand rule. Reverted: 300 more
    horsetails on the island and none to be seen in `mouth_high`, `mouthA`, `strW30` or `topW`.
+10. Fault: from 30 m (`strW30`) the back dunes read as a field of identical small cycads, like toy mushrooms in rows.
+    Change: dune cycads 0.5 to 0.3 of the layer in fewer clumps, belt cycads 0.3 to 0.15. Kept: `strW30` thins to a
+    few cycads among the scrub; up close (`strD12`) the scrub leads and the strand is a little sparser.

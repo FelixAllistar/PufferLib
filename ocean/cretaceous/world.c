@@ -415,7 +415,7 @@ static void beaches_build(CretWorld* w) {
         float belt = bk * sstepf(0.85f * W, 1.05f * W, di) * (1 - sstepf(1.45f * W, 1.85f * W, di));
         float sh = fmaxf(dunes * 0.9f * sstepf(0.3f, 0.6f, clump), belt * (0.45f + 0.35f * (1 - grove)));
         if (v[TERRA_VEG_SHRUB] < 255 * sh) v[TERRA_VEG_SHRUB] = (uint8_t)(255 * sh);
-        float cy = fmaxf(dunes * 0.5f * sstepf(0.45f, 0.7f, grass_noise(px, pz, 24.0f, 0x2d7au)), belt * 0.3f);   // low cycads on the dunes
+        float cy = fmaxf(dunes * 0.3f * sstepf(0.5f, 0.75f, grass_noise(px, pz, 24.0f, 0x2d7au)), belt * 0.15f);   // a few low cycads on the dunes
         if (v[TERRA_VEG_CYCAD] < 255 * cy) v[TERRA_VEG_CYCAD] = (uint8_t)(255 * cy);
         float pa = belt * (0.15f + 0.75f * sstepf(0.4f, 0.65f, grove));
         if (v[TERRA_VEG_PALM] < 255 * pa) v[TERRA_VEG_PALM] = (uint8_t)(255 * pa);
