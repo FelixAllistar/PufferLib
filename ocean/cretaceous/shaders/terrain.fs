@@ -508,7 +508,9 @@ void main() {
             }
             albedo = asum; n = normalize(nsum);
             // Ledges and benches: up-facing rock catches soil and moss.
-            float ledge = smoothstep(0.7, 0.9, n.y) * (1.0 - smoothstep(0.92, 0.98, N.y)) * rk;
+            // Up high (from about 420 m) the ledges are windswept: grey lichen and grit, not moss, which
+            // tinted the summits' gentle rock olive-green.
+            float ledge = smoothstep(0.7, 0.9, n.y) * (1.0 - smoothstep(0.92, 0.98, N.y)) * rk * (1.0 - 0.85 * smoothstep(420.0, 540.0, p.y + 50.0 * (mz - 0.5)));
             vec3 moss = mix(vec3(0.07, 0.085, 0.04), vec3(0.11, 0.1, 0.06), mz);
             albedo = mix(albedo, moss, ledge * smoothstep(0.35, 0.6, mz + 0.15 * cov.b) * 0.75);
         }

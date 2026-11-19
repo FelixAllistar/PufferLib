@@ -63,3 +63,7 @@ is at the end of this file.
     visible change; the striped slopes are rock (53-73% of the ground over 400 m), where strata belong.
 12. Fault: the same fine stripes from afar. Change: the thin layers (2.6 m) fade from 150 to 500 m, the
     thick beds stay. Reverted: a little softer in `mtS`, no change in `mtW`; not clearly better.
+13. Fault: the second summit's gentle rock (`s2a`, `s2b`: 616 m, (5088, 3200) and (5000, 3088), 2 m up)
+    is olive-green: the bedrock's ledge moss lies on all up-facing rock at any height. Change:
+    `terrain.fs` ledge moss fades out (to 15%) from 420 to 540 m, with a noise on the height. Kept: the
+    summits are grey-brown stone; `af2` a little greyer; `mtW` unchanged.
