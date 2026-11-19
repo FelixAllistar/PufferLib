@@ -1198,11 +1198,12 @@ static const float IMP_TONE[VEG_KINDS][VEG_VARIANTS] = {
 // species, the ginkgo's the laurel's and the plane's the katsura's, so a species' green cannot live in its
 // atlas layer alone.) Without it every species was one dark olive (round 3): blue-black araucaria and
 // cheirolep cypress, warm podocarp, fresh dawn redwood, dark glossy laurel and magnolia, cool katsura,
-// yellow-green ginkgo and plane, olive cycads. {0,0,0}: untinted.
+// yellow-green ginkgo and plane, olive cycads. The ginkgo's leaves are already the brightest, most yellow
+// green of the broadleaves: it is darkened, not yellowed (yellowed, it drew neon lime at 100 m). {0,0,0}: untinted.
 static const float LEAF_TINT[VEG_KINDS][VEG_VARIANTS][3] = {
     [VEG_CONIFER] = {{0.9f, 0.96f, 1.1f}, {1.04f, 1.0f, 0.88f}, {1.12f, 1.1f, 0.82f}, {1.12f, 1.1f, 0.82f},
                      {0.9f, 0.96f, 1.1f}, {1.04f, 1.0f, 0.88f}, {0.88f, 0.95f, 1.06f}, {1.12f, 1.1f, 0.82f}},
-    [VEG_BROADLEAF] = {{0.92f, 0.95f, 0.95f}, {0.84f, 0.9f, 0.92f}, {1.0f, 1.08f, 1.12f}, {1.24f, 1.1f, 0.74f},
+    [VEG_BROADLEAF] = {{0.92f, 0.95f, 0.95f}, {0.84f, 0.9f, 0.92f}, {0.86f, 0.9f, 0.98f}, {1.0f, 0.85f, 0.9f},
                        {0.92f, 0.95f, 0.95f}, {0.84f, 0.9f, 0.92f}, {1.2f, 1.08f, 0.78f}, {1.0f, 1.0f, 1.0f}},
     [VEG_CYCAD] = {{1.2f, 1.0f, 0.82f}, {1.12f, 0.98f, 0.86f}, {1.2f, 1.0f, 0.82f}, {1.1f, 1.0f, 0.86f},
                    {1.2f, 1.0f, 0.82f}, {1.12f, 0.98f, 0.86f}, {1.2f, 1.0f, 0.82f}, {1.1f, 1.0f, 0.86f}},

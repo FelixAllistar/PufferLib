@@ -55,3 +55,10 @@ green under it, and the teal is mostly the haze.
    them); toned down to x1.24/1.1/0.74 and x1.2/1.08/0.78. Kept: the gallery and `mid` show the species
    apart (yellow-green ginkgo and plane among darker laurels and blue-black araucarias), no neon.
    One multiply per leaf pixel; one more uniform per mesh draw.
+8. Fault: the lime crowns left in `mid` (pale mint-lime at 80-150 m). A debug colouring (chloranth magenta,
+   katsura blue, then ginkgo red, plane blue) showed every one of them is a ginkgo, lime before pass 7 too:
+   its leaf layer is the brightest, most saturated broadleaf green, and its reduced crown is the laurel's
+   layer lit 1.52 times. Change: the ginkgo's tint darkens it (x1/0.85/0.9) instead of yellowing it; the
+   katsura's a little darker and cooler (x0.86/0.9/0.98). Kept: the ginkgos read yellow-olive inside the
+   stand instead of mint-lime; the gallery's katsura and laurel a shade darker; lime share in `mid` hardly
+   moves (19%: it counts the sunlit grass too).
