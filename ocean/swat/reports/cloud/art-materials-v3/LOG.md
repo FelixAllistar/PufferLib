@@ -61,3 +61,15 @@ verge texture: "Abandoned Motel 3, Marathon, Texas" foreground (item 1).
 - engine 1: road, shoulder and lot-edge views. Diffs: 2 ground blown out yellow-white (the zoning dirt blend at full albedo + gravel); road good. Fix value.
 - engine 2: dirt target (146,136,118) sat 0.7, gravel (168,154,128). closer: yes, still too yellow
 - engine 3: dirt (140,132,118) sat 0.5, gravel (160,150,130) sat 0.75. closer: yes - pale grey caliche like the ref. Final.
+
+## 5. Walkway concrete (deck with joints), curb face / wheel stops (concrete), wall plinth
+Reference: "Concrete sidewalk", roman.nurik, https://www.flickr.com/photos/13288010@N08/3626685752 (CC BY 2.0): worn grey slabs with tooled joints and stains.
+
+- iter 1: concrete_floor_worn_001 @2 m, one baked joint per repeat. Diffs: 1 slab rhythm ok-ish; 2 deck too light and smooth, ref mottled grey; 3 joint barely visible. closer: n/a
+- iter 2: target (142,140,134), contrast 1.3, flatten 0.2, joint darken 0.35 / 8 px. closer: no (scan too clean to carry stains) - kept the joint change, source swapped next
+- iter 3: source -> concrete_floor_02 (stained, 2 m), saturation 0.5. Diffs: 2 mottling like ref but dark specks too contrasty; 3 joints still faint. closer: yes
+- iter 4: contrast 0.7, flatten 0.4. closer: yes
+- iter 5: joints 10 px, darken 0.25, normal depth 2. closer: yes (tooled joint reads)
+- iter 6: slab length 2 m -> 1.33 m (3 per 4 m module, like the ref's ~1.3 m slabs). closer: yes
+- engine 1: gallery + close. Joints are transverse on the deck as intended. Diffs: 2 sunlit deck and curb face blow out to white. Fix value.
+- engine 2: walkway target (116,114,109), curb/wheel-stop concrete (124,121,114). closer: yes - grey jointed slabs like the ref. Final.
