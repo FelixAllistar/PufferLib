@@ -335,6 +335,7 @@ static float* shoulder_keep(const TerraMap* m) {
     }
     return k;
 }
+static float sstepf(float a, float b, float x) { float t = (x - a) / (b - a); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); }
 // Big beaches. The baked shore is a sand strip 10-25 m wide (35-110 m on the stretches terra's coastal
 // flats widened). On about a third of the coast, picked by a smooth noise of BEACH_CELL m cells, the land
 // within BEACH_W m of the sea is lowered onto a gentle sand profile (1.2 % up from the waterline, low dunes
@@ -385,17 +386,40 @@ static void beaches_build(CretWorld* w) {
         float hi = (m->height[i] - 26.0f) / 22.0f; hi = hi < 0 ? 0 : hi > 1 ? 1 : hi;
         // A river or lake crossing the beach: the sand runs on to its banks (a band of old ground left across
         // the beach at every stream drew dark stripes from the air), but they stay above its water, rising
-        // 4 % from it, so the stream keeps its channel to the sea.
-        if (rv[i] < 60.0f) prof = fmaxf(prof, lv[i] + 0.3f + 0.04f * rv[i]);
+        // 4 % from it and blending into the beach's own profile from 15 to 70 m (a hard switch at a set
+        // distance left a sand wall where a stream ran high), so the stream keeps its channel to the sea.
+        if (rv[i] < 70.0f) { float bank = lv[i] + 0.3f + 0.04f * rv[i]; if (bank > prof) prof += (bank - prof) * (1 - sstepf(15.0f, 70.0f, rv[i])); }
         float wgt = pick * (1 - t * t * (3 - 2 * t)) * (1 - hi);
         if (wgt <= 0.01f) continue;
         if (m->height[i] > prof) m->height[i] += (prof - m->height[i]) * wgt;   // ground already lower keeps its height, and is sanded
-        float sand = wgt * (di < W ? 1.0f : 1 - (di - W) / (0.3f * W)); if (sand <= 0) continue; if (sand > 1) sand = 1;
-        uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; int tot = 0;
-        for (int k = 0; k < TERRA_MAT_COUNT; k++) { int nw = k == TERRA_MAT_SAND ? 255 : 0; int val = (int)(sp[k] + (nw - sp[k]) * sand + 0.5f); sp[k] = (uint8_t)val; tot += val; }
-        sp[TERRA_MAT_SAND] = (uint8_t)(sp[TERRA_MAT_SAND] + 255 - tot);
-        uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
-        for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = (uint8_t)(v[k] * (k == TERRA_VEG_PALM ? 1 - 0.7f * sand : k == TERRA_VEG_SHRUB ? 1 - 0.6f * sand : 1 - sand));
+        float sand = wgt * (di < W ? 1.0f : 1 - (di - W) / (0.3f * W)); sand = sand < 0 ? 0 : sand > 1 ? 1 : sand;
+        uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
+        if (sand > 0) {
+            int tot = 0;
+            for (int k = 0; k < TERRA_MAT_COUNT; k++) { int nw = k == TERRA_MAT_SAND ? 255 : 0; int val = (int)(sp[k] + (nw - sp[k]) * sand + 0.5f); sp[k] = (uint8_t)val; tot += val; }
+            sp[TERRA_MAT_SAND] = (uint8_t)(sp[TERRA_MAT_SAND] + 255 - tot);
+            for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = (uint8_t)(v[k] * (k == TERRA_VEG_PALM ? 1 - 0.7f * sand : k == TERRA_VEG_SHRUB ? 1 - 0.6f * sand : 1 - sand));
+        }
+        // From the dunes inland, the beach grades into the strand: salt-hardy scrub and low cycads in clumps
+        // over the back dunes (from 0.6 W), then an open belt of palms in groves and scrub on sandy ground with the
+        // coastal forest thinned (W to 1.5 W), before the forest closes behind it.
+        float bk = pick * (1 - hi), grove = grass_noise(px, pz, 70.0f, 0x9a1fu), clump = grass_noise(px, pz, 16.0f, 0x5c2bu);
+        float dunes = bk * sstepf(0.55f * W, 0.8f * W, di) * (1 - sstepf(1.1f * W, 1.35f * W, di));
+        float belt = bk * sstepf(0.85f * W, 1.05f * W, di) * (1 - sstepf(1.45f * W, 1.85f * W, di));
+        float sh = fmaxf(dunes * 0.9f * sstepf(0.3f, 0.6f, clump), belt * (0.45f + 0.35f * (1 - grove)));
+        if (v[TERRA_VEG_SHRUB] < 255 * sh) v[TERRA_VEG_SHRUB] = (uint8_t)(255 * sh);
+        float cy = fmaxf(dunes * 0.5f * sstepf(0.45f, 0.7f, grass_noise(px, pz, 24.0f, 0x2d7au)), belt * 0.3f);   // low cycads on the dunes
+        if (v[TERRA_VEG_CYCAD] < 255 * cy) v[TERRA_VEG_CYCAD] = (uint8_t)(255 * cy);
+        float pa = belt * (0.15f + 0.75f * sstepf(0.4f, 0.65f, grove));
+        if (v[TERRA_VEG_PALM] < 255 * pa) v[TERRA_VEG_PALM] = (uint8_t)(255 * pa);
+        v[TERRA_VEG_CONIFER] = (uint8_t)(v[TERRA_VEG_CONIFER] * (1 - 0.75f * belt)); v[TERRA_VEG_BROADLEAF] = (uint8_t)(v[TERRA_VEG_BROADLEAF] * (1 - 0.5f * belt));
+        v[TERRA_VEG_TREEFERN] = (uint8_t)(v[TERRA_VEG_TREEFERN] * (1 - belt)); v[TERRA_VEG_FERN] = (uint8_t)(v[TERRA_VEG_FERN] * (1 - 0.5f * belt));
+        float sg = 0.4f * belt * (1 - sand);   // sandy ground under the belt
+        if (sg > 0.01f) {
+            int tot = 0;
+            for (int k = 0; k < TERRA_MAT_COUNT; k++) { int nw = k == TERRA_MAT_SAND ? 255 : 0; int val = (int)(sp[k] + (nw - sp[k]) * sg + 0.5f); sp[k] = (uint8_t)val; tot += val; }
+            sp[TERRA_MAT_SAND] = (uint8_t)(sp[TERRA_MAT_SAND] + 255 - tot);
+        }
     }
     if (getenv("CRET_BEACH_DBG")) {   // a few spots on the big beaches to go and look at: 40 m from the sea, the yaw that faces it
         int shown = 0;
@@ -408,7 +432,6 @@ static void beaches_build(CretWorld* w) {
     }
     free(d); free(rv); free(lv);
 }
-static float sstepf(float a, float b, float x) { float t = (x - a) / (b - a); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); }
 // Ravines (TerraParams.ravine). The land is cut where a smooth noise of GORGE_CELL m cells crosses its
 // middle value, which draws long winding lines, only in some regions (a second, larger noise), on land
 // well above the sea and 40 m clear of rivers and lakes; the cut fades out at a region's edge, which
@@ -566,7 +589,8 @@ static void grassland_build(CretWorld* w) {
             float f = (v[TERRA_VEG_FERN] * ferns + 60.0f * prairie) * (1 - bare); v[TERRA_VEG_FERN] = (uint8_t)(f > 255 ? 255 : f); ferns = 1;
         }
         v[TERRA_VEG_CONIFER] = (uint8_t)(v[TERRA_VEG_CONIFER] * trees); v[TERRA_VEG_BROADLEAF] = (uint8_t)(v[TERRA_VEG_BROADLEAF] * trees);
-        v[TERRA_VEG_TREEFERN] = (uint8_t)(v[TERRA_VEG_TREEFERN] * trees); v[TERRA_VEG_PALM] = (uint8_t)(v[TERRA_VEG_PALM] * trees);
+        float coast = m->habitat ? m->habitat[j * TERRA_HAB_COUNT + TERRA_HAB_COAST] / 255.0f : 0;   // palms stand on in open country by the sea
+        v[TERRA_VEG_TREEFERN] = (uint8_t)(v[TERRA_VEG_TREEFERN] * trees); v[TERRA_VEG_PALM] = (uint8_t)(v[TERRA_VEG_PALM] * (1 - 0.94f * g * (1 - coast)));
         v[TERRA_VEG_FERN] = (uint8_t)(v[TERRA_VEG_FERN] * ferns); v[TERRA_VEG_HORSETAIL] = (uint8_t)(v[TERRA_VEG_HORSETAIL] * ferns);
     }
     if (getenv("CRET_BIOME_DBG")) {
@@ -659,6 +683,12 @@ static void map_dbg(const CretWorld* w) {
         for (int q = 0; q < 3; q++) fputc(c[q] > 255 ? 255 : c[q] < 0 ? 0 : (int)c[q], f);
     }
     fclose(f);
+    // and the scatter's counts of the shore kinds over the whole island
+    int nt = (int)(terra_size(m) / VEG_TILE) + 1; long cnt[3] = {0, 0, 0}; static const int K[3] = {VEG_PALM, VEG_SHRUB, VEG_HORSETAIL};
+    VegInstance* buf = malloc(sizeof(VegInstance) * 65536);
+    for (int q = 0; q < 3 && buf; q++) for (int tz = 0; tz < nt; tz++) for (int tx = 0; tx < nt; tx++) cnt[q] += scatter(m, K[q], tx, tz, buf, 65536);
+    free(buf);
+    fprintf(stderr, "map: palms %ld shrubs %ld horsetails %ld\n", cnt[0], cnt[1], cnt[2]);
 }
 
 static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {

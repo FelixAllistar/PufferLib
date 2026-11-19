@@ -18,3 +18,16 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
    sand had cleared them). Change: `render/veg_place.h` `placeable` refuses sand within 0.6 m of the water beside it or
    below 0.9 m over the sea; `world.c` the prairie does not thicken ferns on sand. Kept: `coast` and `mouthA` are bare
    sand at the water, `bchS` and `airW` unchanged.
+3. Fault: the big beaches meet the forest or open country with nothing between (the bake's strand belt lies under the
+   sand `world.c` lays at load), and the open-country redraw had cut the coast plains' palms (scatter count 798 on
+   `cret/hc`, 734 after pass 1). Change: `world.c` `beaches_build` grades the beach inland: salt-hardy scrub and low
+   cycads in clumps over the back dunes (0.55-1.35 W), then an open belt (0.85-1.85 W) of palms in 70 m groves, scrub
+   and a few cycads on sandy ground, conifers, broadleaves, tree ferns and ferns thinned; `grassland_build` keeps the
+   palms of open country near the sea (thinned by its coast nearness). Kept: `airW` and `topW` show a speckled belt of
+   palms and scrub between the sand and the forest, `strD` (on the back dunes) stands among palms, cycads and scrub
+   where it was bare sand. Palms 734 to 1,384, shrubs 90,243 to 93,415 (the scatter, whole island). Grass cannot grow
+   on sand (`veg.c`, not this track's file), so the dunes carry scrub and cycads, not dune grass.
+4. Fault (from pass 1): a steep sand wall up to 10 m high at the back of the beach (`strD12`, `strW30`): near a stream
+   that runs high the beach floor was held above its water out to 60 m and then dropped to the beach profile at once.
+   Change: the held floor blends into the beach profile from 15 to 70 m from the stream. Kept: the wall is gone, the
+   back of the beach is a smooth rise into the strand.
