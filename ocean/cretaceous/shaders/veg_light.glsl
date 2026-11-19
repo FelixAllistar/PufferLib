@@ -36,7 +36,8 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // a blue sky otherwise read as mint in full sun. Barely with a low sun,
     // when the shaded crowns would turn emerald. The atlas grade (veg.c)
     // already made them deeper and more varied.
-    float sat = mix(0.05, 0.2, smoothstep(0.15, 0.55, L.y)) - 0.22 * u_understory;   // ground cover less: sunlit forest-floor ferns went neon lime
+    float sat = mix(0.0, 0.1, smoothstep(0.15, 0.55, L.y)) - 0.33 * u_understory;   // ground cover less: sunlit ferns and fern prairie went neon lime (round 3: -0.22 -> -0.33,
+                                                                                 // and the trees' boost 0.05-0.2 -> 0-0.1: sunlit broadleaf crowns drew lime)
     albedo = max(mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 1.0 + sat * leaf), 0.0);
     // Biome: in dry open country the grass and ground plants are straw and gold and the bushes olive-yellow.
     {
@@ -115,7 +116,9 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // first, which filters it green (and keeps sunlit ferns from going mint
     // under a blue sky). Gentler with a low sun: in the shade at golden hour
     // the full filter turned crowns a saturated emerald.
-    amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * 0.75 * (1.0 - 0.6 * veg_dry));
+    // Ground cover takes a lighter share (round 3): ferns in a forest's shade, filled mostly by this sky light,
+    // drew emerald against the dull floor.
+    amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * mix(0.75, 0.4, u_understory) * (1.0 - 0.6 * veg_dry));
     // Ground bounce lights undersides and trunks (forest floor albedo ~0.15).
     // veg_bounce: the trunks of cycads, palms and tree ferns take more (veg.fs; terrain.fs takes about three
     // times as much): standing under their own low crown, the lit ground round them is most of what shows
@@ -135,5 +138,13 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // Rain: a faint, broad sheen of grey sky on wet leaves and bark at grazing angles.
     float nv = abs(dot(N, V));
     col += mix(sky_h, sky_up, 0.6) * (u_wet * 0.05 * pow(1.0 - nv, 3.0) * ao);
-    return aerial(col, t_skyview, u_cam, p, L);
+    // Haze over foliage: the in-scattered light (the part aerial() adds, here aerial of black) keeps a fifth
+    // of its colour (the rest grey). Over the dark crowns of a far forest the full horizon-sky blue turned the
+    // stands a saturated teal (hue 180-200), where photos of forest across a valley go blue-grey with
+    // distance. Its brightness is kept, so the depth cue stays. (The two calls share their lookups.)
+    vec3 ins = aerial(vec3(0.0), t_skyview, u_cam, p, L);
+    vec3 hz = aerial(col, t_skyview, u_cam, p, L) - ins;
+    // Past 0.6-3 km the colour comes back (to 70%): there the stands are small marks on hills hazed by the
+    // terrain's own (full colour) haze, and grey they drew as near-black blotches on blue hills.
+    return hz + mix(vec3(dot(ins, vec3(0.3, 0.59, 0.11))), ins, mix(0.2, 0.7, smoothstep(600.0, 3000.0, dcam)));
 }

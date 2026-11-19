@@ -144,7 +144,7 @@ static void paint_rope(Canvas* c, float x0, float y0, float ang, float curve, fl
 // Araucaria branch spray: a woody axis with alternate ropes swept toward the
 // tip and curving forward, with gaps between them (no fern-like pinnae).
 static void paint_arau(Canvas* c, VRng* r, bool thick) {
-    static const float base[3] = {0.026f, 0.066f, 0.028f}, tip[3] = {0.06f, 0.115f, 0.03f};
+    static const float base[3] = {0.022f, 0.05f, 0.026f}, tip[3] = {0.045f, 0.085f, 0.03f};   // dark, a little blue at the base
     paint_stem(c, 256, 0, 256, 470, thick ? 12 : 9, 4, 0.07f, 0.065f, 0.04f);
     int n = thick ? 18 : 24;
     for (int i = 0; i < n; i++) {
@@ -468,8 +468,8 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
     Canvas c = {img}; VRng r = {(uint32_t)layer * 104729u + 7};
     static const float T[L_COUNT][3] = {   // mean linear albedo per layer
         [L_FERN] = {0.045f, 0.10f, 0.028f}, [L_FERN2] = {0.05f, 0.105f, 0.03f}, [L_TFERN] = {0.038f, 0.086f, 0.027f},
-        [L_CYCAD] = {0.026f, 0.066f, 0.028f}, [L_ARAU] = {0.03f, 0.072f, 0.034f}, [L_SPRAY] = {0.08f, 0.16f, 0.036f},
-        [L_PODO] = {0.024f, 0.056f, 0.026f}, [L_LEAF] = {0.045f, 0.095f, 0.03f}, [L_LEAF2] = {0.032f, 0.075f, 0.026f},
+        [L_CYCAD] = {0.042f, 0.058f, 0.03f}, [L_ARAU] = {0.028f, 0.06f, 0.024f}, [L_SPRAY] = {0.08f, 0.16f, 0.036f},
+        [L_PODO] = {0.03f, 0.06f, 0.02f}, [L_LEAF] = {0.045f, 0.095f, 0.03f}, [L_LEAF2] = {0.032f, 0.075f, 0.026f},
         [L_LEAF3] = {0.048f, 0.1f, 0.034f}, [L_PALM] = {0.05f, 0.098f, 0.04f}, [L_SHRUB] = {0.036f, 0.08f, 0.028f},
         // Bark: the mean albedo of each species' bark (the scans' furrow shade, baked in by fetch_foliage.sh, only adds contrast).
         [L_BARK] = {0.14f, 0.125f, 0.105f}, [L_BARK_CON] = {0.17f, 0.088f, 0.056f}, [L_BARK_PALM] = {0.11f, 0.094f, 0.072f},
@@ -767,7 +767,7 @@ static void paint_cluster(int layer, Canvas* c, const Photos* P, VRng* r, const 
         }
         break; }
     case L_CL_ROPE: {   // araucaria: a stout scale-leaf branchlet forking into ropes that curl up and out
-        static const float base[3] = {0.026f, 0.066f, 0.028f}, tipc[3] = {0.06f, 0.115f, 0.03f};
+        static const float base[3] = {0.022f, 0.05f, 0.026f}, tipc[3] = {0.045f, 0.085f, 0.03f};   // as paint_arau
         int n = 5 + (int)vrr(r, 0, 1.99f);
         for (int k = 0; k < n; k++) {   // side ropes first, the leading one over them
             int o = k == n - 1 ? n / 2 : (k < n / 2 ? k : k + 1);
@@ -940,9 +940,9 @@ static void new_layer(int layer, Px* img, const Photos* P) {
     VRng r = {(uint32_t)layer * 7907u + 101};
     static const float T[L_COUNT][3] = {
         [L_CL_MAGN] = {0.045f, 0.095f, 0.03f}, [L_CL_LAUREL] = {0.032f, 0.075f, 0.026f}, [L_CL_HEART] = {0.048f, 0.1f, 0.034f},
-        [L_CL_PODO] = {0.024f, 0.056f, 0.026f}, [L_CL_SPRAY] = {0.08f, 0.16f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f}, [L_CL_ROPE] = {0.03f, 0.072f, 0.034f},
-        [L_LEAFLET] = {0.026f, 0.066f, 0.028f}, [L_PSEG] = {0.05f, 0.098f, 0.04f}, [L_FPINNA] = {0.038f, 0.086f, 0.027f},
-        [L_ROPE] = {0.03f, 0.072f, 0.034f}, [L_SCALES] = {0.03f, 0.072f, 0.034f}, [L_HSTEM] = {0.05f, 0.09f, 0.03f},
+        [L_CL_PODO] = {0.03f, 0.06f, 0.02f}, [L_CL_SPRAY] = {0.08f, 0.16f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f}, [L_CL_ROPE] = {0.028f, 0.06f, 0.024f},
+        [L_LEAFLET] = {0.042f, 0.058f, 0.03f}, [L_PSEG] = {0.05f, 0.098f, 0.04f}, [L_FPINNA] = {0.038f, 0.086f, 0.027f},
+        [L_ROPE] = {0.028f, 0.06f, 0.024f}, [L_SCALES] = {0.028f, 0.06f, 0.024f}, [L_HSTEM] = {0.05f, 0.09f, 0.03f},
         [L_CL_GINKGO] = {0.058f, 0.11f, 0.03f}, [L_CL_PLANE] = {0.05f, 0.1f, 0.034f}, [L_CL_BERRY] = {0.04f, 0.085f, 0.03f},
         [L_GUNNERA] = {0.04f, 0.09f, 0.03f}, [L_LILY] = {0.03f, 0.075f, 0.03f}, [L_CLUB] = {0.04f, 0.1f, 0.026f},
         [L_PETAL] = {0.8f, 0.8f, 0.75f}, [L_FRUIT] = {0.3f, 0.2f, 0.1f}, [L_FUNGUS] = {0.4f, 0.3f, 0.2f},
@@ -971,7 +971,7 @@ static void new_layer(int layer, Px* img, const Photos* P) {
         for (int k = 0; k < cols; k++) {
             float cx = k * cw + cw * 0.5f;
             if (layer == L_ROPE) {
-                static const float base[3] = {0.026f, 0.066f, 0.028f}, tip[3] = {0.06f, 0.115f, 0.03f};
+                static const float base[3] = {0.022f, 0.05f, 0.026f}, tip[3] = {0.045f, 0.085f, 0.03f};   // dark, a little blue at the base
                 paint_rope(&c, cx, 4, vrr(&r, -0.02f, 0.02f), vrr(&r, -0.06f, 0.06f), 500, vrr(&r, 24, 30), base, tip, vrr(&r, 0.85f, 1.15f));
             } else if (layer == L_FPINNA) {
                 leaf_px(&c, P->pinna.n ? &P->pinna : &P->fern, &r, cx, 4, 0, 504, 1.0f, cw - 8, t, vrr(&r, 0.9f, 1.1f), 0);
@@ -1192,6 +1192,28 @@ static const float IMP_TONE[VEG_KINDS][VEG_VARIANTS] = {
     [VEG_TREEFERN] = {1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f},
     [VEG_PALM] = {0.58f, 0.58f, 0.58f, 0.58f, 0.58f, 0.58f, 0.58f, 0.58f},
 };
+// Leaf tint per species (kind and variant, as LOD_TONE), on the leaf albedo at every level of detail: the
+// full and reduced meshes take it per draw (veg.fs u_leaf_tint) and the impostors per variant (veg_imp.vs
+// u_imp_tint), so a tree keeps its green from 3 m to 2 km. (The reduced meshes share leaf layers across
+// species, the ginkgo's the laurel's and the plane's the katsura's, so a species' green cannot live in its
+// atlas layer alone.) Without it every species was one dark olive (round 3): blue-black araucaria and
+// cheirolep cypress, warm podocarp, fresh dawn redwood, dark glossy laurel and magnolia, cool katsura,
+// yellow-green ginkgo and plane, olive cycads. The ginkgo's leaves are already the brightest, most yellow
+// green of the broadleaves: it is darkened, not yellowed (yellowed, it drew neon lime at 100 m). {0,0,0}: untinted.
+static const float LEAF_TINT[VEG_KINDS][VEG_VARIANTS][3] = {
+    [VEG_CONIFER] = {{0.9f, 0.96f, 1.1f}, {1.04f, 1.0f, 0.88f}, {1.12f, 1.1f, 0.82f}, {1.12f, 1.1f, 0.82f},
+                     {0.9f, 0.96f, 1.1f}, {1.04f, 1.0f, 0.88f}, {0.88f, 0.95f, 1.06f}, {1.12f, 1.1f, 0.82f}},
+    [VEG_BROADLEAF] = {{0.92f, 0.95f, 0.95f}, {0.84f, 0.9f, 0.92f}, {0.86f, 0.9f, 0.98f}, {1.0f, 0.85f, 0.9f},
+                       {0.92f, 0.95f, 0.95f}, {0.84f, 0.9f, 0.92f}, {1.2f, 1.08f, 0.78f}, {1.0f, 1.0f, 1.0f}},
+    [VEG_TREEFERN] = {{0.96f, 0.92f, 0.96f}, {0.96f, 0.92f, 0.96f}, {1.04f, 0.86f, 0.92f}, {1.04f, 0.86f, 0.92f},
+                      {0.96f, 0.92f, 0.96f}, {0.96f, 0.92f, 0.96f}, {1.04f, 0.86f, 0.92f}, {1.04f, 0.86f, 0.92f}},   // Cyathea, Dicksonia: deeper, less lime
+    [VEG_CYCAD] = {{1.0f, 1.0f, 1.0f}, {0.9f, 0.96f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.06f, 1.04f, 0.9f},
+                   {1.0f, 1.0f, 1.0f}, {0.9f, 0.96f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.06f, 1.04f, 0.9f}},   // Cycas, Zamia darker, Williamsonia warmer (the olive is in their layers)
+};
+static const float* leaf_tint(int k, int q) {
+    static const float one[3] = {1, 1, 1}; const float* t = LEAF_TINT[k][q];
+    return t[0] > 0 ? t : one;
+}
 static float lod_tone(int k, int q) { float t = LOD_TONE[k][q]; return t > 0 ? t : 1.0f; }
 static float tree_switch_scale(const CretVeg* v, const VegInstance* in) {
     float h = v->mesh[in->kind][in->variant].height * in->scale, m = v->kind_height[in->kind];   // m: the kind's mean over the island
@@ -2052,6 +2074,13 @@ static void imp_uniforms(const CretVeg* v, const GfxProgram* p) {
         if (v->imp_layer[k][q] >= 0 && l < VEG_IMP_TONES && IMP_TONE[k][q] > 0) tone[l] = IMP_TONE[k][q];
     }
     GLint loc = glGetUniformLocation(p->id, "u_imp_tone"); if (loc >= 0) glUniform1fv(loc, VEG_IMP_TONES, tone);
+    // And its leaf tint (LEAF_TINT), by the same index.
+    float tint[VEG_IMP_TONES][3]; for (int i = 0; i < VEG_IMP_TONES; i++) tint[i][0] = tint[i][1] = tint[i][2] = 1.0f;
+    for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
+        int l = v->imp_layer[k][q] / VEG_IMPOSTOR_VIEWS;
+        if (v->imp_layer[k][q] >= 0 && l < VEG_IMP_TONES) { const float* t = leaf_tint(k, q); tint[l][0] = t[0]; tint[l][1] = t[1]; tint[l][2] = t[2]; }
+    }
+    loc = glGetUniformLocation(p->id, "u_imp_tint"); if (loc >= 0) glUniform3fv(loc, VEG_IMP_TONES, &tint[0][0]);
 }
 // Draws the impostor runs with p already in use.
 static void draw_impostor_runs(const CretVeg* v) {
@@ -2247,6 +2276,7 @@ void cret_veg_draw(CretVeg* v, const VegFrameDesc* f) {
         if (!near[k][q].n || is_tree(k) != (pass == 0)) continue;
         VegMesh* vm = q < VEG_VARIANTS ? &v->mesh[k][q] : &v->mesh_lo[k][q - VEG_VARIANTS];
         bind_instances(vm->m.vao, v->inst_vbo, v->list_off[k][q] * sizeof(GpuInst));
+        const float* lt = leaf_tint(k, q % VEG_VARIANTS); gfx_set3f(p, "u_leaf_tint", lt[0], lt[1], lt[2]);
         glDrawElementsInstanced(GL_TRIANGLES, vm->m.index_count, GL_UNSIGNED_INT, 0, near[k][q].n);
         if (is_tree(k)) v->drawn_meshes += near[k][q].n; else v->drawn_ground += near[k][q].n;
     }

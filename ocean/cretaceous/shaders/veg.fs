@@ -16,6 +16,7 @@ const vec3 BARK[13] = vec3[13](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(1.55, 1.4
                                vec3(0.8, 0.72, 0.6), vec3(0.78, 0.86, 0.52), vec3(0.85, 0.62, 0.42), vec3(0.72, 0.64, 0.46), vec3(1.0), vec3(1.0), vec3(1.0));
 uniform sampler2DArray t_atlas;
 uniform int u_bake;
+uniform vec3 u_leaf_tint;   // the species' leaf tint (veg.c LEAF_TINT; impostors: veg_imp.vs u_imp_tint); unset (0) untinted
 uniform float u_edge_fade;   // 1: leaf cards erode away edge on and glow by their own normal (render/veg_look.h VEG_LOOK_EDGE)
 // Leaf material atlas (render/veg.c atlas_store), layer for layer with t_atlas: RG the surface's tilt
 // along +u and +v of the layer, B the share of light from behind it lets through (thin blade high, veins
@@ -58,6 +59,7 @@ void main() {
     }
     vec3 albedo = a.rgb * mix(vec3(1.0), vec3(1.0 + 0.14 * v_hue, 1.0 + 0.05 * v_hue, 1.0 - 0.12 * v_hue) * (u_bake == 1 ? vec3(1.0) : stand_tint(v_base.xz)), v_leaf);
     albedo *= mix(1.0, v_tone, v_leaf);   // the reduced mesh's leaf tone against the full mesh (veg.c LOD_TONE)
+    if (u_bake == 0 && u_leaf_tint != vec3(0.0)) albedo *= mix(vec3(1.0), u_leaf_tint, v_leaf);   // the species' green (veg.c LEAF_TINT)
     if (v_leaf > 0.5) {
         // attr.w on leaves is frond dryness: old fronds yellow, then brown.
         float dry = v_bark / 255.0, l = dot(albedo, vec3(0.3, 0.59, 0.11));
