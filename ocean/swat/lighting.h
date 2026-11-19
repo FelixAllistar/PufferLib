@@ -28,6 +28,7 @@ typedef struct SwatLightingProgram {
     int environment,environment_normal,environment_normal_map,environment_roughness_map;
     int environment_size,environment_tile;
     int ground_blend;
+    int uv_scale,macro_variation,macro_detail; // Materials v3 (materials_v3.h).
     int skinning,skin_sets,skin_palette,skin_influences,emission,normal_green,normal_scale;
     int ibl,ibl_atlas,sun_direction,sun_energy,occlusion,occlusion_strength;
     int occlusion_uv;
@@ -169,6 +170,9 @@ void swat_lighting_material_scaled(SwatLighting* light,Material material,bool en
 // Mesh size/tile remap the original door's unit-space positions to metre UVs.
 void swat_lighting_surface(SwatLighting* light,Texture2D normal,Texture2D roughness,
                            Vector3 size,Vector2 tile,bool mesh);
+// Materials v3: UV repeat multiplier (0 = unchanged) and world-space macro
+// variation for the next draws. Reset by every material/surface binding.
+void swat_lighting_surface_variation(SwatLighting* light,bool mesh,Vector2 uv_scale,Vector4 macro,Vector4 detail);
 // Local door scorch evaluated per pixel, independent of source triangulation.
 // Bind around the complete leaf/edge draw; NULL clears both mesh and batch state.
 void swat_lighting_door_damage(SwatLighting* light,const SwatObject* door);

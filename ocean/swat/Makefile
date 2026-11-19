@@ -71,6 +71,8 @@ slice-capture: $(ENET_LIB) ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/slice_capture.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/slice_capture
 exterior-capture: $(ENET_LIB) ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/exterior_capture.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/exterior_capture
+materials-capture: $(ENET_LIB) ui-assets | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/materials_capture.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/materials_capture
 interior-capture: $(ENET_LIB) ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/interior_capture.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/interior_capture
 reload-review: ui-assets | $(BUILD)

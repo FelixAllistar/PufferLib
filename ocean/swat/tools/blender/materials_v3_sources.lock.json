@@ -1,0 +1,354 @@
+{
+ "Carpet012": {
+  "authors": "Lennart Demes (ambientCG)",
+  "license": "CC0-1.0",
+  "page": "https://ambientcg.com/a/Carpet012",
+  "sha256": "91bae19a8386d66aa43caba1ef9cc00c0ae42169e0bdae11fbe248370ec22eb4",
+  "site": "ambientcg",
+  "zip": "https://ambientcg.com/get?file=Carpet012_2K-PNG.zip"
+ },
+ "Terrazzo004": {
+  "authors": "Lennart Demes (ambientCG)",
+  "license": "CC0-1.0",
+  "page": "https://ambientcg.com/a/Terrazzo004",
+  "sha256": "30346a0f942603c7aec1db68b3f57d00ef37170b092b8dcbd47799f76fcf0cb3",
+  "site": "ambientcg",
+  "zip": "https://ambientcg.com/get?file=Terrazzo004_2K-PNG.zip"
+ },
+ "Tiles036": {
+  "authors": "Lennart Demes (ambientCG)",
+  "license": "CC0-1.0",
+  "page": "https://ambientcg.com/a/Tiles036",
+  "sha256": "7e5f297b9a36cd77d595e96bd2ba5adeb910c34df8a25c16d3a97513e874d7db",
+  "site": "ambientcg",
+  "zip": "https://ambientcg.com/get?file=Tiles036_2K-PNG.zip"
+ },
+ "Tiles071": {
+  "authors": "Lennart Demes (ambientCG)",
+  "license": "CC0-1.0",
+  "page": "https://ambientcg.com/a/Tiles071",
+  "sha256": "dbb6ce4f1dbf0fd53942559212645bc192f85e435d4e0211c516d506ad868d4e",
+  "site": "ambientcg",
+  "zip": "https://ambientcg.com/get?file=Tiles071_2K-PNG.zip"
+ },
+ "Tiles074": {
+  "authors": "Lennart Demes (ambientCG)",
+  "license": "CC0-1.0",
+  "page": "https://ambientcg.com/a/Tiles074",
+  "sha256": "a8ea49efbfe2161508a831a70ae84e554369d094e49b33fda835e982a1c32546",
+  "site": "ambientcg",
+  "zip": "https://ambientcg.com/get?file=Tiles074_2K-PNG.zip"
+ },
+ "asphalt_02": {
+  "authors": "Rob Tuytel",
+  "dimensions_mm": [
+   3000.000238418579,
+   3000
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "fefc3f8f46ac2cf1d701380d67616c33",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/asphalt_02/asphalt_02_diff_2k.png"
+   },
+   "normal": {
+    "md5": "5e1dc171185794b1ffcf8f48864467dd",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/asphalt_02/asphalt_02_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "abe845088afbcbfd05b8f103488df6b6",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/asphalt_02/asphalt_02_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/asphalt_02",
+  "site": "polyhaven"
+ },
+ "asphalt_04": {
+  "authors": "Jenelle van Heerden, Sergej Majboroda",
+  "dimensions_mm": [
+   4039.9999618530273,
+   4039.9999618530273
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "1d02e1ae30a4e6b9459fe2e054f37dc0",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/asphalt_04/asphalt_04_diff_2k.png"
+   },
+   "normal": {
+    "md5": "e6e6cbb986510d8bf08303a1ab90ccd3",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/asphalt_04/asphalt_04_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "bb67303909811dfa612bea296bf4596c",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/asphalt_04/asphalt_04_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/asphalt_04",
+  "site": "polyhaven"
+ },
+ "concrete_floor_worn_001": {
+  "authors": "Dimitrios Savva, Rico Cilliers",
+  "dimensions_mm": [
+   3000,
+   3000.000238418579
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "3b574c02215a64268ba7152b62525542",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/concrete_floor_worn_001/concrete_floor_worn_001_diff_2k.png"
+   },
+   "normal": {
+    "md5": "7516e0878d101554ce5869dc2b281519",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/concrete_floor_worn_001/concrete_floor_worn_001_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "2027e372e30ca611ef6a0be1ab47eca1",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/concrete_floor_worn_001/concrete_floor_worn_001_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/concrete_floor_worn_001",
+  "site": "polyhaven"
+ },
+ "dirty_concrete": {
+  "authors": "Rob Tuytel",
+  "dimensions_mm": [
+   3000,
+   3000
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "b740f371d4c4fe42354412331fe6cfa0",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/dirty_concrete/dirty_concrete_diff_2k.png"
+   },
+   "normal": {
+    "md5": "a71629721bd73b653d1da18c05330857",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/dirty_concrete/dirty_concrete_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "4a963d94fadf8c1f923038a534b68759",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/dirty_concrete/dirty_concrete_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/dirty_concrete",
+  "site": "polyhaven"
+ },
+ "dry_ground_01": {
+  "authors": "Rob Tuytel",
+  "dimensions_mm": [
+   4000,
+   4000
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "7a83a9f071ff6a435304eb1eae045804",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/dry_ground_01/dry_ground_01_diff_2k.png"
+   },
+   "normal": {
+    "md5": "31b81b7f876f1b49b2e0d56ccdb6227d",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/dry_ground_01/dry_ground_01_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "f12f8b8d0e05b468d27eba1d9fa5b9bd",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/dry_ground_01/dry_ground_01_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/dry_ground_01",
+  "site": "polyhaven"
+ },
+ "gravelly_sand": {
+  "authors": "Dario Barresi",
+  "dimensions_mm": [
+   2480.0000190734863,
+   2480.0000190734863
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "04c2a2847fd23667bb937d50a5daf33a",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/gravelly_sand/gravelly_sand_diff_2k.png"
+   },
+   "normal": {
+    "md5": "0091a0b375a08bfe1dea9007fc040b8e",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/gravelly_sand/gravelly_sand_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "101219c232eff51c54173f32fe63b564",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/gravelly_sand/gravelly_sand_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/gravelly_sand",
+  "site": "polyhaven"
+ },
+ "painted_concrete": {
+  "authors": "Dario Barresi, Dimitrios Savva",
+  "dimensions_mm": [
+   2000,
+   2000
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "e477fb384deeb1330d916df5aa892721",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/painted_concrete/painted_concrete_diff_2k.png"
+   },
+   "normal": {
+    "md5": "e5567b7e8c579564a9d9ce825327fedb",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/painted_concrete/painted_concrete_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "2af3ab5f30efbbde33698c8fb155e676",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/painted_concrete/painted_concrete_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/painted_concrete",
+  "site": "polyhaven"
+ },
+ "plastered_wall_04": {
+  "authors": "Rob Tuytel",
+  "dimensions_mm": [
+   3199.9998092651367,
+   3199.9998092651367
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "654ee3d685930f4815b7e78a76c09552",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/plastered_wall_04/plastered_wall_04_diff_2k.png"
+   },
+   "normal": {
+    "md5": "e500767fea1f7e4fccf8819e792f2721",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/plastered_wall_04/plastered_wall_04_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "5de5ca6f7979648ae1ed606b552acc89",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/plastered_wall_04/plastered_wall_04_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/plastered_wall_04",
+  "site": "polyhaven"
+ },
+ "plastered_wall_05": {
+  "authors": "Charlotte Baglioni",
+  "dimensions_mm": [
+   2000,
+   2000
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "713b1c5daf2e682fc1456ab30aaed66c",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/plastered_wall_05/plastered_wall_05_diff_2k.png"
+   },
+   "normal": {
+    "md5": "b0a9076f5a43d557d4445bffc52ffcec",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/plastered_wall_05/plastered_wall_05_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "96665605fba7f707a664d52dc5762b9d",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/plastered_wall_05/plastered_wall_05_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/plastered_wall_05",
+  "site": "polyhaven"
+ },
+ "tarred_gravel": {
+  "authors": "Dimitrios Savva",
+  "dimensions_mm": [
+   2200.000047683716,
+   2200.000047683716
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "824d9ae98153f18ee8c48c8fe8a27976",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/tarred_gravel/tarred_gravel_diff_2k.png"
+   },
+   "normal": {
+    "md5": "1d22b2899da01923d8d96c79edbd913c",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/tarred_gravel/tarred_gravel_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "5c1ee373f97db42024cbacf5ba6ac7bf",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/tarred_gravel/tarred_gravel_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/tarred_gravel",
+  "site": "polyhaven"
+ },
+ "white_plaster_02": {
+  "authors": "Rob Tuytel",
+  "dimensions_mm": [
+   1000,
+   1000
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "29845f6a688650189dc29a66c9896a65",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_plaster_02/white_plaster_02_diff_2k.png"
+   },
+   "normal": {
+    "md5": "5ebaee84d0be9fce4e5047ab97d584ea",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_plaster_02/white_plaster_02_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "3aa6655aa83e1d6ccd92eadc4e213b9a",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_plaster_02/white_plaster_02_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/white_plaster_02",
+  "site": "polyhaven"
+ },
+ "white_rough_plaster": {
+  "authors": "Rob Tuytel",
+  "dimensions_mm": [
+   1000,
+   1000
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "ec563b0b05f22225e51d65680d45bc92",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_rough_plaster/white_rough_plaster_diff_2k.png"
+   },
+   "normal": {
+    "md5": "83eab1e2ad0ac2461586d34e35948a1b",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_rough_plaster/white_rough_plaster_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "d6e179c7ddee44ffe8c50c43df27c92d",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_rough_plaster/white_rough_plaster_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/white_rough_plaster",
+  "site": "polyhaven"
+ },
+ "white_stucco": {
+  "authors": "Amal Kumar",
+  "dimensions_mm": [
+   1998.0629682540894,
+   1998.0640411376953
+  ],
+  "license": "CC0-1.0",
+  "maps": {
+   "color": {
+    "md5": "0b4f7710595002c8e872054c1d4263af",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_stucco/white_stucco_diff_2k.png"
+   },
+   "normal": {
+    "md5": "dc400bce80d20eb54bd71809767c7fe4",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_stucco/white_stucco_nor_gl_2k.png"
+   },
+   "roughness": {
+    "md5": "af21878a6ef02457e4dd923700491ef0",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_stucco/white_stucco_rough_2k.png"
+   }
+  },
+  "page": "https://polyhaven.com/a/white_stucco",
+  "site": "polyhaven"
+ }
+}

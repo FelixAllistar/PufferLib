@@ -1,0 +1,20 @@
+{
+ "facade":   {"kind": "facade", "ref": "abandoned_motel_3_marathon_texas", "eye": [9, -11, 1.6], "target": [-6, 0, 1.9], "lens": 24, "sun": [62, 230], "ground": "gravel"},
+ "wall_close": {"kind": "facade", "ref": "abandoned_motel_3_marathon_texas", "eye": [1.0, -3.2, 1.5], "target": [-0.5, 0, 1.4], "lens": 35, "sun": [62, 230], "ground": "gravel"},
+ "gallery":  {"kind": "gallery", "ref": "concrete_sidewalk", "eye": [6.5, -1.0, 1.6], "target": [-6, -1.2, 0.2], "lens": 28, "sun": [55, 220], "ground": "gravel", "lot": [[-30, -40], [30, -1.95]]},
+ "walk_close": {"kind": "gallery", "ref": "concrete_sidewalk", "eye": [0.5, -1.0, 1.5], "target": [0.6, -1.2, 0.0], "lens": 28, "sun": [55, 220], "ground": "gravel", "lot": [[-30, -40], [30, -1.95]]},
+ "lot":      {"kind": "lot", "ref": "johnson_park", "eye": [0, -30, 1.4], "target": [0, 0, 0.6], "lens": 30, "sun": [40, 250], "ground": "gravel", "lot": [[-40, -45], [40, -2]]},
+ "lot_close":{"kind": "lot", "ref": "asphalt_texture", "eye": [0, -21, 1.2], "target": [0, -20, 0.0], "lens": 35, "sun": [50, 250], "ground": "gravel", "lot": [[-40, -45], [40, -2]], "building": false},
+ "road":     {"kind": "road", "ref": "abandoned_motel_marathon_texas", "eye": [-3, -10, 1.6], "target": [-40, 2, 0.6], "lens": 30, "sun": [60, 200], "ground": "gravel", "road": [[-120, -6], [120, 2]], "building": false},
+ "verge":    {"kind": "road", "ref": "desert_queen_ranch_road", "eye": [0, -20, 1.6], "target": [-20, 0, 0], "lens": 28, "sun": [50, 230], "ground": "gravel", "road": [[-120, -3], [120, 5]], "building": false},
+ "roof":     {"kind": "roof", "ref": "boise_project_arrowrock", "eye": [3, -3, 4.6], "target": [0, 3, 2.9], "lens": 28, "sun": [55, 210], "ground": "gravel"},
+ "trim":     {"kind": "gallery", "ref": "motel_office", "eye": [3.0, -5.0, 1.7], "target": [0, -0.5, 1.8], "lens": 30, "sun": [55, 220], "ground": "gravel", "lot": [[-30, -40], [30, -1.95]]},
+ "room":     {"kind": "room", "ref": "mt_si_motel_room_6", "floor": "carpet", "walls": "drywall", "eye": [1.5, -2.0, 1.55], "target": [-0.6, 1.4, 0.7], "lens": 22, "lamp": 140, "window": 60,
+              "props": [[[-1.6, 0.0, 0], [-0.2, 2.1, 0.55], [0.75, 0.73, 0.68]], [[-1.85, -0.6, 0], [-1.45, -0.15, 0.6], [0.25, 0.13, 0.06]]]},
+ "carpet_close": {"kind": "room", "ref": "mt_si_motel_room_6", "floor": "carpet", "walls": "drywall", "eye": [0.4, -0.4, 1.2], "target": [0.2, 0.4, 0.0], "lens": 30, "lamp": 140, "window": 60},
+ "bath":     {"kind": "bath", "ref": "motel_bathroom_004", "floor": "bath_floor", "walls": "drywall", "wainscot": "bath_wall", "room": [1.8, 2.0, 2.45], "eye": [0.7, -0.85, 1.6], "target": [-0.4, 0.6, 0.3], "lens": 18, "lamp": 60,
+              "props": [[[-0.85, 0.3, 0], [-0.4, 0.9, 0.42], [0.9, 0.88, 0.84]], [[-0.1, 0.55, 0], [0.5, 1.0, 0.82], [0.92, 0.9, 0.86]]]},
+ "ceiling":  {"kind": "room", "ref": "day_125_of_365_popcorn_ceiling", "floor": "carpet", "walls": "drywall", "eye": [0, 0, 1.6], "target": [0.3, 0.4, 2.45], "lens": 30, "lamp": 140, "lamp_at": [1.2, -1.2, 1.4]},
+ "reception":{"kind": "room", "ref": "vintage_vinyl_tile_flooring_south_beach", "floor": "reception_floor", "walls": "drywall", "eye": [0.2, -1.6, 1.5], "target": [0.0, 0.4, 0.0], "lens": 26, "lamp": 160, "window": 80},
+ "laundry":  {"kind": "room", "ref": "terrazzo_floor_former_woolworth", "floor": "laundry_floor", "walls": "drywall", "eye": [0.2, -1.6, 1.5], "target": [0.0, 0.4, 0.0], "lens": 26, "lamp": 160, "window": 80}
+}
