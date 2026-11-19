@@ -71,6 +71,9 @@ slice-capture: $(ENET_LIB) ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/slice_capture.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/slice_capture
 motel-exterior-sections: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/motel_exterior_sections.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/motel_exterior_sections
+
+props-ext-v2-capture: $(ENET_LIB) ui-assets | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/props_ext_v2_capture.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/props_ext_v2_capture
 exterior-capture: $(ENET_LIB) ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/exterior_capture.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/exterior_capture
 materials-capture: $(ENET_LIB) ui-assets | $(BUILD)

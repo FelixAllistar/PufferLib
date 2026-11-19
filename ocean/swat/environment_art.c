@@ -280,6 +280,7 @@ static bool room101_model_load(Model* model,float* scales,const char* file) {
     return true;
 }
 #include "motel_interior_art.h"
+#include "motel_props_ext_v2_impl.h" // Exterior props v2 (SWAT_PROPS_EXT_V2).
 #include "surface_decals_draw.h"
 static void picnic_art_load(SwatEnvironmentArt* art) {
     SwatPicnicArt* p=calloc(1,sizeof(*p));if(!p)return;art->picnic_art=p;
@@ -418,6 +419,7 @@ static void motel_dressing_load(SwatEnvironmentArt* art) {
             }
         }
     }
+    props_ext_v2_load(art);
     const char* surroundings[]={"motel_surroundings/shoulder_render.glb","motel_surroundings/bank_render.glb"};
     for(int i=0;i<2;i++)if(!room101_model_load(&art->motel_surroundings[i],art->motel_surroundings_normal_scale[i],surroundings[i])) {
         swat_art_model_close(art->motel_surroundings[i]);art->motel_surroundings[i]=(Model){0};
@@ -547,6 +549,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     if(art->location==selected) return;
     if(!art->bounds)art->bounds=calloc(1,sizeof(*art->bounds));
     clear_bounds(art->bounds);
+    props_ext_v2_close(art);
     room101_close(art);exterior_close(art);
     location_models_close(art->motel,SWAT_MOTEL_ASSETS);
     location_models_close(art->storefront,SWAT_STOREFRONT_ASSETS);
@@ -663,6 +666,7 @@ void swat_art_model_close(Model model) {
 }
 
 void swat_environment_art_close(SwatEnvironmentArt* art) {
+    props_ext_v2_close(art);
     room101_close(art);exterior_close(art);
     free(art->door_art);art->door_art=NULL;
     surface_decals_release(art->surface_decals);free(art->surface_decals);art->surface_decals=NULL;
@@ -1402,6 +1406,7 @@ void swat_environment_motel_backdrop(const SwatEnvironmentArt* art,const SwatWor
             if(lit && asphalt)swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},true);
         }
     }
+    props_ext_v2_draw(art,shadow,lit,scene);
     if(lit)swat_lighting_material(art->lighting,(Material){0},false);
 }
 static int sedan_triangle_owner(int triangle){return swat_motel_roadside_triangle(0,triangle);}
