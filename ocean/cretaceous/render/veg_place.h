@@ -138,13 +138,25 @@ static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstan
 // radius r0 (m, at scale 1). render/veg_gen.h builds the meshes from these
 // same draws (species_dims), so the colliders below match the drawn trunks.
 // Each draws exactly once from the variant's stream.
+// Age of a conifer variant: 0 young, 1 mature, 2 old. The generator and the
+// heights below agree on it: young redwoods fill the understorey, old ones
+// stand tall with a high crown and a few dead limbs.
+static inline int veg_conifer_age(int kind, int variant) {
+    if (kind != VEG_CONIFER) return 1;
+    switch (flora_species(kind, variant)) {
+    case FL_REDWOOD: return variant == 3 ? 0 : variant == 7 ? 2 : 1;
+    case FL_ARAUCARIA: return variant == 4 ? 2 : 1;
+    case FL_PODOCARP: return variant == 5 ? 2 : 1;
+    default: return 1;
+    }
+}
 static inline void veg_species_dims(int kind, int variant, float* H, float* r0) {
     VpRng r = {vp_hash((uint32_t)kind * 7919u + (uint32_t)variant * 104729u + 12345u)}; float h = 0, rr = 0;
     switch (kind == VEG_SNAG ? -2 : flora_species(kind, variant)) {
-    case FL_ARAUCARIA: h = vp_rr(&r, 26, 34); rr = 0.1f + 0.013f * h; break;
-    case FL_PODOCARP: h = vp_rr(&r, 17, 22); rr = 0.1f + 0.016f * h; break;
+    case FL_ARAUCARIA: h = variant == 4 ? vp_rr(&r, 34, 40) : vp_rr(&r, 25, 32); rr = (variant == 4 ? 0.2f : 0.1f) + 0.013f * h; break;
+    case FL_PODOCARP: h = variant == 5 ? vp_rr(&r, 20, 23) : vp_rr(&r, 16, 21); rr = (variant == 5 ? 0.2f : 0.1f) + 0.016f * h; break;
     case FL_UMBRELLA: h = vp_rr(&r, 18, 24); rr = 0.12f + 0.02f * h; break;
-    case FL_REDWOOD: h = vp_rr(&r, 32, 40); rr = 0.2f + 0.014f * h; break;
+    case FL_REDWOOD: h = variant == 3 ? vp_rr(&r, 17, 23) : variant == 7 ? vp_rr(&r, 40, 46) : vp_rr(&r, 32, 39); rr = (variant == 7 ? 0.3f : 0.2f) + 0.014f * h; break;
     case FL_CHEIROLEP: h = vp_rr(&r, 15, 22); rr = 0.08f + 0.016f * h; break;
     case FL_UNDERSTOREY: h = vp_rr(&r, 4.5f, 6.5f); rr = 0.05f + 0.02f * h; break;
     case FL_KATSURA: h = vp_rr(&r, 9, 14); rr = (0.05f + 0.016f * h) * 1.5f; break;   // several stems: their spread

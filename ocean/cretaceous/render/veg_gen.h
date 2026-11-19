@@ -773,6 +773,7 @@ static void pad_conifer(Gen* g, const PadCrown* K) {
 }
 static void gen_podocarp(Gen* g) {
     PadCrown K = {.width = 0.27f, .el0 = 0.3f, .el1 = 0.85f, .tall = 0.7f, .lean = 0, .layer = L_CL_PODO, .ncards = 7000, .size = 0.55f, .lod_size = 1.25f, .segs = 2, .pad = 1.0f, .base = 0.28f};
+    if (veg_conifer_age(VEG_CONIFER, g->variant) == 2) { K.width = 0.32f; K.base = 0.4f; K.el0 = 0.2f; K.pad = 1.15f; }   // old: a broad, high crown on a tall bare bole
     pad_conifer(g, &K);
 }
 // Araucaria. umbrella = 0: Norfolk-like tiers of cords; 1: monkey-puzzle-like
@@ -805,8 +806,10 @@ static void gen_araucaria(Gen* g, bool umbrella) {
     float H, r0; species_dims(VEG_CONIFER, g->variant, &H, &r0);
     Path T; grow(g, &T, v3(0, -0.3f, 0), v3(grr(g, -0.02f, 0.02f), 1, grr(g, -0.02f, 0.02f)), H + 0.3f, 14, r0, 0.03f, 0, 0.02f, NULL, 0, 0, 0.2f, 0, 0);
     bark(g, &T, 0, 0, 0, 0.2f);
-    float h0 = umbrella ? H * grr(g, 0.58f, 0.66f) : H * grr(g, 0.2f, 0.3f);
-    if (umbrella) for (float h = H * 0.15f; h < h0; h += grr(g, 0.8f, 1.6f)) {   // dead branch stubs on the bare trunk
+    // An old Norfolk has shed its lower half: a bare trunk with stubs under a flat-topped crown of long upper tiers.
+    bool old = !umbrella && veg_conifer_age(VEG_CONIFER, g->variant) == 2;
+    float h0 = umbrella ? H * grr(g, 0.58f, 0.66f) : old ? H * grr(g, 0.42f, 0.5f) : H * grr(g, 0.2f, 0.3f);
+    if (umbrella || old) for (float h = H * 0.15f; h < h0; h += grr(g, 0.8f, 1.6f)) {   // dead branch stubs on the bare trunk
         V3 p; float r; path_at(&T, (h + 0.3f) / (H + 0.3f), &p, NULL, &r, NULL, NULL);
         Path S; grow(g, &S, p, dir_ae(grr(g, 0, 2 * VPI), grr(g, -0.2f, 0.2f)), r + grr(g, 0.1f, 0.35f), 1, 0.05f, 0.035f, 0, 0, NULL, 0, 0, 0, 0, 0);
         bark(g, &S, 0, 0, 0, 0);
@@ -820,6 +823,7 @@ static void gen_araucaria(Gen* g, bool umbrella) {
             float az = az0 + whorl * 0.7f + b * (2 * VPI / nbw) + grr(g, -0.15f, 0.15f), ph = gr(g);
             V3 d = dir_az(az);
             float bl = umbrella ? lerpf(1.4f, 4.6f, sqrtf(fmaxf(1 - hr * hr, 0))) * grr(g, 0.9f, 1.08f)
+                                : old ? (0.6f + (1 - 0.7f * powf(hr, 1.6f)) * 0.17f * H) * grr(g, 0.8f, 1.1f)
                                 : (0.6f + powf(1 - hr, 0.9f) * 0.2f * H) * grr(g, 0.85f, 1.1f);
             bool dead = !umbrella && hr < 0.05f && gr(g) < 0.5f;
             if (dead) bl *= 0.35f;   // a dead branch is a broken stub, not a whole bare limb
@@ -909,18 +913,24 @@ static void gen_metasequoia(Gen* g) {
     Path T; grow(g, &T, v3(0, -0.3f, 0), v3(0, 1, 0), H + 0.3f, 14, r0, 0.03f, 0, 0.02f, NULL, 0, 0, 0.18f, 0, 0);
     for (int k = 0; k < T.n; k++) { float t = (float)k / (T.n - 1); T.r[k] = lerpf(r0, 0.03f, powf(t, 0.6f)) + 0.35f * expf(-t * 14); }
     bark(g, &T, 0, 0, 0, 0.6f);
-    LeafPts L = {0}; float h0 = H * grr(g, 0.12f, 0.18f), az = grr(g, 0, 2 * VPI), R0 = H * 0.17f;
+    // Ages: a young tree is clothed nearly to the ground, a spire; an old one
+    // has a high crown on a bare trunk, a broad rounded top and dead lower limbs.
+    int age = veg_conifer_age(VEG_CONIFER, g->variant);
+    LeafPts L = {0}; float h0 = H * (age == 0 ? grr(g, 0.03f, 0.07f) : age == 2 ? grr(g, 0.3f, 0.36f) : grr(g, 0.12f, 0.18f)), az = grr(g, 0, 2 * VPI);
+    float R0 = H * (age == 0 ? 0.21f : age == 2 ? 0.2f : 0.17f), top = age == 2 ? 0.55f : 0.95f;
     for (float h = h0; h < H * 0.97f; h += grr(g, 0.3f, 0.5f)) {
         float hr = (h - h0) / (H - h0); az += 2.39996f + grr(g, -0.25f, 0.25f);
+        bool dead = age == 2 && hr < 0.18f && gr(g) < 0.45f;
         V3 pt; float rt, hwt; path_at(&T, (h + 0.3f) / (H + 0.3f), &pt, NULL, &rt, &hwt, NULL);
-        float bl = (0.5f + R0 * powf(1 - hr, 0.95f)) * grr(g, 0.8f, 1.12f), el = lerpf(-0.12f, 0.75f, hr * hr) + grr(g, -0.1f, 0.1f), ph = gr(g);
+        float bl = (0.5f + R0 * powf(1 - hr, top) * (age == 2 ? 1.25f - 0.25f * hr : 1.0f)) * grr(g, 0.8f, 1.12f) * (dead ? 0.45f : 1.0f), el = lerpf(-0.12f, 0.75f, hr * hr) + grr(g, -0.1f, 0.1f), ph = gr(g);
         Path P; int n = 6; P.n = n + 1; V3 d = dir_az(az);
         for (int k = 0; k <= n; k++) {   // out at el, sagging a little, the tip turning up
             float t = (float)k / n, x = bl * t;
             P.p[k] = vadd(pt, vadd(vmul(d, x * cosf(el)), v3(0, x * sinf(el) - (1 - hr) * 0.05f * x * x + 0.12f * bl * t * t * t, 0)));
-            P.r[k] = lerpf(fminf(0.018f + 0.012f * bl, rt * 0.6f), 0.007f, powf(t, 0.8f)); P.hw[k] = hwt + 0.6f * t; P.ws[k] = 0;
+            P.r[k] = lerpf(fminf(0.014f + 0.009f * bl, rt * 0.6f), dead ? 0.012f : 0.006f, powf(t, 0.8f)); P.hw[k] = hwt + 0.6f * t; P.ws[k] = 0;
         }
-        if (!g->lod || P.r[0] > 0.045f) bark(g, &P, 0, ph, 0, 0);   // the reduced mesh: only the stouter limbs show through
+        if (!g->lod || P.r[0] > 0.035f) bark(g, &P, 0, ph, 0, 0);   // the reduced mesh: only the stouter limbs show through
+        if (dead) continue;
         tip_add(g, P.p[n], vnorm(vsub(P.p[n], P.p[n - 1])), (Wnd){P.hw[n], ph, 0, 0, 0}, hr);
         V3 sd0 = vnorm(vcross(d, v3(0, 1, 0)));
         VRng sv = fork_in(g);
@@ -931,7 +941,7 @@ static void gen_metasequoia(Gen* g) {
                 V3 dt = vnorm(vadd(vadd(vmul(dp, cosf(a)), vmul(sd0, side * sinf(a))), v3(0, grr(g, -0.3f, 0.2f), 0)));
                 float lt = fminf(lerpf(1.3f, 0.45f, t) * grr(g, 0.8f, 1.1f), 0.35f + 0.5f * bl); float phs = gr(g);
                 Path Q; grow(g, &Q, p, dt, lt, 2, 0.01f, 0.004f, -0.2f, 0.5f, NULL, 0, hw, fminf(hw + 0.15f, 1), 0, 0.6f);
-                if (!g->lod && lt > 0.75f) { int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &Q, 3, 1, 0.12f, 0, ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt; }
+                if (!g->lod && lt > 0.95f) { int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &Q, 3, 1, 0.12f, 0, ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt; }
                 for (float u = 0.15f; u <= 1.001f; u += 0.28f) {
                     V3 q, dq; float hq, wq; path_at(&Q, u, &q, &dq, NULL, &hq, &wq);
                     lp_add(&L, q, vnorm(vadd(dq, v3(0, -0.3f, 0))), (Wnd){hq, ph, wq, phs, 0}, 1);
@@ -947,7 +957,7 @@ static void gen_metasequoia(Gen* g) {
         lp_add(&L, q, dir_ae(u * 40, -0.2f), (Wnd){hq, 0, 0.3f, 0, 0}, 1.5f);
     }
     // Sprays leave their shoots on every roll, mostly lying flat in the layer.
-    leaf_cards(g, &L, 4700, v3(0, H * 0.5f, 0), L_CL_SPRAY, 0.72f, 0.85f, 0.35f, 0.05f, 1, L_CL_SPRAY, 1.9f, 8);
+    leaf_cards(g, &L, 5400, v3(0, H * 0.5f, 0), L_CL_SPRAY, 0.72f, 0.85f, 0.35f, 0.05f, 1, L_CL_SPRAY, age == 2 ? 2.0f : 1.9f, age == 2 ? 9 : 8);
     free(L.a);
 }
 // Cycad crown on top of a trunk at `top`.
@@ -1530,7 +1540,7 @@ static void gen_cover(Gen* g, int kind, int variant) {
 // branchlets serve): steep limbs, pads taller than wide, the trunk often
 // leaning a little.
 static void gen_cheirolep(Gen* g) {
-    PadCrown K = {.width = 0.11f, .el0 = 0.8f, .el1 = 1.15f, .tall = 1.6f, .lean = 0.08f, .layer = L_CL_ROPE, .ncards = 2600, .size = 0.7f, .lod_size = 1.5f, .segs = 1, .point = 1.6f, .pad = 0.7f, .base = 0.1f};
+    PadCrown K = {.width = 0.11f, .el0 = 0.8f, .el1 = 1.15f, .tall = 1.6f, .lean = 0.08f, .layer = L_CL_ROPE, .ncards = 2500, .size = 0.7f, .lod_size = 1.5f, .segs = 1, .point = 1.6f, .pad = 0.7f, .base = 0.1f};
     pad_conifer(g, &K);
 }
 // Ginkgo: a straight leader with few, long ascending limbs (an open,
