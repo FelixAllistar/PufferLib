@@ -30,3 +30,8 @@ green under it, and the teal is mostly the haze.
    little blue at the base and less yellow at the tips (base 0.026/0.066/0.028 -> 0.022/0.05/0.026, tip
    0.06/0.115/0.03 -> 0.045/0.085/0.03). Kept: at 50-150 m in `canopy` the araucarias now read as dark,
    blue-black tiers beside the greener podocarps; the shot's numbers hardly move (hue 175 -> 177).
+4. Fault: still teal (canopy hue 177, hill 167, skyh 188). Change: the foliage haze keeps a fifth of the
+   sky's colour instead of half. Kept: in `canopy` the crowns 100-400 m off read green, not blue-filmed;
+   on `hill` the far forest goes grey-green like the reference valley while the terrain haze behind it is
+   unchanged; canopy 168 / teal 61%, hill 158 / 48%. What is left of the teal in `aerial` and `skyh`
+   (187-189) is mostly 2-8 km out, where the terrain shader paints the far canopy (not this track's file).

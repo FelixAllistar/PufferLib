@@ -135,11 +135,11 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // Rain: a faint, broad sheen of grey sky on wet leaves and bark at grazing angles.
     float nv = abs(dot(N, V));
     col += mix(sky_h, sky_up, 0.6) * (u_wet * 0.05 * pow(1.0 - nv, 3.0) * ao);
-    // Haze over foliage: the in-scattered light (the part aerial() adds, here aerial of black) is taken
-    // half way to its own grey. Over the dark crowns of a far forest the full horizon-sky blue turned the
+    // Haze over foliage: the in-scattered light (the part aerial() adds, here aerial of black) keeps a fifth
+    // of its colour (the rest grey). Over the dark crowns of a far forest the full horizon-sky blue turned the
     // stands a saturated teal (hue 180-200), where photos of forest across a valley go blue-grey with
     // distance. Its brightness is kept, so the depth cue stays. (The two calls share their lookups.)
     vec3 ins = aerial(vec3(0.0), t_skyview, u_cam, p, L);
     vec3 hz = aerial(col, t_skyview, u_cam, p, L) - ins;
-    return hz + mix(vec3(dot(ins, vec3(0.3, 0.59, 0.11))), ins, 0.5);
+    return hz + mix(vec3(dot(ins, vec3(0.3, 0.59, 0.11))), ins, 0.2);
 }
