@@ -21,3 +21,10 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
    `render/veg.c`: tall grass takes bare earth at 0.25 (was 0.55), so bare earth stops reading as a lawn. Kept: `desH`
    ground is stony grey-brown, `desG` reads as scrub on bare earth not as a meadow, `desB` shows pans and gravel. The
    shader's straw tint still sets most of its tone (not this track's file).
+3. Fault: forest is an even lattice of crowns of one age: every conifer drew its age (young, mature, old) by its own
+   dice, so a stand never had an age, and stems stood at an even spacing. Change: `render/veg_place.h`: trees stand in
+   groups with small openings (a 25 m noise on rotated axes; in an opening about half the lattice sites stay empty),
+   and a conifer's age slot is weighed by its stand: old stands (`flora_old`, where the dead wood lies) mostly old
+   trees, regrowth patches and the edges of clearings (`flora_gap`) young redwoods, mature trees elsewhere. Kept:
+   `canopy` and `standA` show groups, gaps and mixed heights instead of an even pile; `wetF` opened up (taken up in a
+   later pass). Trees on the island (the scatter, before the draw caps) 125,085 to 101,539.
