@@ -62,3 +62,7 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
    the beach. Kept, small: `coast` has scrub on the sand by the river mouth instead of a horsetail wall; the belt is
    narrow on this island, where most low coastal ground is already beach (the bake's berm and `world.c`'s big
    beaches), so `beach` and `cstA` change little. Palms 995 to 1,061, shrubs 88,063 to 93,220.
+9. Fault: the near-desert's scrub is too sparse to read as scrubland (the Karoo photos: a dwarf shrub every metre or
+   two). Change: desert scrub layer 0.8 x (0.55-1) in and between the clumps (was 0.6 x (0.45-1)). Reverted: 8% more
+   shrubs on the island and no visible gain in `desB` or `desG`; the scrub models are 1-2 m bushes, so more of them
+   does not make a dwarf-shrub speckle.
