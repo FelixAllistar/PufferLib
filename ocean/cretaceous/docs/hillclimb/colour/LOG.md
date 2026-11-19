@@ -76,3 +76,7 @@ green under it, and the teal is mostly the haze.
    (Zamia darker, Williamsonia warmer) in place of pass 7's yellowing tint; the tree ferns a tint that
    deepens them (x0.96/0.92/0.96, Dicksonia x1.04/0.86/0.92). Kept, a modest step: in the gallery the
    cycads read olive beside the green tree ferns; in `ga0` the tree-fern crowns go deeper, less lime.
+11. Fault: in `mid` the meadow sward 0-40 m out is greener than the terrain's olive grass beyond it, so its
+   end draws a line. Change tried: an olive tint (x1.1/1/0.82) on the sward and tall-grass kinds in
+   `LEAF_TINT`. Reverted: nothing moved (the near sward there is drawn by the grass system, `grass.*`,
+   not the plant meshes), and its shader is outside this track's colour terms.
