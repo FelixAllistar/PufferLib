@@ -825,44 +825,55 @@ static void gen_araucaria(Gen* g, bool umbrella) {
         fork_out(g, s2);
     }
 }
-// Metasequoia: buttressed, conical, branches in loose spirals with twigs of
-// hanging feathery sprays.
+// Metasequoia: buttressed, narrowly conical. Many branches in a loose spiral
+// (one every 0.3-0.5 m), level low in the crown and rising toward the top,
+// each with opposite side shoots splayed in a shallow layer; feathery sprays
+// along the shoots and the outer branch, so each branch is a flat, soft layer
+// and the layers overlap into a dense cone that you cannot see through.
 static void gen_metasequoia(Gen* g) {
     float H, r0; species_dims(VEG_CONIFER, g->variant, &H, &r0);
     Path T; grow(g, &T, v3(0, -0.3f, 0), v3(0, 1, 0), H + 0.3f, 14, r0, 0.03f, 0, 0.02f, NULL, 0, 0, 0.18f, 0, 0);
     for (int k = 0; k < T.n; k++) { float t = (float)k / (T.n - 1); T.r[k] = lerpf(r0, 0.03f, powf(t, 0.6f)) + 0.35f * expf(-t * 14); }
     bark(g, &T, 0, 0, 0, 0.6f);
-    LeafPts L = {0}; float h0 = H * grr(g, 0.15f, 0.22f), az = grr(g, 0, 2 * VPI);
-    for (float h = h0; h < H * 0.97f; h += grr(g, 0.45f, 0.75f)) {
-        float hr = (h - h0) / (H - h0); az += 2.39996f + grr(g, -0.2f, 0.2f);
+    LeafPts L = {0}; float h0 = H * grr(g, 0.12f, 0.18f), az = grr(g, 0, 2 * VPI), R0 = H * 0.17f;
+    for (float h = h0; h < H * 0.97f; h += grr(g, 0.3f, 0.5f)) {
+        float hr = (h - h0) / (H - h0); az += 2.39996f + grr(g, -0.25f, 0.25f);
         V3 pt; float rt, hwt; path_at(&T, (h + 0.3f) / (H + 0.3f), &pt, NULL, &rt, &hwt, NULL);
-        float bl = (0.6f + powf(1 - hr, 1.1f) * 0.22f * H) * grr(g, 0.8f, 1.15f), el = lerpf(-0.25f, 0.5f, hr) + grr(g, -0.1f, 0.1f), ph = gr(g);
+        float bl = (0.5f + R0 * powf(1 - hr, 0.95f)) * grr(g, 0.8f, 1.12f), el = lerpf(-0.12f, 0.75f, hr * hr) + grr(g, -0.1f, 0.1f), ph = gr(g);
         Path P; int n = 6; P.n = n + 1; V3 d = dir_az(az);
-        for (int k = 0; k <= n; k++) {
+        for (int k = 0; k <= n; k++) {   // out at el, sagging a little, the tip turning up
             float t = (float)k / n, x = bl * t;
-            P.p[k] = vadd(pt, vadd(vmul(d, x * cosf(el)), v3(0, x * sinf(el) - (1 - hr) * 0.08f * x * x, 0)));
-            P.r[k] = lerpf(fminf(0.02f + 0.015f * bl, rt * 0.7f), 0.008f, powf(t, 0.8f)); P.hw[k] = hwt + 0.6f * t; P.ws[k] = 0;
+            P.p[k] = vadd(pt, vadd(vmul(d, x * cosf(el)), v3(0, x * sinf(el) - (1 - hr) * 0.05f * x * x + 0.12f * bl * t * t * t, 0)));
+            P.r[k] = lerpf(fminf(0.018f + 0.012f * bl, rt * 0.6f), 0.007f, powf(t, 0.8f)); P.hw[k] = hwt + 0.6f * t; P.ws[k] = 0;
         }
-        bark(g, &P, 0, ph, 0, 0);
+        if (!g->lod || P.r[0] > 0.045f) bark(g, &P, 0, ph, 0, 0);   // the reduced mesh: only the stouter limbs show through
         tip_add(g, P.p[n], vnorm(vsub(P.p[n], P.p[n - 1])), (Wnd){P.hw[n], ph, 0, 0, 0}, hr);
-        float side = 1; VRng sv = fork_in(g);
-        for (float s = 0.2f * bl; s < bl; s += grr(g, 0.18f, 0.26f), side = -side) {
+        V3 sd0 = vnorm(vcross(d, v3(0, 1, 0)));
+        VRng sv = fork_in(g);
+        for (float s = 0.12f * bl; s < bl; s += grr(g, 0.32f, 0.44f)) {
             float t = s / bl; V3 p, dp; float r, hw; path_at(&P, t, &p, &dp, &r, &hw, NULL);
-            V3 sd = vnorm(vcross(dp, v3(0, 1, 0)));
-            V3 dt = vnorm(vadd(vadd(vmul(dp, 0.5f), vmul(sd, side)), v3(0, -0.35f, 0)));
-            float lt = lerpf(0.8f, 0.35f, t) * grr(g, 0.8f, 1.1f); float phs = gr(g);
-            Path Q; grow(g, &Q, p, dt, lt, 2, 0.01f, 0.004f, -0.3f, 0.5f, NULL, 0, hw, fminf(hw + 0.15f, 1), 0, 0.6f);
-            if (!g->lod) { int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &Q, 3, 1, 0.12f, 0, ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt; }
-            lp_add(&L, p, vnorm(vadd(dt, v3(0, -0.6f, 0))), (Wnd){hw, ph, 0, phs, 0}, 0.7f);   // sprays along the branch itself too
-            for (float u = 0.2f; u <= 1.001f; u += 0.27f) {
-                V3 q, dq; float hq, wq; path_at(&Q, u, &q, &dq, NULL, &hq, &wq);
-                lp_add(&L, q, vnorm(vadd(dq, v3(0, -0.5f, 0))), (Wnd){hq, ph, wq, phs, 0}, 1);
+            for (int side = -1; side <= 1; side += 2) {   // opposite side shoots, in a shallow layer either side of the branch
+                float a = grr(g, 0.75f, 1.15f);
+                V3 dt = vnorm(vadd(vadd(vmul(dp, cosf(a)), vmul(sd0, side * sinf(a))), v3(0, grr(g, -0.3f, 0.2f), 0)));
+                float lt = fminf(lerpf(1.3f, 0.45f, t) * grr(g, 0.8f, 1.1f), 0.35f + 0.5f * bl); float phs = gr(g);
+                Path Q; grow(g, &Q, p, dt, lt, 2, 0.01f, 0.004f, -0.2f, 0.5f, NULL, 0, hw, fminf(hw + 0.15f, 1), 0, 0.6f);
+                if (!g->lod && lt > 0.75f) { int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &Q, 3, 1, 0.12f, 0, ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt; }
+                for (float u = 0.15f; u <= 1.001f; u += 0.28f) {
+                    V3 q, dq; float hq, wq; path_at(&Q, u, &q, &dq, NULL, &hq, &wq);
+                    lp_add(&L, q, vnorm(vadd(dq, v3(0, -0.3f, 0))), (Wnd){hq, ph, wq, phs, 0}, 1);
+                }
             }
+            if (t > 0.5f) lp_add(&L, p, vnorm(vadd(dp, v3(0, -0.2f, 0))), (Wnd){hw, ph, 0, gr(g), 0}, 0.8f);   // sprays on the outer branch itself
         }
         fork_out(g, sv);
     }
-    // Sprays hang off the twigs in every roll.
-    leaf_cards(g, &L, 2600, v3(0, H * 0.5f, 0), L_CL_SPRAY, 0.62f, 0.85f, 0.4f, -0.15f, 1, L_SPRAY, 1.5f, 4);
+    // The leader's last metres carry sprays too: a soft spire, not a bare pole.
+    for (float u = 0.9f; u <= 1.001f; u += 0.012f) {
+        V3 q, dq; float hq; path_at(&T, u, &q, &dq, NULL, &hq, NULL);
+        lp_add(&L, q, dir_ae(u * 40, -0.2f), (Wnd){hq, 0, 0.3f, 0, 0}, 1.5f);
+    }
+    // Sprays leave their shoots on every roll, mostly lying flat in the layer.
+    leaf_cards(g, &L, 4700, v3(0, H * 0.5f, 0), L_CL_SPRAY, 0.72f, 0.85f, 0.35f, 0.05f, 1, L_CL_SPRAY, 1.9f, 8);
     free(L.a);
 }
 // Cycad crown on top of a trunk at `top`.
