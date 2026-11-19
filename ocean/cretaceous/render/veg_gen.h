@@ -1195,9 +1195,11 @@ static void cycad_crown(Gen* g, V3 top, int s, float scale, int nf) {
     for (int f = 0; f < nf; f++) {
         float az = f * 2.39996f + grr(g, -0.1f, 0.1f), age = (float)f / nf;
         g->dry = age < 0.12f ? (int)grr(g, 30, 110) : 0;
-        float L = (s == 1 ? grr(g, 0.9f, 1.4f) : grr(g, 1.4f, 2.1f)) * lerpf(1.0f, 0.75f, age) * scale;
-        float e0 = (s == 1 ? lerpf(0.55f, 1.15f, age) : lerpf(0.1f, 0.95f, age)) + grr(g, -0.08f, 0.08f);
-        float droop = s == 1 ? grr(g, 0.1f, 0.3f) : grr(g, 0.35f, 0.7f);
+        // The squat cycad (Zamia, Dioon): a broad rosette arching out and down from a low trunk (round 2; its
+        // upright vase of short fronds on the barrel read as a pot plant).
+        float L = (s == 1 ? grr(g, 1.05f, 1.6f) : grr(g, 1.4f, 2.1f)) * lerpf(1.0f, 0.75f, age) * scale;
+        float e0 = (s == 1 ? lerpf(0.3f, 1.1f, age) : lerpf(0.1f, 0.95f, age)) + grr(g, -0.08f, 0.08f);
+        float droop = s == 1 ? grr(g, 0.25f, 0.5f) : grr(g, 0.35f, 0.7f);
         V3 b = vadd(top, vmul(dir_az(az), 0.12f * scale)); float tw = grr(g, -0.15f, 0.15f); int pairs = 34 + (int)grr(g, 0, 10);
         Frond F = {.base = b, .az = az, .e0 = e0, .droop = droop, .twist = tw, .L = L, .bare = 0.1f,
                    .pairs = g->lod ? 11 : pairs, .lmax = L * (s == 1 ? 0.19f : 0.16f), .lw = g->lod ? 0.42f : 0.2f,
@@ -1236,6 +1238,9 @@ static void gen_cycad(Gen* g, int s) {
     Path T; T.n = 5;
     for (int k = 0; k < 5; k++) { float t = k / 4.0f; T.p[k] = v3(0, -0.2f + (H + 0.2f) * t, 0); T.r[k] = r0 * (1 - 0.15f * t) + 0.04f * sinf(VPI * t); T.hw[k] = 0.03f * t; T.ws[k] = 0; }
     if (s == 2) for (int k = 0; k < 5; k++) { float t = k / 4.0f; T.p[k].x += 0.25f * t * t; }
+    // The squat cycad's trunk swells at its foot and rounds into the rosette, a low dome of leaf bases, not a
+    // straight-sided pot (round 2).
+    if (s == 1) for (int k = 0; k < 5; k++) { float t = k / 4.0f; T.r[k] = r0 * (1.12f - 0.5f * t * t) + 0.03f * sinf(VPI * t); }
     tube(g, &T, sides_for(g, r0) + 2, fmaxf(1, roundf(r0 * 6)), 0.6f, 0, 0, 0, g->bark_layer, 0, 0);
     V3 top = T.p[4];
     // A taller trunk carries a bigger crown: longer fronds and more of them
