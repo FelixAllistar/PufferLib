@@ -348,7 +348,12 @@ static void build_terrain(CretView* v, uint64_t key) {
             con /= 4 * 255.0f; can = clampf(can / (4 * 255.0f), 0, 1);
             float moist = m->habitat ? m->habitat[((size_t)z * h + x) * TERRA_HAB_COUNT + TERRA_HAB_MOIST] / 255.0f : 0.5f;
             float coast = m->habitat ? m->habitat[((size_t)z * h + x) * TERRA_HAB_COUNT + TERRA_HAB_COAST] / 255.0f : 0;
-            float dry = fmaxf(clampf((0.6f - moist) / 0.25f, 0, 1) * (1 - clampf((can - 0.12f) / 0.3f, 0, 1)) * (1 - coast), v->world->grassland ? v->world->grassland[(size_t)z * h + x] / 255.0f : 0);
+            // Neither part is dry at the coast: the open country's grassland reaches the strand behind the beaches, and
+            // terrain.fs draws sand in dry country as the desert's cracked pans (a grey-white strand, hill-climb round 3).
+            float dry = fmaxf(clampf((0.6f - moist) / 0.25f, 0, 1) * (1 - clampf((can - 0.12f) / 0.3f, 0, 1)), v->world->grassland ? v->world->grassland[(size_t)z * h + x] / 255.0f : 0) * (1 - coast);
+            // The broad beaches and the strand behind them (world.c, laid at load, wider than the baked coast band) lie
+            // within a few metres of the sea: no dry country below about 8 m, full from 16 m.
+            { float yb = (m->height[(size_t)(2 * z) * n + 2 * x] - 8.0f) / 8.0f; dry *= yb < 0 ? 0 : yb > 1 ? 1 : yb; }
             uint8_t* o = bm + ((size_t)z * h + x) * 4;
             o[0] = (uint8_t)lrintf(clampf((con - 0.3f) / 0.3f, 0, 1) * (1 - dry) * 255); o[1] = (uint8_t)lrintf(dry * 255); o[3] = 255;
         }
