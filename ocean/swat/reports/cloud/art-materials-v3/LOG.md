@@ -97,3 +97,16 @@ Reference: "Boise Project, Arrowrock Division" (gravel embedded in hot tar pitch
 - iter 6: target (154,150,142). closer: marginal
 - engine 1: roof from the lot and from roof height. Diffs: 2 roof blows out white, pebbles lost (engine sun is brighter than the stand-in). Fix value.
 - engine 2: target (108,105,99). closer: yes - pale grey gravel roof with visible pebbles; fascia/gutter edge reads. Final.
+
+## 8. Guest-room carpet and painted drywall (replaces the generated damask wallpaper and medallion carpet)
+Reference: "Mt. Si Motel - Room 6", Sam Howzit, https://www.flickr.com/photos/12508217@N08/49708226402 (CC BY 2.0): dark green cut-pile carpet, warm painted walls.
+Choice: painted drywall (what the reference room has).
+
+- iter 1: Carpet012 (52,64,58), plastered_wall_04 (196,182,156). Diffs: 1 stand-in room ok; 2 walls pinkish beige vs ref butter-yellow, carpet grey-green and light; 3 ceiling dirty (item 10). closer: n/a
+- iter 2: carpet (36,52,45) contrast 1.3; walls (204,182,138). closer: yes
+- iter 3: carpet (40,62,56) towards the ref's teal-green. closer: yes
+- iter 4: walls (210,182,122) golden. closer: yes
+- iter 5: carpet contrast 1.7 (pile flecks like the ref). closer: marginal yes
+- iter 6: wall normal 0.6 -> 0.35 (smooth paint). closer: no visible change. Stop.
+- engine 1: rooms 102/103/104. Diffs: 2 walls turn mustard/olive under the warm lamps; carpet a touch too dark; 3 ceiling dark speckled (item 10).
+- engine 2: walls (220,204,166), carpet (48,72,64). closer: yes - cream painted walls, dark teal-green carpet. Final.
