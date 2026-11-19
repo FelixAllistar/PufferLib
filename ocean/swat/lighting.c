@@ -15,6 +15,9 @@ static const char* vertex_source=
     "uniform mat4 mvp,matModel,matNormal;\n"
     "uniform int useSkinning,skinSets; uniform sampler2D skinPalette,skinInfluences;\n"
     "uniform vec3 environmentSize; uniform vec2 environmentTile; uniform vec2 uvScale;\n"
+    // Instanced foliage (hollow_woods.h): per-instance model matrix attribute,
+    // used only while useInstancing is set; matModel stays identity then.
+    "in mat4 instanceTransform; uniform int useInstancing;\n"
     "out vec3 position,normal; out vec2 uv,uv2; out vec4 tint,tangent;\n"
     "vec4 item(sampler2D map,int i){int w=textureSize(map,0).x; return texelFetch(map,ivec2(i%w,i/w),0);}\n"
     "mat4 bone(int i){i*=4;return mat4(item(skinPalette,i),item(skinPalette,i+1),item(skinPalette,i+2),item(skinPalette,i+3));}\n"
@@ -25,6 +28,7 @@ static const char* vertex_source=
     "for(int k=0;k<4;k++)if(w[k]>0.0)blend+=w[k]*bone(int(ids[k]));}"
     "p0=(blend*vec4(p0,1.0)).xyz;mat3 b=mat3(blend);"
     "n0=abs(determinant(b))>1e-14?normalize(transpose(inverse(b))*n0):vec3(0.0); t0=b*t0; }"
+    "if(useInstancing!=0){mat3 r=mat3(instanceTransform);p0=(instanceTransform*vec4(p0,1.0)).xyz;n0=r*n0;t0=r*t0;}"
     "position=(matModel*vec4(p0,1.0)).xyz;"
     "normal=normalize((matNormal*vec4(n0,0.0)).xyz); uv=vertexTexCoord; uv2=vertexTexCoord2; tint=vertexColor;"
     "if(environmentTile.x>0.0){ vec3 p=vertexPosition*environmentSize;"
@@ -143,6 +147,12 @@ static const char* fragment_source=
     // Alpha-tested cards (hair, lashes): flagged by a reserved 254/255 albedo
     // alpha so blended glass and every other material are unaffected.
     "if(abs(colDiffuse.a-0.996078)<0.001&&surface.a<0.45)discard;"
+    // Foliage cards (253/255 albedo alpha): alpha test whose coverage widens
+    // with the mip level, so twigs and needles thin out instead of vanishing
+    // in the distance; the surviving texels are opaque.
+    "if(abs(colDiffuse.a-0.992157)<0.001){vec2 ts=vec2(textureSize(texture0,0));"
+    "float lod=max(log2(max(min(length(dFdx(uv*ts)),length(dFdy(uv*ts))),1.0)),0.0);"
+    "if(surface.a*min(1.0+0.3*lod,1.9)<0.5)discard;surface.a=1.0;}"
     "vec3 albedo=pow(max(surface.rgb,vec3(0.0)),vec3(2.2)); vec3 n=normalize(normal);"
     // Ground mode aliases environmentNormal/Roughness to mask/dirt color,
     // specularMap to dirt normal, emissionMap to dirt roughness. Their ordinary
@@ -324,6 +334,7 @@ static SwatLightingProgram program(void) {
     p.night_color=GetShaderLocation(p.shader,"nightColor[0]");p.night_direction=GetShaderLocation(p.shader,"nightDirection[0]");
     p.night_pool=GetShaderLocation(p.shader,"nightPool");p.night_pool_bounds=GetShaderLocation(p.shader,"nightPoolBounds");
     p.emission_tint=GetShaderLocation(p.shader,"emissionTint");
+    p.instancing=GetShaderLocation(p.shader,"useInstancing");p.instance_transform=GetShaderLocationAttrib(p.shader,"instanceTransform");
     p.contact=GetShaderLocation(p.shader,"useContact");p.contact_map=GetShaderLocation(p.shader,"contactMap");
     p.contact_matrix=GetShaderLocation(p.shader,"contactMatrix");p.contact_depth_map=GetShaderLocation(p.shader,"contactDepth");return p;
 }
