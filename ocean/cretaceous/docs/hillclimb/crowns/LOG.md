@@ -75,3 +75,15 @@ Triangles at the start (full / reduced): araucaria v0 22502 / 3712, v4 22140 / 3
     bakes at the full mesh's leaf area, got lighter too: 1.12); kept 6800 with a heavier crown occlusion on
     the reduced mesh (0.6 against 0.5): 1.09 and 1.10. A small gain; the rest is for the tone tables
     (`LOD_TONE`, render/veg.c, the colour track's).
+14. Fault: from a hatchling's eye (3 m out, 0.6 m up) and from under it, the cheirolep's lowest foliage is
+    still a row of palm-like fans against the sky. Change: half its cluster cards (4300 of 0.4 m) and 3500
+    single scale-leaf cords (crossed rope cards, 0.3-0.5 m) in every direction among them, on the full mesh
+    (30242 triangles; lodmatch 1.08 at 30 and 150 m). Reverted: the cords hardly show and the fans at the
+    crown's edge look the same at 2, 3 and 12 m.
+15. Fault: the same fans (pass 14): they are the cluster cards of the crown's lowest third, the ones seen
+    against the sky from under and beside the tree. Change: `pad_conifer` can lay the lowest third of a
+    crown with smaller cards (`low_size`), twice as many for the same leaf area; the cheirolep's are 0.28 m
+    (0.4 above), and its reduced mesh keeps the same merged cards. Kept: from 3 m at a hatchling's eye and
+    2 m under it the big fans along the crown's lower edge are gone, finer foliage in their place; 12 m
+    unchanged. Triangles 23588 / 1180 (from 15822 / 1182 at the start of the round); lodmatch reduced
+    against full 1.11, 1.08, 1.05 at 30, 150, 300 m (impostor 0.90, 1.02, 1.02).

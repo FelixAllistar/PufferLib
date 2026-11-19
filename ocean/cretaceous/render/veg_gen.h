@@ -930,6 +930,7 @@ typedef struct {
     float pad;             // pad size scale (1: podocarp)
     float base;            // the crown's base, a share of the height
     int lod_div;           // the reduced mesh keeps every lod_div-th card (0: 7)
+    float low_size;        // > 0: cards this long in the crown's lowest third (seen against the sky from under it), twice as many
 } PadCrown;
 static void pad_conifer(Gen* g, const PadCrown* K) {
     float H, r0; species_dims(VEG_CONIFER, g->variant, &H, &r0);
@@ -987,6 +988,15 @@ static void pad_conifer(Gen* g, const PadCrown* K) {
         V3 o = vnorm(v3(grr(g, -1, 1), grr(g, -0.6f, 1.0f), grr(g, -1, 1))); float rr = 1.1f * sqrtf(grr(g, 0.15f, 1.0f));
         lp_add(&L, vadd(top, v3(o.x * rr, o.y * rr, o.z * rr)), vnorm(vadd(o, v3(0, 0.4f, 0))), (Wnd){0.4f, 0, 0.6f, 0, 0}, 1);
     }
+    if (K->low_size > 0) {   // the lowest third apart: smaller cards, more of them (the same leaf area)
+        LeafPts Lo = {0}, Hi = {0}; float ycut = h0 + 0.33f * (H - h0); double wlo = 0, wall = 0;
+        for (int i = 0; i < L.n; i++) { LeafPt* q = &L.a[i]; wall += q->wt; if (q->p.y < ycut) { lp_add(&Lo, q->p, q->d, q->w, q->wt); wlo += q->wt; } else lp_add(&Hi, q->p, q->d, q->w, q->wt); }
+        int nlo = (int)(K->ncards * wlo / fmax(wall, 1e-6)), lod_div = K->lod_div > 0 ? K->lod_div : 7;
+        float k = (K->size / K->low_size) * (K->size / K->low_size);
+        leaf_cards(g, &Lo, (int)(nlo * k), v3(0, H * 0.6f, 0), K->layer, K->low_size, 1.0f, 0.15f, 0.45f, K->segs, K->layer, K->lod_size, (int)(lod_div * k + 0.5f));
+        leaf_cards(g, &Hi, K->ncards - nlo, v3(0, H * 0.6f, 0), K->layer, K->size, 1.0f, 0.15f, 0.45f, K->segs, K->layer, K->lod_size, lod_div);
+        free(Lo.a); free(Hi.a);
+    } else
     leaf_cards(g, &L, K->ncards, v3(0, H * 0.6f, 0), K->layer, K->size, 1.0f, 0.15f, 0.45f, K->segs, K->layer, K->lod_size, K->lod_div > 0 ? K->lod_div : 7);
     free(L.a);
 }
@@ -1866,7 +1876,7 @@ static void gen_cover(Gen* g, int kind, int variant) {
 // branchlets serve): steep limbs, pads taller than wide, the trunk often
 // leaning a little.
 static void gen_cheirolep(Gen* g) {
-    PadCrown K = {.width = 0.11f, .el0 = 0.8f, .el1 = 1.15f, .tall = 1.6f, .lean = 0.08f, .layer = L_CL_ROPE, .ncards = 6800, .size = 0.4f, .lod_size = 1.5f, .segs = 1, .point = 1.6f, .pad = 0.7f, .base = 0.1f, .lod_div = 19};
+    PadCrown K = {.width = 0.11f, .el0 = 0.8f, .el1 = 1.15f, .tall = 1.6f, .lean = 0.08f, .layer = L_CL_ROPE, .ncards = 6800, .size = 0.4f, .lod_size = 1.5f, .segs = 1, .point = 1.6f, .pad = 0.7f, .base = 0.1f, .lod_div = 19, .low_size = 0.28f};
     // (round 2: 2500 cards of 0.7 m read as hanging finger-fans from under it; smaller, more, the reduced mesh's count kept)
     pad_conifer(g, &K);
 }
