@@ -1192,6 +1192,25 @@ static const float IMP_TONE[VEG_KINDS][VEG_VARIANTS] = {
     [VEG_TREEFERN] = {1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f},
     [VEG_PALM] = {0.58f, 0.58f, 0.58f, 0.58f, 0.58f, 0.58f, 0.58f, 0.58f},
 };
+// Leaf tint per species (kind and variant, as LOD_TONE), on the leaf albedo at every level of detail: the
+// full and reduced meshes take it per draw (veg.fs u_leaf_tint) and the impostors per variant (veg_imp.vs
+// u_imp_tint), so a tree keeps its green from 3 m to 2 km. (The reduced meshes share leaf layers across
+// species, the ginkgo's the laurel's and the plane's the katsura's, so a species' green cannot live in its
+// atlas layer alone.) Without it every species was one dark olive (round 3): blue-black araucaria and
+// cheirolep cypress, warm podocarp, fresh dawn redwood, dark glossy laurel and magnolia, cool katsura,
+// yellow-green ginkgo and plane, olive cycads. {0,0,0}: untinted.
+static const float LEAF_TINT[VEG_KINDS][VEG_VARIANTS][3] = {
+    [VEG_CONIFER] = {{0.9f, 0.96f, 1.1f}, {1.04f, 1.0f, 0.88f}, {1.12f, 1.1f, 0.82f}, {1.12f, 1.1f, 0.82f},
+                     {0.9f, 0.96f, 1.1f}, {1.04f, 1.0f, 0.88f}, {0.88f, 0.95f, 1.06f}, {1.12f, 1.1f, 0.82f}},
+    [VEG_BROADLEAF] = {{0.92f, 0.95f, 0.95f}, {0.84f, 0.9f, 0.92f}, {1.0f, 1.08f, 1.12f}, {1.24f, 1.1f, 0.74f},
+                       {0.92f, 0.95f, 0.95f}, {0.84f, 0.9f, 0.92f}, {1.2f, 1.08f, 0.78f}, {1.0f, 1.0f, 1.0f}},
+    [VEG_CYCAD] = {{1.2f, 1.0f, 0.82f}, {1.12f, 0.98f, 0.86f}, {1.2f, 1.0f, 0.82f}, {1.1f, 1.0f, 0.86f},
+                   {1.2f, 1.0f, 0.82f}, {1.12f, 0.98f, 0.86f}, {1.2f, 1.0f, 0.82f}, {1.1f, 1.0f, 0.86f}},
+};
+static const float* leaf_tint(int k, int q) {
+    static const float one[3] = {1, 1, 1}; const float* t = LEAF_TINT[k][q];
+    return t[0] > 0 ? t : one;
+}
 static float lod_tone(int k, int q) { float t = LOD_TONE[k][q]; return t > 0 ? t : 1.0f; }
 static float tree_switch_scale(const CretVeg* v, const VegInstance* in) {
     float h = v->mesh[in->kind][in->variant].height * in->scale, m = v->kind_height[in->kind];   // m: the kind's mean over the island
@@ -2052,6 +2071,13 @@ static void imp_uniforms(const CretVeg* v, const GfxProgram* p) {
         if (v->imp_layer[k][q] >= 0 && l < VEG_IMP_TONES && IMP_TONE[k][q] > 0) tone[l] = IMP_TONE[k][q];
     }
     GLint loc = glGetUniformLocation(p->id, "u_imp_tone"); if (loc >= 0) glUniform1fv(loc, VEG_IMP_TONES, tone);
+    // And its leaf tint (LEAF_TINT), by the same index.
+    float tint[VEG_IMP_TONES][3]; for (int i = 0; i < VEG_IMP_TONES; i++) tint[i][0] = tint[i][1] = tint[i][2] = 1.0f;
+    for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
+        int l = v->imp_layer[k][q] / VEG_IMPOSTOR_VIEWS;
+        if (v->imp_layer[k][q] >= 0 && l < VEG_IMP_TONES) { const float* t = leaf_tint(k, q); tint[l][0] = t[0]; tint[l][1] = t[1]; tint[l][2] = t[2]; }
+    }
+    loc = glGetUniformLocation(p->id, "u_imp_tint"); if (loc >= 0) glUniform3fv(loc, VEG_IMP_TONES, &tint[0][0]);
 }
 // Draws the impostor runs with p already in use.
 static void draw_impostor_runs(const CretVeg* v) {
@@ -2247,6 +2273,7 @@ void cret_veg_draw(CretVeg* v, const VegFrameDesc* f) {
         if (!near[k][q].n || is_tree(k) != (pass == 0)) continue;
         VegMesh* vm = q < VEG_VARIANTS ? &v->mesh[k][q] : &v->mesh_lo[k][q - VEG_VARIANTS];
         bind_instances(vm->m.vao, v->inst_vbo, v->list_off[k][q] * sizeof(GpuInst));
+        const float* lt = leaf_tint(k, q % VEG_VARIANTS); gfx_set3f(p, "u_leaf_tint", lt[0], lt[1], lt[2]);
         glDrawElementsInstanced(GL_TRIANGLES, vm->m.index_count, GL_UNSIGNED_INT, 0, near[k][q].n);
         if (is_tree(k)) v->drawn_meshes += near[k][q].n; else v->drawn_ground += near[k][q].n;
     }

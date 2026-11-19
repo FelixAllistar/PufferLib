@@ -10,11 +10,13 @@ uniform mat4 u_viewproj;
 uniform vec3 u_cam;
 uniform vec3 u_imp_range;                // mesh range, crossfade band, far range (veg.c imp_uniforms)
 uniform int u_views;
+uniform vec3 u_imp_tint[64];          // each variant's leaf tint (veg.c LEAF_TINT), by the same index
 uniform float u_imp_tone[64];          // each variant's leaf tone against its mesh (veg.c IMP_TONE), by first layer / u_views
 out vec3 v_world, v_base;
 out vec2 v_uv;
 out float v_fade, v_w, v_hue, v_blend;
 flat out float v_tone;
+flat out vec3 v_tint;
 flat out float v_layer0, v_layer1;
 flat out vec2 v_rot;
 void main() {
@@ -45,6 +47,7 @@ void main() {
     v_uv = vec2(a_corner.x * 0.5 + 0.5, a_corner.y);
     v_world = wp; v_base = base; v_fade = fade; v_hue = i_rot.z; v_rot = i_rot.xy;
     v_tone = u_imp_tone[clamp(int(i_extra.y + 0.5) / u_views, 0, 63)];
+    v_tint = u_imp_tint[clamp(int(i_extra.y + 0.5) / u_views, 0, 63)];
     float fw = smoothstep(30.0, 80.0, d);   // far stands: as veg.vs
     v_tone *= 1.0 + VEG_FAR_TONE * (fract(i_rot.w * 7.123) * 1.5 - 1.0) * fw;   // -32% .. +16%: more darker crowns than lighter v_hue *= 1.0 + VEG_FAR_HUE * fw;
     vec4 clip = u_viewproj * vec4(wp, 1.0);

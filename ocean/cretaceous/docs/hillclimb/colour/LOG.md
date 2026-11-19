@@ -44,3 +44,14 @@ green under it, and the teal is mostly the haze.
    0.05-0.2 -> 0-0.1 (the ground cover's offset -0.38 -> -0.33, so it ends a little further down than in
    pass 5). Kept: the stand reads as photographed rather than painted, the lime crowns calm down; lime
    share mid 28% -> 20%, ga0 15% -> 10%; conifer slopes unchanged.
+7. Fault: species differ too little in green: in the gallery over sand every tree is one dark olive, and
+   the reduced meshes share leaf layers across species (the ginkgo's crown is the laurel's layer, the
+   plane's the katsura's), so a species' green cannot live in its atlas layer. Change: a leaf tint per
+   species (`LEAF_TINT` in veg.c, by kind and variant), set per draw on the meshes (`u_leaf_tint`, veg.fs)
+   and per variant on the impostors (`u_imp_tint`, veg_imp.vs/.fs), so all three levels take the same tint:
+   blue-black araucaria and cheirolep cypress, warm podocarp, fresh dawn redwood, darker glossy laurel and
+   magnolia, cool katsura, yellow-green ginkgo and plane, olive cycads. A first try (ginkgo x1.45/1.2/0.66,
+   plane x1.3/1.12/0.74) lit the ginkgos at 100 m in `mid` a neon yellow (the far hue spread amplifies
+   them); toned down to x1.24/1.1/0.74 and x1.2/1.08/0.78. Kept: the gallery and `mid` show the species
+   apart (yellow-green ginkgo and plane among darker laurels and blue-black araucarias), no neon.
+   One multiply per leaf pixel; one more uniform per mesh draw.
