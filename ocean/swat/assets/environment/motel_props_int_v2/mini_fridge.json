@@ -1,0 +1,17 @@
+{
+ "file": "mini_fridge.glb",
+ "triangles": 732,
+ "materials": 6,
+ "bytes": 268724,
+ "sha256": "07e147b77dae3f25",
+ "min": [
+  -0.246,
+  0.0,
+  -0.006
+ ],
+ "max": [
+  0.246,
+  0.85,
+  0.506
+ ]
+}

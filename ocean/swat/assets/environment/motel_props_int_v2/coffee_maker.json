@@ -1,0 +1,17 @@
+{
+ "file": "coffee_maker.glb",
+ "triangles": 1064,
+ "materials": 7,
+ "bytes": 66956,
+ "sha256": "440b2cb1a2f9bc06",
+ "min": [
+  -0.103,
+  0.0,
+  -0.0
+ ],
+ "max": [
+  0.103,
+  0.292,
+  0.245
+ ]
+}
