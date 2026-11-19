@@ -189,3 +189,20 @@ by ImperfectTommy / Edmond Meinfelder (CC BY 2.0; copy in refs/tumbleweed_ref.jp
 8. tumbleweed game 2: straw (0.76,0.68,0.52); closer: yes. Stop.
 
 Budget: 7,776 triangles, 1 material, 256 px grain; GLB ~0.4 MB. Drawn 6x (~47k tris total, frustum culled).
+
+## Joshua tree (BC2_JOSHUA01)
+
+Reference: https://commons.wikimedia.org/wiki/File:Joshua_Tree_(Yucca_brevifolia)_(51632975337).jpg
+by Joshua Tree National Park (public domain; copy in refs/joshua_ref.jpg).
+
+1. joshua iter 1: random recursive forks with leaf rosettes; one tiny fork on a tall pole; closer: baseline
+2. joshua iter 2: longer forks (2.4/2.0/1.5/1.1 m), four levels, rosettes 0.6, 48 leaves; closer: yes
+3. joshua iter 3: thicker arms (taper 0.85), trunk r 0.26, rosettes 0.8 with 70 leaves, camera closer; closer: yes
+4. joshua iter 4: shorter trunk (3.0 m), wider fork angle 62 deg; closer: no (crown still a narrow clump)
+5. joshua iter 5: outward bias on deeper forks; closer: no (random clumping), reverted
+6. joshua iter 6: replaced random growth with an authored skeleton traced from the ref (fork at 3.5 m, left/middle/right arms, 11 rosettes on tips + 2 mid-arm); closer: yes (now reads as the ref tree)
+7. joshua iter 7: denser, wider leaves (110 per rosette, 34 mm), camera closer; closer: yes
+8. joshua game 1: three on the west, east and north verges; dead-leaf skirts glow white, leaves teal; closer: n/a
+9. joshua game 2: dead leaves (0.46,0.40,0.31), leaves yellower (0.56,0.60,0.28); closer: yes. Stop.
+
+Budget: 4,962 triangles, 3 materials, palm_tree_bark + grain; GLB ~0.6 MB.

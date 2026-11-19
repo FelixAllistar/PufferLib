@@ -2,8 +2,8 @@
 // assets/environment/motel_props_ext_v2/placements.json. Presentation only.
 #ifndef SWAT_MOTEL_PROPS_EXT_V2_DATA_H
 #define SWAT_MOTEL_PROPS_EXT_V2_DATA_H
-#define SWAT_PE2_PROPS 9
-#define SWAT_PE2_PLACEMENTS 17
+#define SWAT_PE2_PROPS 10
+#define SWAT_PE2_PLACEMENTS 20
 typedef struct SwatPe2Placement { int prop; float x,y,z,yaw,scale; bool shadow; } SwatPe2Placement;
 static const char* const swat_pe2_props[SWAT_PE2_PROPS]={
     "BC2_PICKUP01",
@@ -15,6 +15,7 @@ static const char* const swat_pe2_props[SWAT_PE2_PROPS]={
     "BC2_TYRES01",
     "BC2_MATTRESS01",
     "BC2_TUMBLE01",
+    "BC2_JOSHUA01",
 };
 static const SwatPe2Placement swat_pe2_placements[SWAT_PE2_PLACEMENTS]={
     {0,17.500f,-0.080f,15.600f,1.57080f,1.000f,true}, // BC2_PICKUP01 front bay row
@@ -34,5 +35,8 @@ static const SwatPe2Placement swat_pe2_placements[SWAT_PE2_PLACEMENTS]={
     {8,-19.000f,-0.080f,23.600f,5.23599f,1.050f,true}, // BC2_TUMBLE01 south curb west
     {8,-5.600f,-0.080f,33.200f,1.30900f,0.750f,true}, // BC2_TUMBLE01 verge by the payphone
     {8,12.000f,-0.080f,-23.400f,2.79253f,0.950f,true}, // BC2_TUMBLE01 north lot edge
+    {9,-29.500f,-0.080f,4.000f,0.52360f,1.000f,true}, // BC2_JOSHUA01 west verge
+    {9,28.500f,-0.080f,10.500f,2.09440f,0.850f,true}, // BC2_JOSHUA01 east verge
+    {9,6.000f,-0.080f,-29.000f,3.49066f,1.100f,true}, // BC2_JOSHUA01 north verge
 };
 #endif
