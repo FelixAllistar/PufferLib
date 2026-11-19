@@ -279,6 +279,7 @@ void main() {
     float stony = 0.85 * smoothstep(360.0, 500.0, p.y + 60.0 * (texture(t_noise, p.xz / 190.0 + 0.37).r - 0.5));
     vec3 albedo = vec3(0.0), n = vec3(0.0); float rough = 0.0, wt = 0.0, mao = 0.0;
     vec4 shv = vec4(0.0);   // the drawn share (after the height blend) of rock, scree, bare soil and sand
+    float soil_h = 0.5;     // the bare soil photo's height here (its stones stand high)
     for (int j = 0; j < 4; j++) {
         if (hsum[j] < 0.0) continue;
         int k = id[j];
@@ -294,6 +295,7 @@ void main() {
         // From its height map, near only; past 60-150 m the mips average it away.
         if (k == 1) al *= mix(mix(0.4, 1.0, smoothstep(0.2, 0.42, mats[j].height)), 1.0, smoothstep(60.0, 150.0, dist));
         shv += vec4(k == 0, k == 1, k == 2, k == 6 || k == 8) * b;
+        if (k == 2) soil_h = mats[j].height;
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
     albedo /= max(wt, 1e-4); shv /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
@@ -327,6 +329,13 @@ void main() {
         albedo = mix(albedo, bl * mix(DRY_STRAW, DRY_EARTH, earth), texture(t_biome, uv).g * 0.8 * (1.0 - clamp(shv.x + shv.y + shv.w, 0.0, 1.0)));
         // Stony flats in dry country are desert pavement: stones darkened and reddened by varnish, not grey talus.
         albedo = mix(albedo, albedo * vec3(1.3, 1.02, 0.8), texture(t_biome, uv).g * shv.y);
+        // Sun-baked desert soil up close is hard and stony, not soft dust: the soil photo's high points (its
+        // stones) pale grey-brown, the fines between darker and redder (round 3, dry; near only).
+        float hardg = texture(t_biome, uv).g * earth * (1.0 - smoothstep(25.0, 60.0, dist));
+        if (hardg > 0.0) {
+            float st = smoothstep(0.52, 0.7, soil_h);
+            albedo = mix(albedo, mix(albedo * vec3(0.78, 0.7, 0.66), vec3(dot(albedo, vec3(0.3, 0.59, 0.11))) * vec3(1.12, 1.06, 1.0) * 1.15, st), hardg * 0.8);
+        }
     }
     // Far forest. Between distant crowns the ground is the shaded floor, and
     // past the impostor range the terrain is the canopy: coloured by the

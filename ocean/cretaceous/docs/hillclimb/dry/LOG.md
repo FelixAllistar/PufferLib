@@ -52,3 +52,8 @@ plain (Atriplex vesicaria, SW Queensland), Atriplex glauca up close, a cracked r
    (the terrain's scrub dots) is too faint and too even. Change: `terrain.fs` the dots gather into 27 m stands
    (nearly half their weight, was a quarter), a little denser and stronger. Kept, small: `desB` shows darker
    scrub stands and paler bare ground across the desert; `desA` unchanged.
+8. Fault: the desert's soil up close (`desH`, 2 m) is soft orange dust with faint stones; it should look
+   sun-baked and hard. Change: `terrain.fs` within 25-60 m, on bare soil in dry country, the soil photo's own
+   high points (its stones) turn pale grey-brown and the fines between darker and redder (one height value the
+   blend already read; no new lookup). Kept: `desH` and `desG` show grey stones and plates set in red-brown
+   fines.
