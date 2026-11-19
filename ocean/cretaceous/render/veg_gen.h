@@ -1615,7 +1615,7 @@ static void build_species(MB* m, int kind, int variant, int lod) {
     switch (kind) {
     case VEG_CONIFER:
         if (sp == FL_PODOCARP) gen_podocarp(&G); else if (sp == FL_CHEIROLEP) gen_cheirolep(&G); else if (sp == FL_REDWOOD) gen_metasequoia(&G); else gen_araucaria(&G, sp == FL_UMBRELLA);
-        if (sp == FL_REDWOOD) k_ext = 0.32f;   // fine deciduous sprays let light deep into the crown: it shades lighter than a dense evergreen
+        if (sp == FL_REDWOOD) k_ext = lod ? 0.45f : 0.32f;   // (the reduced mesh's fewer, larger sprays bake lighter: 1.15-1.25x the full mesh at 30 m)   // fine deciduous sprays let light deep into the crown: it shades lighter than a dense evergreen
         break;
     case VEG_BROADLEAF:
         if (sp == FL_GINKGO) gen_ginkgo(&G); else if (sp == FL_PLANE) gen_plane(&G);
