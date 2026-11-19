@@ -360,7 +360,43 @@ the pose, added the speed term and added the step rate all at once. Run 16
 is run 10's rewards unchanged (`reward_pose 0.65, k_pose 2`, exp kernel,
 which kept every action inside its range) plus only `cadence 1.5` and
 `reward_speed 0.3`: the one way to gain speed without leaving the clip is to
-play it faster. Not evaluated yet.
+play it faster.
+
+It failed the same way. Entropy dips to 93 by 50M steps as in run 10, then
+climbs to 152 once the step rate starts to rise; at the end the mean actions
+are at the clamp on 62% of joint steps, joints 33 degrees off, step rate
+2.6x. Final checkpoint, 32 raptors for 20 s: walk 1.86, trot 3.66, run 5.64
+m/s (asked 1.8, 3.6, 6.0), 0 falls on each alone; idle falls 32 of 45,
+switching 9 of 35, with 2.5 m/s shoves 17 of 42.
+
+**Where runs 11 to 16 leave it.** Six runs with a speed reward and a free
+step rate, under five different pose and cost terms, all end in the same
+saturated, hunched gait that does follow the speed command. Runs 9 and 10
+(no speed reward, fixed step rate) track the clips within about 10 degrees
+and travel at about 1.9 m/s on every gait. What separates the two groups is
+the speed reward together with the step rate; which of the two is enough on
+its own was not tested. Untested ideas: a torque limit on the joints, a run
+clip whose stride is long enough for its speed, the speed reward without the
+step rate. The work stopped here (2026-11-19).
+
+## The physics walk in the game (2026-11-19)
+
+`loco_bake --clip walk+idle+trot+run --tail-flex 2 --policy RUN.bin` bakes an
+all-gaits policy's walk (list every clip it trained on, the one to bake
+first). On the game's raptor, original walk against the baked `walk_phys` of
+runs 9 and 10 (config/scenarios/raptor_walk.ini, captured with `CRET_PHYS=2
+CRET_SCN_CAM_DIST=5 CRET_GRASS=0 CRET_CARPET=0 CRET_VEG_DENSITY=0`):
+
+| Walk | Clip speed | Speed its stance foot implies | Loop seam |
+|---|---|---|---|
+| Artist's walk | 1.80 m/s | 1.31 m/s | (authored loop) |
+| Physics walk, run 10 | 1.72 m/s | 1.77 m/s | 3.8 deg |
+| Physics walk, run 9 | 1.80 m/s | 1.86 m/s | 25.8 deg |
+
+The artist's walk slides its feet at about a quarter of its travel; the
+physics walks are within about 3% (crude stance detection). Run 9's stride
+does not repeat exactly and pops at the loop. The baked clips are not in the
+shipped raptor file.
 
 ## The policy sees the target pose (2026-11-18)
 
