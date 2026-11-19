@@ -114,7 +114,9 @@ def surf(maps, name):
     return material(name, maps), RECIPE[name]['tile_m']
 
 
-def building(maps, v, x0=-12, x1=12, depth=6.2, h=2.8):
+def building(maps, v, x0=None, x1=None, depth=6.2, h=2.8):
+    x0 = v.get('x0', -12) if x0 is None else x0
+    x1 = v.get('x1', 12) if x1 is None else x1
     stucco, ts = surf(maps, v.get('wall', 'stucco'))
     box('wall', (x0, -0.1, 0), (x1, 0.1, h), stucco, ts)
     box('rear', (x0, depth - 0.1, 0), (x1, depth + 0.1, h), stucco, ts)
