@@ -113,3 +113,69 @@ world FOV) and interpolates to the same sight FOV at full ADS. It preserves the
 world depth buffer. World dimensions, physical muzzle, achieved weapon fitting,
 obstruction checks, projectiles and hit authority retain their original camera
 and pose. This changes presentation framing without scaling the source art.
+
+## Materials v3: scanned CC0 materials for Briar Court
+
+`materials_v3.h` (included once by `environment_art.c`) replaces the motel's
+generated/placeholder finishes with 20 scanned CC0 PBR materials from Poly
+Haven and ambientCG, baked into `assets/environment/materials_v3/` and
+hill-climbed against reference photographs of 1960s-70s roadside motels
+(`reports/cloud/art-materials-v3/LOG.md`, contact sheets `01_*.jpg`..`11_*.jpg`,
+overview `00_overview.jpg`). Sources, authors and licences:
+`assets/environment/materials_v3/README.md`.
+
+| Surface | v3 material | Where it is bound |
+|---|---|---|
+| Painted stucco walls, repair patches | `stucco`, `repair` | exterior kit library (`stucco`, `repair`) → every shell module |
+| Cream trim / soffit, teal fascia and posts, ochre gutter | `trim`, `fascia`, `gutter` | kit library `cream`, `teal`, `ochre` |
+| Concrete details, wall plinth, roof deck + canopy sheet | `concrete`, `plinth`, `roof` | kit library `concrete`, `concrete_dark`, `roof` |
+| Walkway deck (transverse joints every 1.33 m), ramp | `walkway` | `gallery_walkway_4m` / `gallery_access_ramp` `MC15_concrete` |
+| Walkway curb face, wheel stops | `concrete` | `gallery_walkway_4m` `MC15_cream`, `parking_wheel_stop` |
+| Parking lot | `lot` | object 0 (metric box) |
+| Road, driveway, highway extension | `road` | ground GLB asphalt, `road_extension.glb` |
+| Gravel ground, shoulder; zoning dirt blend | `gravel`, `dirt` | ground GLB gravel, `shoulder_render.glb`; ground blend |
+| Guest-room/reception walls (papered faces, framed skins) | `drywall` | interior pass wall copies and skin boxes |
+| Guest-room carpet, bathroom floor, ceilings | `carpet`, `bath_floor`, `ceiling` | interior pass floor/roof copies |
+| Bathroom wainscot | `bath_wall` | `bathroom_partition_4m` `MC15_tile` |
+| Reception floor (VCT), laundry floor (terrazzo) | `reception_floor`, `laundry_floor` | own floor copies for owners 2 and 127 |
+
+Room 101 keeps its accepted realism set. Geometry, UVs, collision, physics
+materials, navigation, protocol and determinism are unchanged: v3 only swaps
+texture maps and sets per-draw uniforms.
+
+**Repeat and repetition.** Each material has a metric repeat (`tile_m`). Mesh
+UVs are rescaled in the vertex shader by `uvScale = 1/(uv_per_m*tile_m)`
+(motel_v1 modules map 1.1 UV/m). Two cheap, switchable fragment options break
+up tiling: `macroVariation` (world-space 3-octave value noise modulating
+albedo by ±x at y cycles/m and roughness by ±z) and `macroDetail` (a second,
+rotated sample of the same base map at a different scale, blended in where a
+low-frequency noise is high). Both reuse texture unit 0; no new samplers. The
+gravel's `macroDetail.z` sets the zoning dirt repeat. Every ordinary material
+or surface binding resets the three uniforms, so nothing leaks to other draws.
+
+**Ownership.** v3 textures are entries in the shared art texture pool; every
+model whose material borrows one becomes a counted owner, and the set holds
+its own reference, so close order between the set, the kit, the shells and the
+ground is irrelevant. Displaced unpooled maps are released when no other map of
+the model references them. Floor copies own only their `MaterialMap` arrays.
+
+**Switches.** `SWAT_MATERIALS_V3=0` restores the previous look (also off with
+`SWAT_ENVIRONMENT_STYLE=legacy`; `SWAT_ENVIRONMENT_PBR=0` disables the set
+rather than mixing v3 colour with old relief). `SWAT_MATERIALS_V3_MACRO=0`
+keeps the maps without macro variation / two-scale blending. The exterior
+shells need the exterior kit (`SWAT_MOTEL_EXTERIOR=0` also removes v3 from them).
+
+**Budget.** 60 JPEG maps, 16 MB on disk (basecolor and normal at 1024 px, 512 px
+for three small materials; roughness at half resolution). API-format RGB8 with
+mips ≈ 167 MiB of texture memory while the motel is loaded; the replaced kit
+library and interior maps stay resident in their owners (~40 MiB, unchanged).
+Per pixel on v3 surfaces: three value-noise evaluations and, where enabled,
+one extra base-colour fetch.
+
+**Rebuild and review.** `python3 tools/blender/materials_v3_fetch.py CACHE`,
+then `blender -b --factory-startup -P tools/blender/materials_v3_bake.py --
+CACHE assets/environment/materials_v3` (byte-reproducible).
+`tools/blender/materials_v3_preview.py` renders the Blender stand-ins
+(`materials_v3_views.json`), `materials_v3_compare.py` composes sheets, and
+`make -C ocean/swat materials-capture` builds `tools/materials_capture.c`:
+`xvfb-run -a build/swat/materials_capture OUT NAME:ex,ey,ez:tx,ty,tz:fov ...`.

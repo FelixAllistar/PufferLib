@@ -13,7 +13,7 @@ static const char* vertex_source=
     "in vec3 vertexPosition; in vec2 vertexTexCoord,vertexTexCoord2; in vec3 vertexNormal; in vec4 vertexColor,vertexTangent;\n"
     "uniform mat4 mvp,matModel,matNormal;\n"
     "uniform int useSkinning,skinSets; uniform sampler2D skinPalette,skinInfluences;\n"
-    "uniform vec3 environmentSize; uniform vec2 environmentTile;\n"
+    "uniform vec3 environmentSize; uniform vec2 environmentTile; uniform vec2 uvScale;\n"
     "out vec3 position,normal; out vec2 uv,uv2; out vec4 tint,tangent;\n"
     "vec4 item(sampler2D map,int i){int w=textureSize(map,0).x; return texelFetch(map,ivec2(i%w,i/w),0);}\n"
     "mat4 bone(int i){i*=4;return mat4(item(skinPalette,i),item(skinPalette,i+1),item(skinPalette,i+2),item(skinPalette,i+3));}\n"
@@ -28,6 +28,8 @@ static const char* vertex_source=
     "normal=normalize((matNormal*vec4(n0,0.0)).xyz); uv=vertexTexCoord; uv2=vertexTexCoord2; tint=vertexColor;"
     "if(environmentTile.x>0.0){ vec3 p=vertexPosition*environmentSize;"
     "vec3 a=abs(vertexNormal); uv=(a.y>max(a.x,a.z)?vec2(p.x,p.z):vec2(a.x>=a.z?p.z:p.x,p.y))/environmentTile; }"
+    // Materials v3 (materials_v3.h): per-material metric repeat on mesh UVs.
+    "if(uvScale.x>0.0)uv*=uvScale;"
     "tangent=vec4((matModel*vec4(t0,0.0)).xyz,vertexTangent.w);"
     "gl_Position=mvp*vec4(p0,1.0); }\n";
 // Shared linear daylight environment: the visible sky and reflected radiance
@@ -71,6 +73,7 @@ static const char* fragment_source=
     "uniform int nightCount; uniform vec4 nightPosition[16],nightColor[16],nightDirection[16]; uniform sampler2D nightPool; uniform vec4 nightPoolBounds;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform int groundBlend,decalSurface;\n"
+    "uniform vec2 uvScale; uniform vec4 macroVariation,macroDetail;\n"
     "uniform sampler2D decalMap; uniform int useDecal; uniform vec3 fogColor; uniform float fogDensity,grading;\n"
     "uniform int doorScorchCount; uniform vec4 doorScorches[33]; uniform vec3 doorOrigin,doorUp,doorSide;\n"
     "uniform mat4 sunMatrix,lampMatrix[6]; uniform vec3 camera;\n"
@@ -117,6 +120,11 @@ static const char* fragment_source=
     "float cone=dot(nightDirection[i].xyz,nightDirection[i].xyz)>0.5?smoothstep(nightDirection[i].w,min(nightDirection[i].w+0.35,1.0),dot(-l,nightDirection[i].xyz)):1.0;"
     "return nightColor[i].rgb*window*cone/(1.0+d2);}\n"
     "vec3 srgbLinear(vec3 c){return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),c));}\n"
+    // Materials v3 macro variation: world-space value noise breaks up tiling.
+    "float macroHash(vec3 p){p=fract(p*0.3183099+0.1);p*=17.0;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}\n"
+    "float macroNoise(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.0-2.0*f);"
+    "return mix(mix(mix(macroHash(i),macroHash(i+vec3(1,0,0)),f.x),mix(macroHash(i+vec3(0,1,0)),macroHash(i+vec3(1,1,0)),f.x),f.y),"
+    "mix(mix(macroHash(i+vec3(0,0,1)),macroHash(i+vec3(1,0,1)),f.x),mix(macroHash(i+vec3(0,1,1)),macroHash(i+vec3(1,1,1)),f.x),f.y),f.z);}\n"
     "void main(){ vec4 surface=texture(texture0,uv)*tint*colDiffuse;"
     // Alpha-tested cards (hair, lashes): flagged by a reserved 254/255 albedo
     // alpha so blended glass and every other material are unaffected.
@@ -125,7 +133,7 @@ static const char* fragment_source=
     // Ground mode aliases environmentNormal/Roughness to mask/dirt color,
     // specularMap to dirt normal, emissionMap to dirt roughness. Their ordinary
     // shading branches are disabled by the binding API, not by changing art.
-    "float dirtWeight=0.0;vec2 dirtUV=vec2(uv.x*4.0/3.0,1.0+(uv.y-1.0)*4.0/3.0);"
+    "float dirtWeight=0.0;vec2 baseUV=uvScale.x>0.0?uv/uvScale:uv;vec2 dirtUV=vec2(baseUV.x*4.0/3.0,1.0+(baseUV.y-1.0)*4.0/3.0)*(macroDetail.z>0.0?macroDetail.z:1.0);"
     "if(groundBlend!=0 && n.y>0.999){vec2 maskUV=(position.xz+vec2(64.0,48.0))/vec2(128.0,100.0);"
     "if(all(greaterThanEqual(maskUV,vec2(0.0)))&&all(lessThanEqual(maskUV,vec2(1.0))))"
     "dirtWeight=textureLod(environmentNormalMap,maskUV,0.0).r;"
@@ -163,6 +171,16 @@ static const char* fragment_source=
     // in world XZ for the lot+driveway (rows 0..1599) and the two halves of the
     // authored road (rows 1600..1823 west, 1824..2047 east). Only ground-level,
     // upward faces sample it; gradients come from uniform control flow.
+    // Materials v3: x albedo amplitude, y frequency (1/m), z roughness
+    // amplitude; detail x blends a second, rotated repeat of the base map at
+    // detail y times its scale where the noise is high (two-scale tiling).
+    "if(macroVariation.y>0.0){vec3 mp=position*macroVariation.y;"
+    "float m=macroNoise(mp)*0.55+macroNoise(mp*2.13+vec3(11.0,3.0,7.0))*0.30+macroNoise(mp*4.7+vec3(5.0,17.0,1.0))*0.15;"
+    "if(macroDetail.x>0.0&&groundBlend==0){vec2 su=mat2(0.8,-0.6,0.6,0.8)*uv*macroDetail.y+vec2(0.37,0.61);"
+    "vec3 alt=pow(max(texture(texture0,su).rgb*tint.rgb*colDiffuse.rgb,vec3(0.0)),vec3(2.2));"
+    "albedo=mix(albedo,alt,smoothstep(0.35,0.65,macroNoise(mp*0.71+vec3(3.0,9.0,1.0)))*macroDetail.x);}"
+    "albedo*=max(1.0+macroVariation.x*(m*2.0-1.0),0.0);"
+    "roughness=clamp(roughness+macroVariation.z*(m-0.5),0.08,1.0);}"
     "vec2 decalDx=dFdx(position.xz),decalDy=dFdy(position.xz);"
     "if(useDecal!=0&&normal.y>0.9&&abs(position.y+0.08)<0.03){vec2 du=vec2(-1.0),ds=vec2(0.0);"
     "if(abs(position.x)<=24.0&&position.z>=-24.0&&position.z<=36.0){du=vec2((position.x+24.0)/48.0,clamp((position.z+24.0)/60.0,0.0003,0.9997)*0.78125);ds=vec2(1.0/48.0,0.78125/60.0);}"
@@ -266,6 +284,7 @@ static SwatLightingProgram program(void) {
     p.environment_roughness_map=GetShaderLocation(p.shader,"environmentRoughnessMap");
     p.environment_size=GetShaderLocation(p.shader,"environmentSize");
     p.environment_tile=GetShaderLocation(p.shader,"environmentTile");
+    p.uv_scale=GetShaderLocation(p.shader,"uvScale");p.macro_variation=GetShaderLocation(p.shader,"macroVariation");p.macro_detail=GetShaderLocation(p.shader,"macroDetail");
     p.ground_blend=GetShaderLocation(p.shader,"groundBlend");p.decal_surface=GetShaderLocation(p.shader,"decalSurface");
     p.door_scorch_count=GetShaderLocation(p.shader,"doorScorchCount");p.door_scorches=GetShaderLocation(p.shader,"doorScorches[0]");
     p.door_origin=GetShaderLocation(p.shader,"doorOrigin");p.door_up=GetShaderLocation(p.shader,"doorUp");p.door_side=GetShaderLocation(p.shader,"doorSide");
@@ -684,6 +703,9 @@ void swat_lighting_material_uv(SwatLighting* light,Material material,bool enable
     mesh_uniform(p->ground_blend,&zero,SHADER_UNIFORM_INT);
     mesh_uniform(p->environment,&zero,SHADER_UNIFORM_INT);
     mesh_uniform(p->environment_tile,&tile,SHADER_UNIFORM_VEC2);
+    Vector4 none={0};
+    mesh_uniform(p->uv_scale,&tile,SHADER_UNIFORM_VEC2);
+    mesh_uniform(p->macro_variation,&none,SHADER_UNIFORM_VEC4);mesh_uniform(p->macro_detail,&none,SHADER_UNIFORM_VEC4);
     int orm=enabled && material.maps && material.maps[MATERIAL_MAP_ROUGHNESS].texture.id;
     int spec_gloss=enabled && material.maps && material.maps[MATERIAL_MAP_SPECULAR].texture.id &&
         material.maps[MATERIAL_MAP_ROUGHNESS].texture.id && material.maps[MATERIAL_MAP_ROUGHNESS].value<0;
@@ -753,12 +775,24 @@ void swat_lighting_surface(SwatLighting* light,Texture2D normal,Texture2D roughn
     SetShaderValue(p->shader,p->environment_roughness_map,&rslot,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_size,&size,SHADER_UNIFORM_VEC3);
     SetShaderValue(p->shader,p->environment_tile,&tile,SHADER_UNIFORM_VEC2);
+    Vector2 unscaled={0};Vector4 none={0};
+    SetShaderValue(p->shader,p->uv_scale,&unscaled,SHADER_UNIFORM_VEC2);
+    SetShaderValue(p->shader,p->macro_variation,&none,SHADER_UNIFORM_VEC4);SetShaderValue(p->shader,p->macro_detail,&none,SHADER_UNIFORM_VEC4);
     rlActiveTextureSlot(12); if(normal.id) rlEnableTexture(normal.id); else rlDisableTexture();
     rlActiveTextureSlot(13); if(roughness.id) rlEnableTexture(roughness.id); else rlDisableTexture();
     rlActiveTextureSlot(0);
     // Mesh draws share auxiliary units and invalidate a previously cached batch.
     light->surface_normal=mesh ? ~0u : normal.id;
     light->surface_roughness=mesh ? ~0u : roughness.id;
+}
+
+void swat_lighting_surface_variation(SwatLighting* light,bool mesh,Vector2 uv_scale,Vector4 macro,Vector4 detail) {
+    if(!light || !light->enabled || !light->prepared) return;
+    rlDrawRenderBatchActive();
+    SwatLightingProgram* p=mesh ? &light->mesh : &light->batch;
+    SetShaderValue(p->shader,p->uv_scale,&uv_scale,SHADER_UNIFORM_VEC2);
+    SetShaderValue(p->shader,p->macro_variation,&macro,SHADER_UNIFORM_VEC4);
+    SetShaderValue(p->shader,p->macro_detail,&detail,SHADER_UNIFORM_VEC4);
 }
 
 void swat_lighting_door_damage(SwatLighting* light,const SwatObject* door) {

@@ -1,0 +1,17 @@
+{
+ "file": "potted_plant.glb",
+ "triangles": 3578,
+ "materials": 4,
+ "bytes": 228604,
+ "sha256": "bd2b7338b5c7bc6a",
+ "min": [
+  -0.267,
+  0.0,
+  0.06
+ ],
+ "max": [
+  0.278,
+  1.124,
+  0.456
+ ]
+}

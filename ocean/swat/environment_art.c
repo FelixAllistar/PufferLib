@@ -27,6 +27,17 @@ static void picnic_art_close(SwatEnvironmentArt* art) {
 static void exterior_load(SwatEnvironmentArt* art);
 static void exterior_close(SwatEnvironmentArt* art);
 static void exterior_override(const SwatEnvironmentArt* art,Model* model,const char* path);
+// Materials v3 (materials_v3.h, included after the exterior kit).
+static void mv3_load(SwatEnvironmentArt* art);
+static void mv3_close(SwatEnvironmentArt* art);
+static void mv3_exterior_kit(SwatEnvironmentArt* art);
+static void mv3_module(const SwatEnvironmentArt* art,Model* model,const char* path);
+static void mv3_ground(SwatEnvironmentArt* art);
+static void mv3_interior(SwatEnvironmentArt* art);
+static const Model* mv3_floor(const SwatEnvironmentArt* art,int owner);
+static const SwatSurfaceMaps* mv3_maps(const SwatEnvironmentArt* art,int id);
+static void mv3_variation(const SwatEnvironmentArt* art,int id,bool mesh);
+static void mv3_bind(const SwatEnvironmentArt* art,const Material* material);
 // Window glazing albedo alpha (of 255): see-through, still reads as glass.
 #define SWAT_WINDOW_GLASS_ALPHA 80
 // OpenGL 1.1 entry points are exported by both native platform libraries. Raylib
@@ -269,6 +280,7 @@ static bool room101_model_load(Model* model,float* scales,const char* file) {
     return true;
 }
 #include "motel_interior_art.h"
+#include "motel_props_ext_v2_impl.h" // Exterior props v2 (SWAT_PROPS_EXT_V2).
 #include "surface_decals_draw.h"
 static void picnic_art_load(SwatEnvironmentArt* art) {
     SwatPicnicArt* p=calloc(1,sizeof(*p));if(!p)return;art->picnic_art=p;
@@ -407,6 +419,7 @@ static void motel_dressing_load(SwatEnvironmentArt* art) {
             }
         }
     }
+    props_ext_v2_load(art);
     const char* surroundings[]={"motel_surroundings/shoulder_render.glb","motel_surroundings/bank_render.glb"};
     for(int i=0;i<2;i++)if(!room101_model_load(&art->motel_surroundings[i],art->motel_surroundings_normal_scale[i],surroundings[i])) {
         swat_art_model_close(art->motel_surroundings[i]);art->motel_surroundings[i]=(Model){0};
@@ -536,15 +549,17 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     if(art->location==selected) return;
     if(!art->bounds)art->bounds=calloc(1,sizeof(*art->bounds));
     clear_bounds(art->bounds);
+    props_ext_v2_close(art);
     room101_close(art);exterior_close(art);
     location_models_close(art->motel,SWAT_MOTEL_ASSETS);
     location_models_close(art->storefront,SWAT_STOREFRONT_ASSETS);
+    mv3_close(art);
     art->location=selected;
     if(!selected) return;
     char path[4096];
     int location=selected-1;
     int missing=0;
-    if(selected==1)exterior_load(art);
+    if(selected==1){mv3_load(art);exterior_load(art);mv3_exterior_kit(art);}
     for(int i=0;i<(location ? SWAT_STOREFRONT_ASSETS : SWAT_MOTEL_ASSETS);i++) {
         const SwatMotelAsset* a=location ? swat_storefront_asset(i) : swat_motel_asset(i);
         char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i>=SWAT_MOTEL_TRANSFORMER_ASSET_FIRST?"motel_transformer":i>=60?"motel_dumpster":i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":i<44?"motel_fence":i==44?"motel_mounted":"motel_props",a->file);
@@ -594,7 +609,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
             }
         }
         swat_art_model_share_textures(*model,path);
-        if(!location && i<SWAT_MOTEL_BASE_ASSETS)exterior_override(art,model,path);
+        if(!location && i<SWAT_MOTEL_BASE_ASSETS){exterior_override(art,model,path);mv3_module(art,model,path);}
     }
     if(missing) TraceLog(LOG_WARNING,"SWAT: %d %s modules absent; matching colliders use graybox rendering",missing,location ? "storefront" : "motel");
     if(selected==1) {room101_load(art);
@@ -606,7 +621,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
             Model* m=shell[k].bank==3?(art->room101_v3_ready?&art->room101_v3[shell[k].index]:NULL):(art->room101_v4_ready?&art->room101_v4[shell[k].index]:NULL);
             if(m && asset_path(path,sizeof(path),shell[k].file))exterior_override(art,m,path);
         }
-        motel_dressing_load(art);picnic_art_load(art);motel_interior_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
+        motel_dressing_load(art);picnic_art_load(art);motel_interior_load(art);mv3_ground(art);mv3_interior(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
         for(int i=0;i<2;i++){
             char file[256];snprintf(file,sizeof(file),"motel_windows_r1/%s",swat_motel_window_model(i)->file);
             if(!room101_model_load(&art->motel_windows[i],art->motel_windows_normal_scale[i],file)){
@@ -650,7 +665,10 @@ void swat_art_model_close(Model model) {
     if(model.meshCount || model.materialCount) UnloadModel(model);
 }
 
+static void motel_props_v2_close(const SwatEnvironmentArt* art);
 void swat_environment_art_close(SwatEnvironmentArt* art) {
+    props_ext_v2_close(art);
+    motel_props_v2_close(art);
     room101_close(art);exterior_close(art);
     free(art->door_art);art->door_art=NULL;
     surface_decals_release(art->surface_decals);free(art->surface_decals);art->surface_decals=NULL;
@@ -664,6 +682,7 @@ void swat_environment_art_close(SwatEnvironmentArt* art) {
     swat_art_model_close(art->door);
     location_models_close(art->motel,SWAT_MOTEL_ASSETS);
     location_models_close(art->storefront,SWAT_STOREFRONT_ASSETS);
+    mv3_close(art);
     for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) swat_art_model_close(art->props[i]);
     clear_bounds(art->bounds);free(art->bounds);
     memset(art,0,sizeof(*art));
@@ -923,8 +942,11 @@ bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o
     }
     if(o->door && (o->latch_broken || o->cuts)){clear_surface(art);swat_environment_door_fragment_draw(o);return true;}
     if(motel_interior_skin(art,o)) {
-        swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
-        textured_box(art->motel_interior->wallpaper,o,art->lit,(Vector2){.6f,.6f},-1,true);
+        const SwatSurfaceMaps* v3=mv3_maps(art,MV3_DRYWALL);
+        swat_lighting_surface(art->lighting,v3?v3->normal:(Texture2D){0},v3?v3->roughness:(Texture2D){0},(Vector3){0},(Vector2){0},false);
+        if(v3)mv3_variation(art,MV3_DRYWALL,false);
+        textured_box(v3?v3->color:art->motel_interior->wallpaper,o,art->lit,v3?v3->tile:(Vector2){.6f,.6f},-1,true);
+        if(v3)clear_surface(art);
         return true;
     }
     Texture2D texture={0};
@@ -1033,14 +1055,15 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
         Material material=model->materials[model->meshMaterial[i]];
         MaterialMap ground_maps[SWAT_MATERIAL_MAPS];
         int ground_part=o->tag.index-SWAT_MOTEL_GROUND_FIRST;
+        const SwatSurfaceMaps* dirt=mv3_maps(art,MV3_DIRT);if(!dirt || !dirt->normal.id)dirt=&art->motel_dirt;
         bool ground_blend=lit && source==&art->motel_ground && swat_motel_zoning_part(ground_part) &&
-            art->motel_zoning.id && art->motel_dirt.color.id && art->motel_dirt.normal.id && art->motel_dirt.roughness.id;
+            art->motel_zoning.id && dirt->color.id && dirt->normal.id && dirt->roughness.id;
         if(ground_blend) {
             // Per-draw copies leave the source GLB and its shared map ownership
             // untouched. Ground has neither emission nor specular-gloss art.
             memcpy(ground_maps,material.maps,sizeof(ground_maps));material.maps=ground_maps;
-            ground_maps[MATERIAL_MAP_SPECULAR].texture=art->motel_dirt.normal;
-            ground_maps[MATERIAL_MAP_EMISSION].texture=art->motel_dirt.roughness;
+            ground_maps[MATERIAL_MAP_SPECULAR].texture=dirt->normal;
+            ground_maps[MATERIAL_MAP_EMISSION].texture=dirt->roughness;
         }
         // Night glow override (swat_lighting glow_source): the albedo map is
         // reused as the emission map of the selected materials, per draw.
@@ -1094,7 +1117,8 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
                 normal_scale=art->motel_dressing_normal_scale[r][model->meshMaterial[i]];
             }
             swat_lighting_material_uv(art->lighting,material,true,normal_scale,ao_uv);
-            if(ground_blend)swat_lighting_ground(art->lighting,art->motel_zoning,art->motel_dirt.color);
+            mv3_bind(art,&material);
+            if(ground_blend)swat_lighting_ground(art->lighting,art->motel_zoning,dirt->color);
             if(glow) {
                 SwatLightingProgram* program=&art->lighting->mesh;rlEnableShader(program->shader.id);
                 if(program->emission_tint>=0)rlSetUniform(program->emission_tint,&art->lighting->glow_tint,SHADER_UNIFORM_VEC3,1);
@@ -1109,6 +1133,7 @@ static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,cons
     return location_mesh_draw(art,o,p,model,model,shadow,cutaway,transparent,NULL);
 }
 #include "motel_exterior_impl.h"
+#include "materials_v3.h"
 uint32_t swat_environment_motel_hinge_mesh_mask(const SwatWorld* world,int owner,bool remnants) {
     if(!world->motel || world->count<=16 || owner<0 || owner>=world->count || !world->objects[owner].active)return 0;
     const SwatObject* door=&world->objects[16];
@@ -1370,23 +1395,25 @@ void swat_environment_motel_backdrop(const SwatEnvironmentArt* art,const SwatWor
             material.shader=lit?art->lighting->mesh.shader:(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
             // The highway's asphalt strips reuse the authored lot's CC0 maps,
             // so the extension continues the same surface at x=+-56 m.
-            bool asphalt=k==2 && model->meshMaterial[i]==1 && art->motel_asphalt.color.id;
+            bool asphalt=k==2 && model->meshMaterial[i]==1 && art->motel_asphalt.color.id && !mv3_maps(art,MV3_ROAD);
             if(asphalt) {
                 memcpy(maps,material.maps,sizeof(maps));material.maps=maps;
                 maps[MATERIAL_MAP_ALBEDO].texture=art->motel_asphalt.color;maps[MATERIAL_MAP_ALBEDO].color=WHITE;
             }
             if(lit) {
                 if(asphalt)swat_lighting_surface(art->lighting,art->motel_asphalt.normal,art->motel_asphalt.roughness,(Vector3){0},(Vector2){0},true);
-                else swat_lighting_material_uv(art->lighting,material,true,1,0);
+                else {swat_lighting_material_uv(art->lighting,material,true,1,0);mv3_bind(art,&material);}
             }
             DrawMesh(model->meshes[i],material,MatrixIdentity());
             if(lit && asphalt)swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},true);
         }
     }
+    props_ext_v2_draw(art,shadow,lit,scene);
     if(lit)swat_lighting_material(art->lighting,(Material){0},false);
 }
 static int sedan_triangle_owner(int triangle){return swat_motel_roadside_triangle(0,triangle);}
 static int shelter_triangle_owner(int triangle){return swat_motel_roadside_triangle(1,triangle);}
+#include "motel_props_interior_v2_data.h"
 // Interior pass pieces supported by this object (motel_interior_art.h).
 static void motel_interior_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     const SwatMotelInteriorArt* a=art->motel_interior;
@@ -1441,9 +1468,10 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     // Pool slot indices are independent of authored motel instance IDs.
     if(o->rubble)return false;
     if(o->tag.index==0) {
-        const SwatSurfaceMaps* m=&art->motel_asphalt;
+        const SwatSurfaceMaps* m=mv3_maps(art,MV3_LOT);if(!m)m=&art->motel_asphalt;
         if(!o->active || shadow || !m->color.id)return false;
         swat_lighting_surface(art->lighting,m->normal,m->roughness,(Vector3){0},(Vector2){0},false);
+        if(m==mv3_maps(art,MV3_LOT))mv3_variation(art,MV3_LOT,false);
         rlPushMatrix();rlTranslatef(o->center.x,o->center.y,o->center.z);
         // Upward plane: U=+X, V=-Z, so tangent X bitangent -Z normal +Y.
         // Source pixels are flipped once on upload; normal green stays intact.
@@ -1643,6 +1671,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     }
     exterior_draw(art,world,o,shadow,cutaway);
     motel_interior_draw(art,world,o,shadow,cutaway);
+    motel_props_v2_draw(art,world,o,shadow,cutaway);
     if(o->tag.index>SWAT_MOTEL_INSTANCES)return motel_wall_draw(art,world,o,shadow,cutaway);
     const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
     if(o->door && (o->latch_broken || o->cuts) && art->motel[p->asset].meshCount) {
@@ -1707,6 +1736,8 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
             return drawn;
         }
     }
+    const Model* v3_floor=p->asset==4?mv3_floor(art,o->tag.index):NULL;
+    if(v3_floor)return location_mesh_draw(art,o,p,v3_floor,&art->motel[4],shadow,cutaway,false,NULL);
     if(p->asset==4 && art->motel_interior && art->motel_interior->floor.meshCount && o->tag.index!=9 && o->tag.index!=127)
         return location_mesh_draw(art,o,p,&art->motel_interior->floor,&art->motel[4],shadow,cutaway,false,NULL);
     // Ceilings of reception and Rooms 102-104 (Room 101 keeps its accepted roof).

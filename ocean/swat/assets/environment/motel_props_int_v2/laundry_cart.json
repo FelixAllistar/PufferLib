@@ -1,0 +1,17 @@
+{
+ "file": "laundry_cart.glb",
+ "triangles": 6448,
+ "materials": 4,
+ "bytes": 517872,
+ "sha256": "9a1e988d1df95a5f",
+ "min": [
+  -0.389,
+  0.001,
+  -0.014
+ ],
+ "max": [
+  0.389,
+  0.989,
+  0.52
+ ]
+}

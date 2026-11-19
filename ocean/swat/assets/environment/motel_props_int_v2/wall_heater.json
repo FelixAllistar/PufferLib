@@ -1,0 +1,17 @@
+{
+ "file": "wall_heater.glb",
+ "triangles": 380,
+ "materials": 4,
+ "bytes": 70748,
+ "sha256": "8e17a3ed9d3f558b",
+ "min": [
+  -0.55,
+  0.07,
+  -0.0
+ ],
+ "max": [
+  0.55,
+  0.212,
+  0.071
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "file": "closet_rod.glb",
+ "triangles": 1408,
+ "materials": 5,
+ "bytes": 100600,
+ "sha256": "dcb2999fb46bbaa3",
+ "min": [
+  -0.5,
+  0.795,
+  -0.0
+ ],
+ "max": [
+  0.512,
+  1.78,
+  0.48
+ ]
+}
