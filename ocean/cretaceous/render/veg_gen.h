@@ -399,6 +399,7 @@ typedef struct {
     int lod_div;                // the reduced mesh keeps every lod_div-th card (0: 3)
     float clump;                // weight of the leaf masses round each branch's outer part (0: leaves only along the twigs)
     int twig_every;             // the full mesh draws every n-th twig (0: all)
+    float inner;                // leaf weight deep inside the crown, against 1 at its surface (0: 0.12)
 } Crown;
 static void crown_tree(Gen* g, const Crown* C, const Env* E) {
     LeafPts L = {0}; float H = C->H; int ntw = 0;
@@ -493,7 +494,7 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
                 for (float u = 0.3f; u <= 1.001f; u += 0.24f) {
                     V3 q, dq; float hq, wq; path_at(&T, u, &q, &dq, NULL, &hq, &wq);
                     float dep = env_depth(E, q);
-                    lp_add(&L, q, dq, (Wnd){hq, lb->ph, wq, phs, 0}, (0.12f + sstep(0.45f, 0.9f, dep)) * lerpf(1.0f, sstep(0.3f, 0.75f, t), C->pad));
+                    lp_add(&L, q, dq, (Wnd){hq, lb->ph, wq, phs, 0}, ((C->inner > 0 ? C->inner : 0.12f) + sstep(0.45f, 0.9f, dep)) * lerpf(1.0f, sstep(0.3f, 0.75f, t), C->pad));
                 }
             }
         }
@@ -1490,15 +1491,16 @@ static void gen_cheirolep(Gen* g) {
     Env E; env_init(g, &E, v3(grr(g, -0.1f, 0.1f) * H, H * 0.62f, 0), v3(H * 0.3f, H * 0.36f, H * 0.28f), 6, 0.3f);
     crown_tree(g, &C, &E);
 }
-// Ginkgo: a straight leader with few, long ascending limbs (an open,
-// irregular crown), fan leaves in tufts on spur shoots.
+// Ginkgo: a straight leader with long limbs that leave it low and rise
+// steeply (a tall vase, broad at the top on old trees), fan leaves in tufts
+// on spur shoots all along them.
 static void gen_ginkgo(Gen* g) {
     float H, r0; species_dims(VEG_BROADLEAF, g->variant, &H, &r0);
-    Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.22f, 0.3f), .stems = 1, .leader = 1, .sp1 = 0.9f, .el1 = 0.75f,
-               .sp2 = 0.7f, .sp3 = 0.4f, .ang2 = 0.7f, .ang3 = 0.9f, .trop1 = 0.1f, .trop2 = 0.08f, .trop3 = 0.2f, .twig_len = 0.5f,
-               .leaf_layer = L_CL_GINKGO, .lod_layer = L_LEAF2, .nleaf = 520, .leaf_size = 0.42f, .lod_size = 1.3f, .curl = 0.25f, .upbias = 0.3f, .lobes = 0.15f, .droop = 0.0f, .clump = 0.5f};
-    crown_scale(&C, 12.5f); crown_full(&C, 1.5f);
-    Env E; env_init(g, &E, v3(0, H * 0.6f, 0), v3(H * 0.27f, H * 0.42f, H * 0.25f), 7, 0.3f);
+    Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.14f, 0.22f), .stems = 1, .leader = 1, .sp1 = 1.5f, .el1 = 1.0f,
+               .sp2 = 1.1f, .sp3 = 0.4f, .ang2 = 0.7f, .ang3 = 0.9f, .trop1 = 0.15f, .trop2 = 0.1f, .trop3 = 0.2f, .twig_len = 0.5f,
+               .leaf_layer = L_CL_GINKGO, .lod_layer = L_LEAF2, .nleaf = 620, .leaf_size = 0.42f, .lod_size = 1.3f, .curl = 0.25f, .upbias = 0.3f, .lobes = 0.15f, .droop = 0.0f, .clump = 0.35f, .inner = 0.7f};
+    crown_scale(&C, 12.5f); crown_full(&C, 1.5f); C.twig_every = 3; C.lod_div = C.lod_div * 6 / 5; C.lod_size *= 1.08f;
+    Env E; env_init(g, &E, v3(0, H * 0.57f, 0), v3(H * 0.33f, H * 0.45f, H * 0.31f), 7, 0.3f);
     crown_tree(g, &C, &E);
 }
 // River plane: a tall, broad, spreading crown on a stout trunk, big
