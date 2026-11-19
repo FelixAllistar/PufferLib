@@ -152,11 +152,11 @@ static inline void veg_species_dims(int kind, int variant, float* H, float* r0) 
     case FL_LAUREL: h = vp_rr(&r, 9, 13); rr = 0.07f + 0.02f * h; break;
     case FL_PLANE: h = vp_rr(&r, 21, 27); rr = 0.1f + 0.018f * h; break;
     case FL_GINKGO: h = vp_rr(&r, 16, 22); rr = 0.08f + 0.016f * h; break;
-    case FL_CYCAS: if ((variant & 3) == 2) { h = vp_rr(&r, 1.5f, 3.0f); rr = 0.22f; } else { h = vp_rr(&r, 0.3f, 1.6f); rr = 0.3f; } break;
-    case FL_ZAMIA: h = vp_rr(&r, 0.15f, 0.6f); rr = 0.34f; break;
-    case FL_WILLIAMSONIA: h = vp_rr(&r, 1.0f, 1.7f); rr = 0.19f; break;
-    case FL_CYATHEA: h = vp_rr(&r, 3.0f, 5.8f); rr = 0.26f; break;
-    case FL_DICKSONIA: h = vp_rr(&r, 1.3f, 2.4f); rr = 0.32f; break;
+    case FL_CYCAS: if ((variant & 3) == 2) { h = vp_rr(&r, 2.2f, 3.8f); rr = 0.24f; } else { h = vp_rr(&r, 0.9f, 2.2f); rr = 0.3f; } break;
+    case FL_ZAMIA: h = vp_rr(&r, 0.25f, 0.8f); rr = 0.34f; break;
+    case FL_WILLIAMSONIA: h = vp_rr(&r, 1.4f, 2.4f); rr = 0.2f; break;
+    case FL_CYATHEA: h = vp_rr(&r, 4.5f, 8.0f); rr = 0.26f; break;
+    case FL_DICKSONIA: h = vp_rr(&r, 2.2f, 4.2f); rr = 0.34f; break;
     case FL_SABAL: h = vp_rr(&r, 4.0f, 8.5f); rr = 0.27f; break;
     case FL_FEATHER_PALM: h = vp_rr(&r, 3.0f, 6.5f); rr = 0.24f; break;
     case -2:   // standing dead trees: whole and broken conifers, a dead broadleaf, a leaning broken trunk

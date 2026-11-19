@@ -1000,7 +1000,7 @@ static void gen_treefern(Gen* g, bool stout) {
     for (int f = 0; f < nf; f++) {
         float az = f * 2.39996f + grr(g, -0.2f, 0.2f), age = (float)f / nf; bool young = f >= nf - 3; int pairs = 18 + (int)grr(g, 0, 5);
         g->dry = age < 0.2f ? (int)grr(g, 30, 110) : 0;
-        float L = (young ? grr(g, 0.9f, 1.4f) : grr(g, 2.3f, 3.2f)) * (stout ? 0.9f : 1.0f);
+        float L = (young ? grr(g, 0.9f, 1.4f) : grr(g, 2.3f, 3.2f)) * (stout ? 0.95f : 1.0f) * fminf(1.0f + 0.06f * fmaxf(H - 4.0f, 0.0f), 1.25f);
         float e0 = (young ? grr(g, 1.25f, 1.45f) : lerpf(0.55f, 1.1f, age) + grr(g, -0.1f, 0.1f)) + (stout ? 0.25f : 0);
         float droop = (young ? 0.6f : lerpf(2.1f, 1.4f, age) + grr(g, -0.2f, 0.2f)) * (stout ? 0.7f : 1.0f);
         Frond F = {.base = top, .az = az, .e0 = e0, .droop = droop, .twist = grr(g, -0.3f, 0.3f), .L = L, .bare = 0.1f,
