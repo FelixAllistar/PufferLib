@@ -36,6 +36,7 @@ static const char* vertex_source=
 // agree. Roughness blends toward its broad irradiance approximation.
 // Hollow dusk horizon radiance; its fog colour is the same value (hollow_apply).
 #define HOLLOW_HORIZON_C .205f,.200f,.215f
+#define HOLLOW_BULB .42f
 #define HOLLOW_HORIZON "vec3(0.205,0.200,0.215)"
 #define SWAT_SKY_GLSL \
     "uniform float night; uniform vec3 moonDirection;" \
@@ -217,6 +218,9 @@ static const char* fragment_source=
     "if(usePbr!=0||useEnvironment!=0)reflection+=sunEnergy*sunVisibility*specular(n,v,sun,f0,roughness);"
     "for(int i=0;i<rooms;i++){ vec3 delta=position-centers[i];"
     "if(abs(delta.x)>halves[i].x+0.12||abs(delta.z)>halves[i].z+0.12||abs(delta.y)>halves[i].y+0.15)continue;"
+    /* The Hollow (night>1.5): single-board walls are thinner than the margin; */
+    /* their outward face belongs to the dusk outside, not to the room's lamp. */
+    "if(night>1.5&&any(greaterThan(abs(delta),halves[i]))&&dot(n,delta)>0.0)continue;"
     "insideRoom=true;insideLamp=max(insideLamp,roomPower[i]);"
     "vec3 gap=max(halves[i]-abs(delta),vec3(0.0));"
     // A bounded room approximation darkens ambient near adjacent planes only.
@@ -240,7 +244,7 @@ static const char* fragment_source=
     // fixtures: the nearest (capped) lights are shaded per pixel and replace
     // their share of the baked pool map; the rest come from the pool alone.
     "if(night>0.5){"
-    "if(!insideRoom){illumination=night>1.5?mix(vec3(0.026,0.026,0.032),vec3(0.090,0.092,0.108),n.y*0.5+0.5):mix(vec3(0.0030,0.0032,0.0044),vec3(0.0145,0.020,0.038),n.y*0.5+0.5);"
+    "if(!insideRoom){illumination=night>1.5?mix(vec3(0.060,0.060,0.070),vec3(0.165,0.165,0.185),n.y*0.5+0.5):mix(vec3(0.0030,0.0032,0.0044),vec3(0.0145,0.020,0.038),n.y*0.5+0.5);"
     "vec2 pu=(position.xz-nightPoolBounds.xy)/nightPoolBounds.zw;float far=0.0;vec3 pool=vec3(0.0);"
     "float lift=clamp(1.0-(position.y+0.08)/7.0,0.0,1.0)*(0.3+0.7*max(n.y,0.0));"
     "if(all(greaterThanEqual(pu,vec2(0.0)))&&all(lessThanEqual(pu,vec2(1.0))))pool=textureLod(nightPool,pu,0.0).rgb;"
@@ -487,7 +491,7 @@ static SwatNightLight night_spot(Vector3 p,Vector3 d,float cone,Vector3 color,fl
 // between house and barn, and bare bulbs over the porch, barn and cellar doors.
 static int hollow_night_lights(SwatNightLight* l) {
     const Vector3 bulb={1.0f,.62f,.30f},sodium={1.0f,.50f,.17f};int n=0;
-    l[n++]=night_spot((Vector3){27.4f,6.55f,-3.6f},(Vector3){-.25f,-1,.1f},.12f,Vector3Scale(sodium,95),18,1.0f,SWAT_NIGHT_LOT);
+    l[n++]=night_spot((Vector3){27.4f,6.55f,-3.6f},(Vector3){-.25f,-1,.1f},.12f,Vector3Scale(sodium,32),15,.9f,SWAT_NIGHT_LOT);
     l[n++]=night_point((Vector3){16.0f,2.40f,-6.35f},Vector3Scale(bulb,2.6f),7,.45f,SWAT_NIGHT_PORCH);
     l[n++]=night_point((Vector3){36.5f,4.05f,-8.35f},Vector3Scale(bulb,4.0f),9,.5f,SWAT_NIGHT_PORCH);
     l[n++]=night_point((Vector3){18.0f,2.12f,11.75f},Vector3Scale(bulb,1.8f),6,.4f,SWAT_NIGHT_PORCH);
@@ -1285,6 +1289,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         halves[i]=(Vector3){r->half.x,r->half.y,r->half.z}; origins[i]=room_light_origin(world,i);
         SwatRoomLight source=swat_world_room_light(world,i);
         directions[i]=(Vector3){source.direction.x,source.direction.y,source.direction.z};room_power[i]=source.power;
+        if(world->hollow)room_power[i]*=HOLLOW_BULB; // one dim bare bulb per room (presentation only)
     }
     float night=light->hollow?2:light->night?1:0;
     Vector4 night_position[SWAT_NIGHT_DYNAMIC],night_color[SWAT_NIGHT_DYNAMIC],night_direction[SWAT_NIGHT_DYNAMIC];

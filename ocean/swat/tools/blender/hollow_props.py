@@ -309,11 +309,16 @@ def dog_pen_wire(m):
     # Chain-link panels between the four posts (3 x 3 m), gate ajar, chain on a stake, empty dish.
     p = Part()
     wire = mat("chain_link", (.30, .30, .29), .5, .7)
-    for (a, b) in (((-1.5, -1.5), (1.5, -1.5)), ((1.5, -1.5), (1.5, 1.5)), ((-1.5, 1.5), (-1.5, -1.5))):
-        cx, cz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2; L = math.hypot(b[0] - a[0], b[1] - a[1])
-        sheet = bm_box((cx, .9, cz), (L / 2 if a[1] == b[1] else .004, .88, .004 if a[1] == b[1] else L / 2))
-        p.add(sheet, wire)
-    p.add(rotate_bm(bm_box((-.4, .9, 1.5), (.75, .88, .004)), .6, (-1.5, 0, 1.5)), wire)  # gate hanging open
+    def fence(x0, z0, x1, z1, yaw=0.0, about=(0, 0, 0)):
+        # An open wire lattice (see-through), not a sheet: verticals and rails.
+        L = math.hypot(x1 - x0, z1 - z0); n = int(L / .16)
+        for k in range(n + 1):
+            t = k / n; x = x0 + (x1 - x0) * t; z = z0 + (z1 - z0) * t
+            p.add(rotate_bm(bm_box((x, .9, z), (.003, .88, .003)), yaw, about), wire)
+        for y in (.05, .45, .9, 1.35, 1.76):
+            p.add(rotate_bm(bm_box(((x0 + x1) / 2, y, (z0 + z1) / 2), (max(abs(x1 - x0) / 2, .004), .006, max(abs(z1 - z0) / 2, .004))), yaw, about), wire)
+    fence(-1.5, -1.5, 1.5, -1.5); fence(1.5, -1.5, 1.5, 1.5); fence(-1.5, 1.5, -1.5, -1.5)
+    fence(-1.5, 1.5, 0.0, 1.5, .6, (-1.5, 0, 1.5))  # gate hanging open
     p.add(bm_cyl((0, .15, 0), .02, .3, 6), m["rust"])  # stake
     pts = [(0, .1, 0)] + [(.12 * k, .02, .2 * k) for k in range(1, 7)]
     p.add(bm_tube(pts, .012, 5), m["chain"])
@@ -432,12 +437,24 @@ def yard_light_pole(m):
     p.add(bm_box((-.8, 6.44, 0), (.15, .02, .1)), mat("sodium_lens", (1.0, .55, .2), .3, emission=(1.0, .5, .15)))
     return p
 
+@prop
+def ladder(m):
+    # A wooden ladder left leaning on the front wall, as in the reference photo.
+    p = Part(); L = 4.6; lean = .32
+    for x in (-.22, .22):
+        p.add(tilt_bm(bm_box((x, L / 2, 0), (.025, L / 2, .035)), lean, 'x', (x, 0, 0)), m["grey"])
+    for k in range(13):
+        y = .3 + k * .33
+        p.add(tilt_bm(bm_box((0, y, 0), (.22, .018, .018)), lean, 'x', (0, 0, 0)), m["grey"])
+    return p
+
 if __name__ == "__main__":
     os.makedirs(C.OUT, exist_ok=True)
     for name, fn in PROPS.items():
         if ONLY and name not in ONLY: continue
         C.reset(); C.MATS.clear()
         part = fn(M())
+        assert len(part.mats) <= 7, (name, len(part.mats))  # hollow_art.h loader limit
         ob = C.export(name, part)
         if C.RENDER and ONLY and len(ONLY) == 1:
             C.preview({"cam": (2.2, 1.6, 2.6), "target": (0, .5, 0), "fov": 45, "sun": ((-.4, -.8, -.3), 2.5),

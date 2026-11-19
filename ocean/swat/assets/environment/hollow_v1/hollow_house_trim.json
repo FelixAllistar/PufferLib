@@ -1,0 +1,17 @@
+{
+ "file": "hollow_house_trim.glb",
+ "triangles": 3760,
+ "materials": 7,
+ "bytes": 540600,
+ "sha256": "f19d1b6357ec6630",
+ "min": [
+  13.55,
+  0.0,
+  -8.09
+ ],
+ "max": [
+  23.17,
+  7.575,
+  3.57
+ ]
+}

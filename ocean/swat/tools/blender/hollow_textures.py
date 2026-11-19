@@ -41,7 +41,7 @@ def noise(rng, n, scale):
 
 
 def flyer(rng, w, h, kind):
-    paper = tuple(int(v) for v in (np.array([226, 220, 200]) * (0.86 + 0.1 * rng.random())))
+    paper = tuple(int(v) for v in (np.array([196, 188, 166]) * (0.80 + 0.1 * rng.random())))
     im = Image.new("RGB", (w, h), paper); d = ImageDraw.Draw(im)
     if kind == "missing":
         d.text((w // 2, int(h * .09)), "MISSING", fill=(25, 20, 18), font=font(int(w * .19)), anchor="mm")
@@ -128,8 +128,8 @@ def mattress():
     stripes = (np.sin(np.arange(n) / n * 2 * math.pi * 26) > .6)[None, :, None]
     base = np.where(stripes, base * np.array([.72, .74, .82]), base)
     base *= (0.8 + 0.25 * noise(rng, n, 20))[..., None]
-    for _ in range(3):  # old, dark, mostly brown stains: implied, not graphic
-        a, col = stain(rng, n, 5, (70, 32, 26), 0.85, 0.2)
+    for _ in range(2):  # old, dark, mostly brown stains: implied, not graphic
+        a, col = stain(rng, n, 4, (58, 36, 28), 0.75, 0.16)
         base = base * (1 - a[..., None]) + col * a[..., None]
     a, col = stain(rng, n, 4, (120, 100, 60), 0.4, 0.25)  # water rings
     base = base * (1 - a[..., None]) + col * a[..., None]

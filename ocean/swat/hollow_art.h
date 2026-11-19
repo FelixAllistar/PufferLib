@@ -13,7 +13,7 @@
 #include "hollow_data.h"
 
 enum { HOLLOW_MAT_PLANKS, HOLLOW_MAT_DOOR, HOLLOW_MAT_FLOOR, HOLLOW_MAT_ROOF, HOLLOW_MAT_STONE,
-       HOLLOW_MAT_GROUND, HOLLOW_MAT_DIRT, HOLLOW_MAT_COUNT };
+       HOLLOW_MAT_GROUND, HOLLOW_MAT_DIRT, HOLLOW_MAT_ROOF_DARK, HOLLOW_MAT_COUNT };
 static const struct { const char* name; float tile; } hollow_mat_defs[HOLLOW_MAT_COUNT]={
     [HOLLOW_MAT_PLANKS]={"planks_grey",1.6f},   // wood_planks_grey: weathered vertical boards
     [HOLLOW_MAT_DOOR]={"planks_old",1.2f},      // old_planks_02: door leaves, interior trim
@@ -22,6 +22,7 @@ static const struct { const char* name; float tile; } hollow_mat_defs[HOLLOW_MAT
     [HOLLOW_MAT_STONE]={"field_stone",2.0f},    // old_stone_wall
     [HOLLOW_MAT_GROUND]={"yard_ground",4.0f},   // brown_mud_leaves_01
     [HOLLOW_MAT_DIRT]={"dirt_floor",2.5f},      // dirt_floor: barn, smokehouse, cellar
+    [HOLLOW_MAT_ROOF_DARK]={"roof_tin_dark",1.8f}, // rusty_corrugated_iron, graded darker/greyer: house roofs
 };
 // Scenery GLBs drawn at identity (world space, metres).
 static const char* const hollow_scene_files[]={"hollow_terrain","hollow_woods","hollow_house_trim","hollow_outbuildings_trim"};
@@ -106,6 +107,8 @@ static int hollow_prop_row(const SwatObject* o) {
 static bool hollow_box_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
     const SwatHollowArt* h=art->hollow;
     if(!h || o->material==SWAT_GLASS || (o->door && (o->latch_broken || o->cuts))) return false;
+    // Stepped gable fill (collision): the trim GLB draws the true triangle.
+    if(o->material==SWAT_WOOD && o->part==SWAT_PART_SKIN && !o->wall_group && o->center.y>2.2f && !o->fractured && !o->cuts) return true;
     int row=hollow_prop_row(o);
     if(row>=0 && h->prop_model[row]>=0) return true; // drawn by its model
     int id=-1,grain=-1;
@@ -116,7 +119,7 @@ static bool hollow_box_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
         else if(flat || (o->part==SWAT_PART_SOLID && o->half.y<.2f)) { id=HOLLOW_MAT_FLOOR; grain=o->half.x>o->half.z ? 0 : 2; }
         else { id=HOLLOW_MAT_PLANKS; grain=o->half.y>=o->half.x && o->half.y>=o->half.z ? 1 : -1; }
         break;
-    case SWAT_STEEL: if(o->part!=SWAT_PART_LIGHT && o->half.y<.1f) id=HOLLOW_MAT_ROOF; break;
+    case SWAT_STEEL: if(o->part!=SWAT_PART_LIGHT && o->half.y<.1f) id=o->center.x<23.5f && o->center.z<4 ? HOLLOW_MAT_ROOF_DARK : HOLLOW_MAT_ROOF; break;
     case SWAT_STONE: id=HOLLOW_MAT_STONE; break;
     case SWAT_SOIL:
         // Earth floors inside the barn, smokehouse and cellar read as packed dirt.

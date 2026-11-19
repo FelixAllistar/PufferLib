@@ -221,7 +221,11 @@ void swat_mission_build_hollow(SwatWorld* w) {
     hollow_roof(w,(b3Pos){18,UT,.4f},(b3Pos){18,HOLLOW_RIDGE,-3},4.3f,true,SWAT_STEEL);
     hollow_box(w,13.6f,2.55f,-8.1f,22.4f,2.62f,-6,SWAT_STEEL,0,SWAT_PART_SOLID);   // porch roof (tin)
     for(int i=0;i<4;i++) hollow_box(w,14.05f+i*2.6f,F,-7.95f,14.2f+i*2.6f,2.55f,-7.8f,SWAT_WOOD,0,SWAT_PART_SUPPORT);
-    hollow_box(w,22.05f,0,-3.7f,23.25f,HOLLOW_RIDGE+.8f,-2.3f,SWAT_STONE,0,SWAT_PART_SOLID); // stone chimney
+    // Field-stone gable chimney, stepped like the Wolcott farmhouse's: a broad
+    // firebox base, shoulders at the first floor and a stack past the ridge.
+    hollow_box(w,22.05f,0,-4.0f,23.15f,2.3f,-2.0f,SWAT_STONE,0,SWAT_PART_SOLID);
+    hollow_box(w,22.05f,2.3f,-3.65f,22.95f,UT+.2f,-2.35f,SWAT_STONE,0,SWAT_PART_SOLID);
+    hollow_box(w,22.05f,UT+.2f,-3.4f,22.8f,HOLLOW_RIDGE+.45f,-2.6f,SWAT_STONE,0,SWAT_PART_SOLID);
     // --- Smokehouse: windowless board box with a low door.
     HollowOpening smoke_door[]={{25.5f,.78f,0,1.95f,false}};
     hollow_wall(w,24,3,27,3,0,2.2f,1,smoke_door,1,false,.30f);
