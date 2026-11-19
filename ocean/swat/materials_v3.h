@@ -47,7 +47,7 @@ static const SwatMaterialV3Def mv3_defs[MV3_COUNT]={
     [MV3_CEILING]={"ceiling",false,0.6f,1.1f,{.05f,.6f,0},{0,0,0}},
     [MV3_BATH_FLOOR]={"bath_floor",false,1.0f,1.1f,{.04f,.8f,0},{0,0,0}},
     [MV3_BATH_WALL]={"bath_wall",false,1.0f,1.1f,{.03f,.8f,0},{0,0,0}},
-    [MV3_RECEPTION_FLOOR]={"reception_floor",false,1.2f,1.1f,{.05f,.6f,0},{0,0,0}},
+    [MV3_RECEPTION_FLOOR]={"reception_floor",false,1.8f,1.1f,{.05f,.6f,0},{0,0,0}},
     [MV3_LAUNDRY_FLOOR]={"laundry_floor",false,1.5f,1.1f,{.06f,.5f,0},{0,0,0}},
 };
 

@@ -133,3 +133,14 @@ Reference: "Motel Bathroom 004", cygnus921, https://www.flickr.com/photos/117267
 - iter 5: floor flatten 0, target (196,184,154). closer: marginal. Stop.
 - engine 1: rooms 102/104 bathrooms. Diffs: 2 floor reads darker brown under the lamp; walls above the wainscot are the room's painted drywall (beige where the ref is white); 3 a large square grime grid from the existing bathroom grout decals sits over the hex.
 - engine 2: floor (214,204,178). closer: yes. Final.
+
+## 11. Reception floor (vinyl composition tile)
+Reference: "Vintage Vinyl Tile Flooring South Beach", Phillip Pessar, https://www.flickr.com/photos/25955895@N03/45568707481 (CC BY 2.0): 12-inch green / off-white VCT checker.
+Built from ambientCG Tiles074 (stone checker) recoloured to two VCT colours with the scan's mottling kept as detail.
+
+- iter 1: recolour (46,96,78)/(214,208,186), tile 1.2 m. Diffs: 1 tiles ~20 cm vs 30 cm; 2 polished-stone gloss (roughness 0.09) vs matte vinyl; green veined like marble. closer: n/a
+- iter 2: roughness 0.4r+0.45, teal green (28,104,90), recolour detail 0.3. closer: yes
+- iter 3: repeat 1.8 m (30 cm tiles). closer: yes
+- iter 4: recolour detail 0.8 (speckle). closer: no (green marbling returns) -> reverted. 
+- iter 5 (engine 1): reception views. Diffs: 2 light tiles slightly too white; otherwise matches. 
+- iter 6 (engine 2): light (200,196,178), dark (28,100,86). closer: yes (slightly). Stop.
