@@ -58,3 +58,6 @@ is at the end of this file.
 10. Fault: past 25-60 m, where the fracture faded out, steep rock still reads as smears down the fall line
     (the upper slope in `af4`). Change: the fracture (only the big slabs are left there) fades from 40 to
     120 m. Kept: `af4`'s upper slope keeps slabs and joints; `tl1` about the same.
+11. Fault: since pass 1 the beds show as many thin contour stripes across the summit's slopes (`mtS`).
+    Change: bed layering at 35% on loose steep ground (scree, stony soil), full on rock. Reverted: no
+    visible change; the striped slopes are rock (53-73% of the ground over 400 m), where strata belong.
