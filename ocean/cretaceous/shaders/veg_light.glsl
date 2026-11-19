@@ -19,6 +19,8 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 // How much of the light behind a leaf this pixel lets through, relative to the leaf's mean (veg.fs sets
 // it from the material atlas; 1 elsewhere): scales the transmission below.
 float veg_trans = 1.0;
+// Ground bounce on bark, relative to the leaves' (veg.fs: more for trunks under their own low crown).
+float veg_bounce = 1.0;
 // albedo, N (bent toward the crown's outside), ao (baked crown occlusion:
 // low deep inside and underneath), leaf 0 bark .. 1 leaf, p world position,
 // base the plant's foot, card 1 for an impostor (0 for a mesh), thru how squarely the sun lights the
@@ -87,10 +89,10 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // the full filter turned crowns a saturated emerald.
     amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * 0.75);
     // Ground bounce lights undersides and trunks (forest floor albedo ~0.15).
-    // Bark takes twice as much (as terrain.fs's own bounce): a trunk's sides face the lit ground round it, and
-    // under its own low crown (cycads, tree ferns) that light is most of what shows its form; with the
-    // leaves' share it drew near black.
-    vec3 bounce = sun * max(L.y, 0.0) * 0.15 * (0.5 - 0.5 * N.y) * mix(0.6, 1.0, shadow) / PI * contact * (1.0 + u_lk_bounce) * mix(2.0, 1.0, leaf);
+    // veg_bounce: the trunks of cycads, palms and tree ferns take more (veg.fs; terrain.fs takes about three
+    // times as much): standing under their own low crown, the lit ground round them is most of what shows
+    // their form, and with the leaves' share they drew near black.
+    vec3 bounce = sun * max(L.y, 0.0) * 0.15 * (0.5 - 0.5 * N.y) * mix(0.6, 1.0, shadow) / PI * contact * (1.0 + u_lk_bounce) * mix(veg_bounce, 1.0, leaf);
     // Shaded ground cover: light from the sunlit floor and trunks all round fills it too. Without it ferns in a
     // forest's shade drew a third as bright as the soil beside them, black cut-outs. Not in the sun, where the
     // open sward keeps its dark gaps.

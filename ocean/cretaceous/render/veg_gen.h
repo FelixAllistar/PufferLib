@@ -1182,9 +1182,11 @@ static void cycad_crown(Gen* g, V3 top, int s, float scale, int nf) {
         VRng s2 = fork_in(g);
         if (g->lod) ribbon(g, vadd(top, v3(0, -0.1f, 0)), dir_az(az), e0, 0.4f, L, 0.45f * scale, L_CYCAD, 0.3f, tw, 3, ph, 0.05f);
         else {
+            // (round 2: 14 pairs of thin 18 cm leaflets drew a black wire fishbone; a dead Cycas frond keeps
+            // its full set of leaflets, withered and folded down: more, longer, a little wider, hanging)
             Frond F = {.base = vadd(top, v3(0, -0.08f, 0)), .az = az, .e0 = e0, .droop = 0.3f, .twist = tw, .L = L,
-                       .bare = 0.12f, .pairs = 14, .lmax = 0.18f * scale, .lw = 0.12f, .ang = 1.1f, .keel = -0.2f, .curl = 0.0f, .profile = 0, .layer = L_LEAFLET, .cols = 8,
-                       .rachis_r = 0.012f, .segs = 4, .lsegs = 1, .ph = ph, .flex = 0.5f};
+                       .bare = 0.1f, .pairs = 24, .lmax = 0.25f * scale, .lw = 0.16f, .ang = 0.75f, .keel = -0.55f, .curl = 0.0f, .profile = 0, .layer = L_LEAFLET, .cols = 8,
+                       .rachis_r = 0.014f, .segs = 4, .lsegs = 1, .ph = ph, .flex = 0.5f};
             frond(g, &F);
         }
         fork_out(g, s2);
