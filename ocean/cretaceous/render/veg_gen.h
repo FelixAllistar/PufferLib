@@ -727,13 +727,17 @@ static void gen_broadleaf(Gen* g, int s) {
     }
     else if (s == 2) { C.leaf_layer = L_CL_HEART; C.lod_layer = L_LEAF3; C.stems = 2 + (int)grr(g, 0, 2.99f); C.fork = 0.3f; C.sp1 = 1.0f; C.el1 = 0.55f;
                        C.leaf_size = 0.38f; C.nleaf = 1350; spread = 0.98f; cy = 0.6f; ry = 0.42f; }   // broad, a vase of stems
-    else if (s == 3) { C.fork = 0.38f; C.nleaf = 420; C.sp2 = 0.5f; C.leaf_size = 0.38f; C.lod_size = 1.0f; spread = 0.85f; C.droop = 0.4f; }
+    else if (s == 3) {   // chloranth: a many-stemmed shrub, leafy from knee height
+        C.fork = 0.2f; C.nleaf = 520; C.sp2 = 0.5f; C.leaf_size = 0.38f; C.lod_size = 1.0f; spread = 0.95f; C.droop = 0.4f;
+        C.stems = 2 + (int)grr(g, 0, 1.99f); C.sp1 = 1.4f; C.el1 = 0.6f; cy = 0.56f; ry = 0.46f; C.inner = 0.3f;
+    }
     else {   // laurel: a dense, dark oval crown carried low on a short trunk, often forked near the ground
         C.nleaf = 1250; C.leaf_size = 0.45f; spread = 0.8f; C.fork *= 0.7f; cy = 0.56f; ry = 0.46f; C.el1 = 1.0f; C.inner = 0.35f;
     }
     crown_scale(&C, s == 0 ? 10.5f : s == 2 ? 11.5f : s == 3 ? 5.5f : 9.0f); crown_full(&C, 1.5f);
     if (s == 2) { C.lod_div = (int)(C.lod_div * 1.35f + 0.5f); C.lod_size *= 1.12f; }   // the katsura's extra cards on the full mesh only
     if (s == 0) { C.lod_div = (int)(C.lod_div * 1.12f + 0.5f); C.lod_size *= 1.05f; }   // and the magnolia's
+    if (s == 3) { C.lod_div += 1; C.lod_size *= 1.1f; }   // the chloranth's stems cost the reduced mesh some cards
     Env E; float rx = H * 0.44f * spread * grr(g, 0.9f, 1.1f), rz = H * 0.44f * spread * grr(g, 0.9f, 1.1f);
     env_init(g, &E, v3(grr(g, -0.06f, 0.06f) * H, H * cy, grr(g, -0.06f, 0.06f) * H), v3(rx, H * ry, rz), 6, 0.16f);
     crown_tree(g, &C, &E);
