@@ -888,8 +888,10 @@ static void gen_broadleaf(Gen* g, int s) {
     else if (s == 2) { C.leaf_layer = L_CL_HEART; C.lod_layer = L_LEAF3; C.stems = 2 + (int)grr(g, 0, 2.99f); C.fork = 0.3f; C.sp1 = 1.0f; C.el1 = 0.55f;
                        C.leaf_size = 0.38f; C.nleaf = 1350; spread = 0.98f; cy = 0.6f; ry = 0.42f; }   // broad, a vase of stems
     else if (s == 3) {   // chloranth: a many-stemmed shrub, leafy from knee height
-        C.fork = 0.2f; C.nleaf = 520; C.sp2 = 0.5f; C.leaf_size = 0.38f; C.lod_size = 1.0f; spread = 0.95f; C.droop = 0.4f;
-        C.stems = 2 + (int)grr(g, 0, 1.99f); C.sp1 = 1.4f; C.el1 = 0.6f; cy = 0.56f; ry = 0.46f; C.inner = 0.3f;
+        // (round 2: 520 cards of 0.38 m on 2-3 stems drew a narrow, see-through bush of oversized leaves; now
+        // smaller leaves, nearly twice as many, gathered in clumps, in a broader dome on 3-4 stems)
+        C.fork = 0.16f; C.nleaf = 980; C.sp2 = 0.42f; C.sp3 = 0.2f; C.leaf_size = 0.3f; C.lod_size = 1.0f; spread = 1.12f; C.droop = 0.4f;
+        C.stems = 3 + (int)grr(g, 0, 1.99f); C.sp1 = 1.1f; C.el1 = 0.6f; cy = 0.55f; ry = 0.5f; C.inner = 0.45f; C.clump = 0.9f;
     }
     else {   // laurel: a dense, dark oval crown carried low on a short trunk, often forked near the ground
         C.nleaf = 1250; C.leaf_size = 0.45f; spread = 0.8f; C.fork *= 0.7f; cy = 0.56f; ry = 0.46f; C.el1 = 1.0f; C.inner = 0.35f;
@@ -897,7 +899,7 @@ static void gen_broadleaf(Gen* g, int s) {
     crown_scale(&C, s == 0 ? 10.5f : s == 2 ? 11.5f : s == 3 ? 5.5f : 9.0f); crown_full(&C, 1.5f);
     if (s == 2) { C.lod_div = (int)(C.lod_div * 1.35f + 0.5f); C.lod_size *= 1.12f; }   // the katsura's extra cards on the full mesh only
     if (s == 0) { C.lod_div = (int)(C.lod_div * 1.12f + 0.5f); C.lod_size *= 1.05f; }   // and the magnolia's
-    if (s == 3) { C.lod_div += 1; C.lod_size *= 1.1f; }   // the chloranth's stems cost the reduced mesh some cards
+    if (s == 3) { C.lod_div = (int)(C.lod_div * 980.0f / 520.0f + 0.5f) + 1; C.lod_size *= 1.1f; }   // the chloranth's stems cost the reduced mesh some cards; its extra full-mesh cards none
     Env E; float rx = H * 0.44f * spread * grr(g, 0.9f, 1.1f), rz = H * 0.44f * spread * grr(g, 0.9f, 1.1f);
     env_init(g, &E, v3(grr(g, -0.06f, 0.06f) * H, H * cy, grr(g, -0.06f, 0.06f) * H), v3(rx, H * ry, rz), 6, 0.16f);
     crown_tree(g, &C, &E);
