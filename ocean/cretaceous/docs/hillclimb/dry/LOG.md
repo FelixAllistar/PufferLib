@@ -87,3 +87,6 @@ Checks after pass 12: `make -i test` (every line): `test_sim` 2 and `test_net_co
 in the cloud (no converted props); the rest pass. `camprobe` (210 violation frames in 160 runs) and `ecoprobe`
 (126 of 146 within budget) fail the same way on `cret/hc` built in a worktree (210 in 160, 126 of 146); budget
 files left alone. Bake version 28 (the pans and the desert shrub layer): the island re-bakes once.
+Added per pixel by this track (`terrain.fs`): two lookups for the pan choice, two noise reads for the straw's
+tussock mottle (one on the low preset), and mixes; the pan layer replaces a sand lookup and the hard-soil and
+crack terms reuse heights the blend already reads.
