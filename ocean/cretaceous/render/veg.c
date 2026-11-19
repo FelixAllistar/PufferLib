@@ -468,7 +468,7 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
     Canvas c = {img}; VRng r = {(uint32_t)layer * 104729u + 7};
     static const float T[L_COUNT][3] = {   // mean linear albedo per layer
         [L_FERN] = {0.045f, 0.10f, 0.028f}, [L_FERN2] = {0.05f, 0.105f, 0.03f}, [L_TFERN] = {0.038f, 0.086f, 0.027f},
-        [L_CYCAD] = {0.026f, 0.066f, 0.028f}, [L_ARAU] = {0.028f, 0.06f, 0.024f}, [L_SPRAY] = {0.08f, 0.16f, 0.036f},
+        [L_CYCAD] = {0.042f, 0.058f, 0.03f}, [L_ARAU] = {0.028f, 0.06f, 0.024f}, [L_SPRAY] = {0.08f, 0.16f, 0.036f},
         [L_PODO] = {0.03f, 0.06f, 0.02f}, [L_LEAF] = {0.045f, 0.095f, 0.03f}, [L_LEAF2] = {0.032f, 0.075f, 0.026f},
         [L_LEAF3] = {0.048f, 0.1f, 0.034f}, [L_PALM] = {0.05f, 0.098f, 0.04f}, [L_SHRUB] = {0.036f, 0.08f, 0.028f},
         // Bark: the mean albedo of each species' bark (the scans' furrow shade, baked in by fetch_foliage.sh, only adds contrast).
@@ -941,7 +941,7 @@ static void new_layer(int layer, Px* img, const Photos* P) {
     static const float T[L_COUNT][3] = {
         [L_CL_MAGN] = {0.045f, 0.095f, 0.03f}, [L_CL_LAUREL] = {0.032f, 0.075f, 0.026f}, [L_CL_HEART] = {0.048f, 0.1f, 0.034f},
         [L_CL_PODO] = {0.03f, 0.06f, 0.02f}, [L_CL_SPRAY] = {0.08f, 0.16f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f}, [L_CL_ROPE] = {0.028f, 0.06f, 0.024f},
-        [L_LEAFLET] = {0.026f, 0.066f, 0.028f}, [L_PSEG] = {0.05f, 0.098f, 0.04f}, [L_FPINNA] = {0.038f, 0.086f, 0.027f},
+        [L_LEAFLET] = {0.042f, 0.058f, 0.03f}, [L_PSEG] = {0.05f, 0.098f, 0.04f}, [L_FPINNA] = {0.038f, 0.086f, 0.027f},
         [L_ROPE] = {0.028f, 0.06f, 0.024f}, [L_SCALES] = {0.028f, 0.06f, 0.024f}, [L_HSTEM] = {0.05f, 0.09f, 0.03f},
         [L_CL_GINKGO] = {0.058f, 0.11f, 0.03f}, [L_CL_PLANE] = {0.05f, 0.1f, 0.034f}, [L_CL_BERRY] = {0.04f, 0.085f, 0.03f},
         [L_GUNNERA] = {0.04f, 0.09f, 0.03f}, [L_LILY] = {0.03f, 0.075f, 0.03f}, [L_CLUB] = {0.04f, 0.1f, 0.026f},
@@ -1205,8 +1205,10 @@ static const float LEAF_TINT[VEG_KINDS][VEG_VARIANTS][3] = {
                      {0.9f, 0.96f, 1.1f}, {1.04f, 1.0f, 0.88f}, {0.88f, 0.95f, 1.06f}, {1.12f, 1.1f, 0.82f}},
     [VEG_BROADLEAF] = {{0.92f, 0.95f, 0.95f}, {0.84f, 0.9f, 0.92f}, {0.86f, 0.9f, 0.98f}, {1.0f, 0.85f, 0.9f},
                        {0.92f, 0.95f, 0.95f}, {0.84f, 0.9f, 0.92f}, {1.2f, 1.08f, 0.78f}, {1.0f, 1.0f, 1.0f}},
-    [VEG_CYCAD] = {{1.2f, 1.0f, 0.82f}, {1.12f, 0.98f, 0.86f}, {1.2f, 1.0f, 0.82f}, {1.1f, 1.0f, 0.86f},
-                   {1.2f, 1.0f, 0.82f}, {1.12f, 0.98f, 0.86f}, {1.2f, 1.0f, 0.82f}, {1.1f, 1.0f, 0.86f}},
+    [VEG_TREEFERN] = {{0.96f, 0.92f, 0.96f}, {0.96f, 0.92f, 0.96f}, {1.04f, 0.86f, 0.92f}, {1.04f, 0.86f, 0.92f},
+                      {0.96f, 0.92f, 0.96f}, {0.96f, 0.92f, 0.96f}, {1.04f, 0.86f, 0.92f}, {1.04f, 0.86f, 0.92f}},   // Cyathea, Dicksonia: deeper, less lime
+    [VEG_CYCAD] = {{1.0f, 1.0f, 1.0f}, {0.9f, 0.96f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.06f, 1.04f, 0.9f},
+                   {1.0f, 1.0f, 1.0f}, {0.9f, 0.96f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.06f, 1.04f, 0.9f}},   // Cycas, Zamia darker, Williamsonia warmer (the olive is in their layers)
 };
 static const float* leaf_tint(int k, int q) {
     static const float one[3] = {1, 1, 1}; const float* t = LEAF_TINT[k][q];

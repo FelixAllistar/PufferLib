@@ -66,3 +66,13 @@ green under it, and the teal is mostly the haze.
    (the terrain keeps the haze's full colour). Change: the foliage haze keeps a fifth of the sky's colour to
    600 m, rising to 70% by 3 km. Kept: the far stands sit in the blue of their hills again while the teal
    at 100-600 m (`canopy`, `hill`) stays gone; canopy 172, hill 160 unchanged.
+   Check (after pass 9): `lodmatch.py` on araucaria, podocarp, dawn redwood, cypress, laurel, katsura,
+   ginkgo and plane: reduced crowns at 30 m 0.955-1.037 of the full mesh, impostors at 150 m 0.967-1.042,
+   hues alike; the tints hold through the levels.
+10. Fault: the umbrella crowns on the fern-prairie slopes of `ga0` (20-40 m) are a lime grass-green with
+   yellow patches, and the cycads (brief: olive) are the same saturated green as every fern. A debug
+   colouring showed the umbrella crowns are stout tree ferns, not cycads. Change: the cycad leaf layers
+   (`L_CYCAD`, `L_LEAFLET`) olive, 0.026/0.066/0.028 -> 0.042/0.058/0.03, with small shifts by species
+   (Zamia darker, Williamsonia warmer) in place of pass 7's yellowing tint; the tree ferns a tint that
+   deepens them (x0.96/0.92/0.96, Dicksonia x1.04/0.86/0.92). Kept, a modest step: in the gallery the
+   cycads read olive beside the green tree ferns; in `ga0` the tree-fern crowns go deeper, less lime.
