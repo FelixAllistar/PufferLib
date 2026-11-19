@@ -250,8 +250,7 @@ void main() {
         if (k == 2) al = mix(al, vec3(dot(al, vec3(0.3, 0.59, 0.11))) * vec3(1.06, 1.0, 0.9), stony);
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
-    albedo /= max(wt, 1e-4); n = normalize(n);
-    if (u_splat_debug == 5) { o = vec4(sqrt(albedo), 1.0); return; }   // PROBE (temporary) rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
+    albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
     // Large-scale tint: drier/redder patches, greener under canopy.
     vec4 misc = texture(t_misc, uv);
     float canopy = misc.a;
