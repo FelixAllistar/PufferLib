@@ -1,9 +1,9 @@
 {
  "file": "cot.glb",
  "triangles": 144,
- "materials": 4,
- "bytes": 285532,
- "sha256": "2a1d7fef2e7e828f",
+ "materials": 3,
+ "bytes": 284808,
+ "sha256": "107e141a757f8a43",
  "min": [
   -0.95,
   0.0,

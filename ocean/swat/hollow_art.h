@@ -13,7 +13,7 @@
 #include "hollow_data.h"
 
 enum { HOLLOW_MAT_PLANKS, HOLLOW_MAT_DOOR, HOLLOW_MAT_FLOOR, HOLLOW_MAT_ROOF, HOLLOW_MAT_STONE,
-       HOLLOW_MAT_GROUND, HOLLOW_MAT_DIRT, HOLLOW_MAT_ROOF_DARK, HOLLOW_MAT_COUNT };
+       HOLLOW_MAT_GROUND, HOLLOW_MAT_DIRT, HOLLOW_MAT_ROOF_DARK, HOLLOW_MAT_LIMEWASH, HOLLOW_MAT_COUNT };
 static const struct { const char* name; float tile; } hollow_mat_defs[HOLLOW_MAT_COUNT]={
     [HOLLOW_MAT_PLANKS]={"planks_grey",1.6f},   // wood_planks_grey: weathered vertical boards
     [HOLLOW_MAT_DOOR]={"planks_old",1.2f},      // old_planks_02: door leaves, interior trim
@@ -23,9 +23,10 @@ static const struct { const char* name; float tile; } hollow_mat_defs[HOLLOW_MAT
     [HOLLOW_MAT_GROUND]={"yard_ground",4.0f},   // brown_mud_leaves_01
     [HOLLOW_MAT_DIRT]={"dirt_floor",2.5f},      // dirt_floor: barn, smokehouse, cellar
     [HOLLOW_MAT_ROOF_DARK]={"roof_tin_dark",1.8f}, // rusty_corrugated_iron, graded darker/greyer: house roofs
+    [HOLLOW_MAT_LIMEWASH]={"limewash",2.0f},     // old_stone_wall, greyed and lightened: limewashed cellar walls
 };
 // Scenery GLBs drawn at identity (world space, metres).
-static const char* const hollow_scene_files[]={"hollow_terrain","hollow_woods","hollow_house_trim","hollow_outbuildings_trim"};
+static const char* const hollow_scene_files[]={"hollow_terrain","hollow_woods","hollow_house_trim","hollow_outbuildings_trim","hollow_cellar_trim"};
 #define HOLLOW_SCENE_FILES (int)(sizeof(hollow_scene_files)/sizeof(hollow_scene_files[0]))
 #define HOLLOW_MODEL_SLOTS 48
 
@@ -125,11 +126,13 @@ static bool hollow_box_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
         else if(flat || (o->part==SWAT_PART_SOLID && o->half.y<.2f)) { id=HOLLOW_MAT_FLOOR; grain=o->half.x>o->half.z ? 0 : 2; }
         else { id=HOLLOW_MAT_PLANKS; grain=o->half.y>=o->half.x && o->half.y>=o->half.z ? 1 : -1; }
         break;
-    case SWAT_STEEL: if(o->part!=SWAT_PART_LIGHT && o->half.y<.1f) id=o->center.x<23.5f && o->center.z<4 ? HOLLOW_MAT_ROOF_DARK : HOLLOW_MAT_ROOF; break;
-    case SWAT_STONE: id=HOLLOW_MAT_STONE; break;
+    case SWAT_STEEL: if(o->part!=SWAT_PART_LIGHT && o->half.y<.1f) id=o->center.x>31 && o->center.x<42 ? HOLLOW_MAT_ROOF : HOLLOW_MAT_ROOF_DARK; break; // only the barn keeps red rust
+    case SWAT_STONE: id=o->center.z>14 && o->center.y<1.2f ? HOLLOW_MAT_LIMEWASH : HOLLOW_MAT_STONE; break; // cellar liners are limewashed
     case SWAT_SOIL:
-        // Earth floors inside the barn, smokehouse and cellar read as packed dirt.
-        id=o->center.y<-1 && o->center.z>14 && o->half.x<3 ? HOLLOW_MAT_DIRT : HOLLOW_MAT_GROUND; break;
+        // Earth floors inside the barn, smokehouse and cellar read as packed dirt;
+        // the hill bank's face is a dry-laid field-stone retaining wall.
+        id=o->center.y<-1 && o->center.z>14 && o->half.x<3 ? HOLLOW_MAT_DIRT :
+           (o->center.z>12 && o->center.y>-.5f && o->half.y>1) ? HOLLOW_MAT_STONE : HOLLOW_MAT_GROUND; break;
     case SWAT_CLOTH: case SWAT_ALUMINUM: break;
     default: break;
     }

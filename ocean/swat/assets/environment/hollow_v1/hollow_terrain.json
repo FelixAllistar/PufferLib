@@ -1,9 +1,9 @@
 {
  "file": "hollow_terrain.glb",
- "triangles": 13294,
- "materials": 3,
- "bytes": 3123780,
- "sha256": "cc12ee520928cec1",
+ "triangles": 26496,
+ "materials": 4,
+ "bytes": 4471352,
+ "sha256": "d408fc9326c67538",
  "min": [
   -120.0,
   -1.219,

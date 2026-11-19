@@ -92,3 +92,29 @@ target (37.5, 3.8, -2.5), fov 52.
 | 03 | 3. Rotted feet | Per-board uneven dark splash/rot band at the base (barn, house, sheds) | Slightly |
 | 04 | View mismatch: the reference shows the long side | Camera moved to the reference's angle | (match) |
 | 05 | 1. Eave overhang | Roof slabs extended 0.75 m past the walls and dropped 0.33 m | Slightly; stopped |
+
+### Smokehouse vs `smokehouse_crow_farm_habs.jpg`
+View from 01 on: south-east 3/4, eye (30.5, 1.6, -3.5), target (25.4, 1.5, 4.5),
+fov 46.
+
+| Iter | Biggest differences | Change | Closer? |
+|---|---|---|---|
+| 00 | 3. The rot band reads as black bar-chart blocks. 1. Frontal view, unlike the reference's 3/4. | (baseline) | n/a |
+| 01 | Rot band | Rot band subtler (tint 0.42 -> 0.68, height 0.12-0.5 -> 0.04-0.26 m). Camera matched to a 3/4 view (the first try sat inside the house wall). | Yes |
+| 02 | 1. The hill bank behind is a flat black wall | The bank face is a dry-laid field-stone retaining wall, matching the cellar headwall | Yes |
+| 03 | 2. Roof red; the reference tin is dark | Only the barn keeps red rust; smokehouse and shed use the dark tin. Lime bags darkened. | Yes |
+| 04 | 3. The reference sits in rank dead grass; our yard is bare | Dead-grass tufts as wide triangles | **No**: orange paper cones (kept only as a step to 05) |
+| 05 | Tufts | Thin dark blades, 7 per clump, about 1,900 clumps, thick at walls and the woods edge, none on the lane, paths or drag marks | Yes; stopped |
+
+### Root cellar interior vs `root_cellar_interior_habs.jpg`
+View: eye (18.1, 0.25, 14.75) at the passage mouth, target (18.6, -0.7, 18.4),
+fov 72.
+
+| Iter | Biggest differences | Change | Closer? |
+|---|---|---|---|
+| 00 | 1. The reference has a barrel vault; ours a flat timber ceiling. 2. The reference has grimy limewash and a dark floor; ours raw warm stone over a bright orange dirt floor. 3. Hooks, bench, baskets. | (baseline) | n/a |
+| 01 | 2. Values | Liners use a limewashed grade of the field stone; the dirt floor graded darker and desaturated | Yes |
+| 02 | 1. Vault | Segmental limewashed barrel vault (springing 1.9 m above the floor) with three iron hooks in the crown, in a new `hollow_cellar_trim.glb`. Cot pad in stained ticking. | **Yes, large** |
+| 03 | Shadow-acne bands on the double-sided vault | Single-sided vault, crown 0.93 | Yes |
+| 04 | 2. The vault is darker than the walls | Lighter limewash grade | Slightly |
+| 05 | 2. Still dark: the vault normals faced up, away from the bulb | Faces flipped toward the bulb | Yes; stopped (matches) |

@@ -84,6 +84,31 @@ def terrain(m):
     disc = bm_grid(16, 16, lambda u, v: (-1.5 + 9 * (u - .5) * math.cos(.4) - 6 * (v - .5) * math.sin(.4), .016,
                                           -18.6 + 9 * (u - .5) * math.sin(.4) + 6 * (v - .5) * math.cos(.4)))
     p.add(disc, m["gravel"], uv_scale=.45)
+    # Dead grass: rank tufts over the unkempt yard, thick along walls and the
+    # woods edge, none on the lane, the paths, the drag marks or inside buildings.
+    import bmesh
+    rng = np.random.default_rng(77)
+    keep_out = [(13.4, 22.6, -8.6, 3.8), (31.4, 41.6, -8.6, 4.4), (23.8, 27.2, 2.8, 6.2), (5.8, 8.7, 1.8, 5.2),
+                (16.8, 19.2, 3.4, 12.1), (-1.2, 1.7, -4.3, 6.3), (-5.5, 1.5, -21.5, -16.0), (26.8, 30.2, -12.2, -8.8)]
+    tuft = bmesh.new(); tufts = 0
+    for k in range(4200):
+        x = rng.uniform(RECT[0], RECT[1]); z = rng.uniform(RECT[2], BANK_Z - .2)
+        if any(a0 <= x <= a1 and b0 <= z <= b1 for (a0, a1, b0, b1) in keep_out): continue
+        if seg_dist(x, z, LANE) < 2.2: continue
+        edge = min(x - RECT[0], RECT[1] - x, z - RECT[2], BANK_Z - z)
+        if rng.random() > .25 + .75 * math.exp(-edge / 5): continue
+        hgt = rng.uniform(.25, .65) * (1.3 if edge < 3 else 1)
+        for j in range(7):  # thin blades fanning out from a clump
+            a = rng.uniform(0, math.pi); w = rng.uniform(.012, .025); lean = rng.normal(0, .12, 2)
+            x0, z0 = x + rng.normal(0, .05), z + rng.normal(0, .05)
+            ca, sa = math.cos(a) * w, math.sin(a) * w
+            hb = hgt * rng.uniform(.6, 1.1)
+            v = [tuft.verts.new(C.E(x0 - ca, .005, z0 - sa)), tuft.verts.new(C.E(x0 + ca, .005, z0 + sa)),
+                 tuft.verts.new(C.E(x0 + lean[0] * hb * 2, hb, z0 + lean[1] * hb * 2))]
+            tuft.faces.new(v)
+        tufts += 1
+    print("grass tufts", tufts)
+    p.add(tuft, m["straw"])
     # Creek: dark still water in the trough beyond the west edge.
     def water(u, v):
         z = -130 + 300 * u; x = CREEK_X + (v - .5) * 3.2 + 1.5 * math.sin(z * .07)
@@ -187,7 +212,7 @@ def wall_battens(p, mm, x0, z0, x1, z1, y, h, out_sign, openings=(), board=.30):
         for k in range(n):
             t0 = a + (b - a) * k / n; t1 = a + (b - a) * (k + 1) / n; c = (t0 + t1) / 2
             if any(o[2] <= .1 and abs(c - o[0]) < o[1] / 2 + .05 for o in ops): continue
-            hh = rng.uniform(.12, .5) / 2
+            hh = rng.uniform(.04, .26) / 2
             if along_x: p.add(bm_box((c, y + hh, z0 + out_sign * (.0125 + .004)), ((t1 - t0) / 2 - .004, hh, .003)), M2["rot"])
             else: p.add(bm_box((x0 + out_sign * (.0125 + .004), y + hh, c), (.003, hh, (t1 - t0) / 2 - .004)), M2["rot"])
     # Corner boards at both ends.
@@ -328,12 +353,37 @@ def outbuildings_trim(m):
     return p
 
 M2 = {}
+def cellar_trim(m):
+    """Root cellar: a segmental limewashed barrel vault under the timber
+    ceiling (springing 1.95 m above the floor, crown just under the timbers),
+    iron hooks in the crown, damp streaks; the vault runs north-south."""
+    p = Part(); x0, x1, z0, z1 = 16.5, 20.5, 14.5, 18.5
+    spring, crown = .50, .93
+    half = (x1 - x0) / 2; sag = crown - spring
+    R = (half * half + sag * sag) / (2 * sag); cy = crown - R
+    def vault(u, v):
+        x = x0 + (x1 - x0) * u; dx = x - (x0 + half)
+        return (x, cy + math.sqrt(max(R * R - dx * dx, 0)), z0 + (z1 - z0) * v)
+    import bmesh
+    vb = bm_grid(16, 4, vault)
+    vb.normal_update()
+    if sum(f.normal.z for f in vb.faces) > 0:  # face down, toward the bulb
+        bmesh.ops.reverse_faces(vb, faces=list(vb.faces))
+    p.add(vb, m["lime"], uv_scale=.5)
+    for (xa, xb) in ((x0, x0 + .02), (x1 - .02, x1)):  # spring course
+        p.add(bm_box(((xa + xb) / 2, spring - .05, (z0 + z1) / 2), (.03, .05, (z1 - z0) / 2)), m["lime"])
+    for k, z in enumerate((15.6, 16.6, 17.6)):  # hooks in the crown
+        x = 18.5 + (.3 if k % 2 else -.3)
+        p.add(bm_tube([(x, crown - .01, z), (x, crown - .18, z), (x + .05, crown - .24, z), (x + .09, crown - .17, z)], .008, 5), m["rust"])
+    return p
+
 def palette():
     ph = C.polyhaven
     return {
         "leaves": mat("forest_floor", (1, 1, 1), .95, image=ph("dry_decay_leaves", "diff", "1k", 1024), normal=ph("dry_decay_leaves", "nor_gl", "1k", 512)),
         "gravel": mat("gravel", (1, 1, 1), .9, image=C.tint_image(ph("gravel_floor_02", "diff", "1k", 1024), "gravel_graded", (.5, .5, .48)), normal=ph("gravel_floor_02", "nor_gl", "1k", 512)),
         "water": mat("creek", (.015, .02, .02), .08, .0),
+        "straw": mat("dead_grass", (.13, .11, .065), .95),
         "bark": mat("bark", (1, 1, 1), .95, image=ph("bark_brown_02", "diff", "1k", 512)),
         "crown_a": mat("crown_olive", (.075, .075, .025), .9),
         "crown_b": mat("crown_rust", (.15, .055, .018), .9),
@@ -347,13 +397,14 @@ def palette():
         "tin": mat("tin", (1, 1, 1), .7, .4, image=ph("rusty_corrugated_iron", "diff", "1k", 512)),
         "rust": mat("rust", (1, 1, 1), .8, .3, image=ph("rusty_metal_02", "diff", "1k", 512)),
         "soot": mat("soot", (.02, .02, .02), .9),
-        "rot": mat("board_rot", (1, 1, 1), .95, image=C.tint_image(ph("wood_planks_grey", "diff", "1k", 512), "planks_rot", (.42, .38, .33))),
+        "lime": mat("limewash", (.78, .76, .70), .95, image=C.tint_image(ph("old_stone_wall", "diff", "1k", 512), "limewash_tex", (.5, .5, .48), (.45, .44, .41))),
+        "rot": mat("board_rot", (1, 1, 1), .95, image=C.tint_image(ph("wood_planks_grey", "diff", "1k", 512), "planks_rot", (.68, .62, .54))),
         "batten_dark": mat("batten_dark", (.62, .6, .56), .9, image=ph("wood_planks_grey", "diff", "1k", 512)),
     }
 
 if __name__ == "__main__":
     os.makedirs(C.OUT, exist_ok=True)
-    for name, fn in (("terrain", terrain), ("woods", woods), ("house_trim", house_trim), ("outbuildings_trim", outbuildings_trim)):
+    for name, fn in (("terrain", terrain), ("woods", woods), ("house_trim", house_trim), ("outbuildings_trim", outbuildings_trim), ("cellar_trim", cellar_trim)):
         if ONLY and name not in ONLY: continue
         C.reset(); C.MATS.clear(); M2.clear(); M2.update(palette())
         part = fn(M2)

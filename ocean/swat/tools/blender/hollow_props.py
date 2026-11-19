@@ -42,7 +42,7 @@ def M():
         "skin": mat("pale_skin", (.50, .44, .40), .6),
         "hay": mat("hay", (.52, .43, .22), .95),
         "canvas": mat("canvas", (.42, .40, .33), .9),
-        "lime": mat("lime_bag", (.80, .78, .72), .9),
+        "lime": mat("lime_bag", (.50, .49, .45), .9),
         "soil": mat("turned_soil", (.13, .09, .06), 1.0),
         "chain": mat("chain", (.18, .15, .13), .45, .8),
         "leaf": mat("laurel", (.028, .042, .022), .8),
@@ -190,7 +190,7 @@ def wardrobe(m):
 @prop
 def cot(m):
     p = Part()
-    p.add(bm_box((0, .38, 0), (.95, .03, .4)), m["canvas"])
+    p.add(bm_box((0, .38, 0), (.95, .03, .4)), m["mattress"], uv_mode="fit")  # stained ticking pad
     for x in (-.9, .9):
         p.add(bm_box((x, .2, 0), (.02, .2, .4)), m["rust"])
     for z in (-.38, .38):
