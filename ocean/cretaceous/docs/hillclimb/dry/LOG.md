@@ -16,3 +16,13 @@ plain (Atriplex vesicaria, SW Queensland), Atriplex glauca up close, a cracked r
    near and far, stones in dry country reddened like varnished desert pavement, pans and washes a pale grey-buff
    instead of beach gold. Kept: `desB` and `dAir` show a red-brown desert with dark stony patches apart from the
    golden grass; `grB` a little more golden; the ground shots (inside 20 m) barely change.
+2. Fault: no cracked earth, and in fact no pans: the bake's pans and washes covered 0.2% of the near-desert
+   (`CRET_TERRA_DBG=1` now prints their share and the three sandiest spots), because three quarters of the desert
+   is steeper than 27 degrees and the pan rule asked for flat hollows and still lost to the soil. Change:
+   `fetch_textures.py` fetches Poly Haven's `mud_cracked_dry_03` (CC0) as a ninth ground layer, `pan`, which
+   `view.c` loads after the eight splat materials (`GROUND_LAYERS`) and `terrain.fs` draws in place of sand
+   wherever the ground is dry (the beach never is); `terra.c` lets the pans take most of the desert's flat ground
+   and win over the soil there (2.3% of the desert, all of its valley floors), no trees on them; bake version 28.
+   Kept: `pG` (on a pan, 1.8 m) is sun-baked polygons of cracked mud; `pA` and `dAir` show pale pans down the
+   valley floors. Still: the pan is near white from 480 m and sand at the desert's very edge keeps the beach's
+   gold.

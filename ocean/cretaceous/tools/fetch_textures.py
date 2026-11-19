@@ -23,6 +23,9 @@ SLOTS = {
     "mud":    ("ph", "brown_mud_03"),
     "sand":   ("acg", "Ground088"),
     "moss":   ("acg", "Moss003"),
+    # Not a splat material: an extra layer the terrain shader draws in place of sand on the near-desert's
+    # pans and washes (sun-baked cracked mud), render/view.c GROUND_LAYERS.
+    "pan":    ("ph", "mud_cracked_dry_03"),
 }
 UA = {"User-Agent": "cretaceous-fetch-textures"}
 

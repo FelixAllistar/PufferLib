@@ -21,7 +21,8 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 #ifndef CRET_UNDER_NEAR
 #define CRET_UNDER_NEAR 0.55
 #endif
-const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
+// The ninth (pan) is not a splat material: the cracked mud drawn in place of sand on the near-desert's pans (main).
+const float TILE[9] = float[9](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5, 3.4);
 const float BED_PALE = 1.1;   // brightest the bedrock skin's tones lift the ground before easing (main)
 const float STONY_SOIL = 0.6;   // bare soil above the tree line, darkened (main)
 const float FR_CELL = 0.9;   // fractured rock: mean plate size (m)
@@ -29,15 +30,15 @@ const float SCREE_COPY = 0.5;
 // Dry country per unit luminance (round 3, dry): golden straw of the dry grassland, its olive where the
 // drainage keeps it green, and the near-desert's warm red-brown earth, darker than the straw.
 const vec3 DRY_STRAW = vec3(1.62, 1.28, 0.64), DRY_OLIVE = vec3(1.2, 1.18, 0.62), DRY_EARTH = vec3(1.42, 0.98, 0.72) * 0.86;   // scale of scree's second copy (sample_mat): stones twice the size
-const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
+const bool TRIPLANAR[9] = bool[9](true, true, false, false, false, false, false, true, false);
 // Living ground cover: ferns, mosses and litter read green, as they would
 // under a Cretaceous canopy (photo sources are mostly brown leaf litter).
-const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(0.4, 0.41, 0.44), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(2.2, 2.05, 1.7), vec3(0.85, 0.9, 0.8));   // scree: the gravel photo is far paler than the rock it falls from (read as cream bands), so grey it down to near the rock; forest floor: brown litter; fern ground: litter with some green; sand: the photo is damp, dry beach sand is pale
+const vec3 TINT[9] = vec3[9](vec3(1.0), vec3(0.4, 0.41, 0.44), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(2.2, 2.05, 1.7), vec3(0.85, 0.9, 0.8), vec3(0.74, 0.71, 0.67));   // pan: the photo is near white in the sun   // scree: the gravel photo is far paler than the rock it falls from (read as cream bands), so grey it down to near the rock; forest floor: brown litter; fern ground: litter with some green; sand: the photo is damp, dry beach sand is pale
 // Fern and moss photos are khaki; keep only their luminance detail and take
 // the hue from TINT (living fern albedo has green about twice red). The
 // detail is stretched around the photo's mean luminance (RECOLOR_MEAN), so
 // the sward reads as fronds and shadowed gaps, not a pale felt.
-const float RECOLOR[8] = float[8](0.0, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0, 0.0);
+const float RECOLOR[9] = float[9](0.0, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0, 0.0, 0.0);
 const vec3 RECOLOR_HUE = vec3(0.27, 0.5, 0.2);    // living fern sward per unit luminance (deep green, not lime)
 const float RECOLOR_MEAN = 0.19, RECOLOR_CONTRAST = 1.6;
 
@@ -160,7 +161,7 @@ vec4 fracture(vec2 q) {
 // its height map along the view ray, shift every material's lookup by the
 // hit offset, then march toward the sun for contact self-shadowing.
 // Relief depth in metres per material (rock scree dirt forest fern mud sand moss).
-const float RELIEF[8] = float[8](0.0, 0.12, 0.05, 0.05, 0.05, 0.04, 0.025, 0.06);
+const float RELIEF[9] = float[9](0.0, 0.12, 0.05, 0.05, 0.05, 0.04, 0.025, 0.06, 0.03);
 float pom_height(int k, vec2 xz, vec2 gx, vec2 gy) {
     float s = 1.0 / TILE[k];
     return textureGrad(t_mat_a, vec3(xz * s, k), gx * s, gy * s).a;
@@ -228,8 +229,12 @@ void main() {
         vec4 cv = texture(t_cover, uv);
         o = vec4((u_splat_debug == 2 ? cv.rgb : cv.aaa) * (0.4 + 0.6 * max(dot(N, u_sun), 0.0)), 1.0); return;
     }
+    // The near-desert's pans and washes (sand in dry country; the beach is never dry, view.c) are sun-baked
+    // cracked mud: the sand layer is read from the pan layer there, its edge dithered by a fine noise.
+    bool pan = texture(t_biome, uv).g > 0.22 + 0.25 * (texture(t_noise, p.xz / 3.7 + 0.21).r - 0.5);
     // Parallax on the dominant layer (planar ones only; cliffs are triplanar).
     int dom = 0; for (int k = 1; k < 8; k++) if (w[k] > w[dom]) dom = k;
+    if (pan && dom == 6) dom = 8;
     float pfade = float(u_detail >= 2) * (1.0 - smoothstep(18.0, 35.0, dist)) * step(0.0, RELIEF[dom] - 0.001) * smoothstep(0.85, 0.95, N.y);
     vec3 ps = p; float pom_h = 1.0, self_sh = 1.0;
     if (pfade > 0.0) {
@@ -250,6 +255,7 @@ void main() {
         else if (x > ww.z) { ww.zw = vec2(x, ww.z); id.zw = ivec2(k, id.z); }
         else { ww.w = x; id.w = k; }
     }
+    if (pan) id = ivec4(id.x == 6 ? 8 : id.x, id.y == 6 ? 8 : id.y, id.z == 6 ? 8 : id.z, id.w == 6 ? 8 : id.w);
     // The running best only grows, so testing each layer against it as the
     // layers are sampled (largest weight first) is still exact, and skips
     // more than the fixed bound: the top layer's own height raises it.
@@ -287,7 +293,7 @@ void main() {
         // Talus: the voids between the blocks are deep and dark (the photo's gaps are mid-grey fines).
         // From its height map, near only; past 60-150 m the mips average it away.
         if (k == 1) al *= mix(mix(0.4, 1.0, smoothstep(0.2, 0.42, mats[j].height)), 1.0, smoothstep(60.0, 150.0, dist));
-        shv += vec4(k == 0, k == 1, k == 2, k == 6) * b;
+        shv += vec4(k == 0, k == 1, k == 2, k == 6 || k == 8) * b;
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
     albedo /= max(wt, 1e-4); shv /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
