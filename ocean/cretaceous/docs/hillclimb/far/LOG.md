@@ -85,3 +85,17 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
     stand shade from 8-30 m instead of 15-40 m. Reverted: the palm trunks and the far redwood trunks darkened a
     little, but the palest ones (the ginkgo's and the plane's, their bark itself near white in the shade) did
     not move; their tone belongs to the near track's bark, and the term reached into its range for no gain.
+
+## Sheets (left `cret/hc`, right this branch; llvmpipe, high preset, 1280x720 halved)
+
+- `01`-`08`: world shots `canopy`, `val3`, `hill`, `mid`, `skyh`, `val7`, `aerial`, `ridge` (cameras in the report).
+- `09`: the reduced mesh at 30 m (full mesh, reduced before, reduced after) for the magnolia, the young
+  redwood, the araucaria and the tree fern.
+- `10`: the impostor at 150 m (full mesh, impostor before, impostor after) for the old redwood, the katsura,
+  the araucaria and the ginkgo.
+
+## Final lodmatch (20 trees, luma against the full mesh; before is `cret/hc`)
+
+Reduced mesh at 30 m within 5% of the full mesh: 20 of 20 (before 5 of 20; worst before magnolia 1.33,
+ginkgo 0.79). Impostor at 150 m within 5%: 19 of 20 (before 6 of 20; worst before old redwood 1.23,
+redwood 1.21, Sabal 1.18; worst after Sabal 1.07 on 55 pixels).
