@@ -1479,8 +1479,11 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
                                          v->look & VEG_LOOK_CREASE ? "on" : "off", v->look & VEG_LOOK_EDGE ? "on" : "off");
     int tris = build_meshes(v);
     v->lod_dist = getenv("CRET_VEG_LOD") ? (float)atof(getenv("CRET_VEG_LOD")) : 25.0f;
-    // Full tree meshes (twigs, curled leaf clusters) out to ~32 m on high, the reduced mesh beyond.
-    v->tree_lod_dist = getenv("CRET_VEG_TREE_LOD") ? (float)atof(getenv("CRET_VEG_TREE_LOD")) : 32.0f;
+    // Full tree meshes (twigs, curled leaf clusters) out to ~24 m on high, the reduced mesh beyond. It was 32 m
+    // until the trees grew (512k to 805k triangles over the 2026-11-19 look pass): on a GTX 1060 at 1920x1080 the
+    // riverside forest then took 49 ms a frame and the canopy view 48 ms; at 24 m they take 33 and 31 ms (28 and
+    // 27 before the pass), and the reduced meshes are matched closely enough that the two do not differ by eye.
+    v->tree_lod_dist = getenv("CRET_VEG_TREE_LOD") ? (float)atof(getenv("CRET_VEG_TREE_LOD")) : 24.0f;
     CRET_LOAD_MARK("veg: species meshes");
     // Impostors are baked every start (about 0.5 s): caching them needs a GPU
     // readback, which broke later allocations on Mesa's d3d12 driver (WSL).

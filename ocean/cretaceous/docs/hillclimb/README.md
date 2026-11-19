@@ -31,12 +31,16 @@ the final world.
 
 ## Not done
 
-- **Frame time.** On a GTX 1060 (high, 1920x1080, through WSL) the round 2
-  merge drew the riverside forest in 38.5 ms against 27.9 ms on 5.0; the
-  other views moved by 2 ms or less. Tree meshes went from 512k to 805k
-  triangles over the pass. The switch distances (`CRET_VEG_TREE_LOD`,
-  `CRET_VEG_LOD`, `CRET_VEG_NEAR`) have not been retuned, and round 3 was not
-  timed on a GPU.
+- **Frame time, partly.** Tree meshes went from 512k to 805k triangles over
+  the pass. On a GTX 1060 (high, 1920x1080, through WSL, nothing else on the
+  card) the final build drew the riverside forest in 49.2 ms and the canopy
+  view in 48.3 ms, against 27.9 and 27.4 ms on 5.0 before the pass. The full
+  tree mesh now switches to the reduced one at 24 m, not 32 m
+  (`tree_lod_dist`, `CRET_VEG_TREE_LOD`): 33.1 and 31.2 ms, with no visible
+  difference side by side. 18 m gains under 1 ms more. What is left is mostly
+  the terrain shader (river 3.3 to 6.8 ms, canopy 8.9 to 11.3 ms: the rock
+  fracture and dry-country terms). The aerial, ridge and coast views were not
+  timed on the final build.
 - The dwarf shrub reads lime-olive, not grey (it needs a `LEAF_TINT` entry);
   the cheirolep's reduced crown and the krummholz mats want `LOD_TONE` entries.
 - The grass sward in the foreground is still a bright lime.
