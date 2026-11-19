@@ -76,3 +76,8 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
     it, ferns keep at least 75% of the lattice (the patch draw is unchanged and still only taken by the understorey
     kinds, so no tree moves). Kept: `prH` is a closed sea of bracken, `prJ` unchanged, forest floors unchanged.
     Ferns on the island 1,449,641 to 1,669,427 (drawn only near the camera).
+12. Fault: from 300-600 m the near-desert hills are still one cream colour; the splat view shows them as bare earth
+    with only a little gravel. Change: `terra.c` stony ground in the near-desert in larger patches (a 260 m noise
+    beside the 90 m one), more of it on slopes, and heavier (1.35). Kept: `desH` (2 m up on a desert hillside) is
+    stony grey-brown ground instead of orange earth; `desA` and `desB` read a little greyer and less cream. The
+    straw tint the shader lays over bare earth in dry country still sets most of the tone from afar.

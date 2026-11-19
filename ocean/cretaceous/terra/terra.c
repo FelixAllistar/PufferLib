@@ -1291,11 +1291,11 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
             float d = desert, flat_ = 1 - sstep(0.06f, 0.16f, slope);
             float pan = flat_ * sstep(0.2f, 1.2f, curv[i] + 0.8f * n2) * sstep(-0.1f, 0.25f, n1 + 0.3f * n2);
             float wash = sstep(0.16f, 0.3f, flowlog + 0.05f * n3) * (1 - sstep(0.12f, 0.25f, slope));   // on the valley floors and fans, not as rills down every slope
-            float pave = (1 - sstep(0.7f, 1.0f, slope)) * sstep(0.0f, 0.25f, fbm(wx / 90.0f, wz / 90.0f, s + 24, 3, 2, 0.5f) + 0.25f * n3 + 0.3f * sstep(0.2f, 0.6f, slope)) * (1 - pan) * (1 - wash);   // stony flats, and stony hillsides
+            float pave = (1 - sstep(0.7f, 1.0f, slope)) * sstep(0.0f, 0.25f, 0.6f * fbm(wx / 90.0f, wz / 90.0f, s + 24, 3, 2, 0.5f) + 0.6f * fbm(wx / 260.0f, wz / 260.0f, s + 25, 2, 2, 0.5f) + 0.25f * n3 + 0.45f * sstep(0.2f, 0.6f, slope)) * (1 - pan) * (1 - wash);   // stony flats, and stony hillsides
             float scrubg = sstep(0.05f, 0.3f, n2 + 0.25f * n3) * (1 - pan) * (1 - wash);
             w[TERRA_MAT_DIRT] += open * d * (0.9f + 0.5f * n3) * (1 - 0.6f * pan) * (1 - 0.5f * wash);
             w[TERRA_MAT_SAND] += open * d * (0.8f * pan + 0.45f * wash * (0.6f + 0.6f * n3));
-            w[TERRA_MAT_SCREE] += open * d * (1.0f * pave + 0.9f * wash + 0.6f * crest);
+            w[TERRA_MAT_SCREE] += open * d * (1.35f * pave + 0.9f * wash + 0.6f * crest);
             w[TERRA_MAT_ROCK] += d * 0.5f * crest * sstep(0.2f, 0.6f, n3 + 0.3f);
             w[TERRA_MAT_FERN] *= 1 - 0.85f * d; w[TERRA_MAT_MOSS] *= 1 - d; w[TERRA_MAT_FOREST] *= 1 - 0.9f * d; w[TERRA_MAT_MUD] *= 1 - d;
             w[TERRA_MAT_FOREST] += open * d * 0.75f * scrubg;
