@@ -1364,7 +1364,10 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
             float bare_ = (1 - dpan) * (1 - 0.35f * dpave), wline = sstep(0.0f, 0.12f, dwash) * (1 - sstep(0.5f, 0.9f, dwash));
             v[TERRA_VEG_CONIFER] = fmaxf(v[TERRA_VEG_CONIFER], grow * d * 0.3f * wline * sstep(0.0f, 0.3f, n3));
             v[TERRA_VEG_CYCAD] = lerpf(v[TERRA_VEG_CYCAD], grow * (0.22f * cl + 0.15f * wline) * bare_, d);   // sparse: a cycad here and there in the scrub
-            v[TERRA_VEG_SHRUB] = lerpf(v[TERRA_VEG_SHRUB], grow * fminf(0.6f * (0.45f + 0.55f * cl) + 0.35f * wline, 0.85f) * bare_, d);
+            // (round 3, dry) The flats are speckled with dwarf shrubs (flora.h FL_DWARF, the shrub layer's
+            // species there), a bush every few metres, so the layer stands near full on them whatever the bake's
+            // growth term says (it is low on dry ground and the scatter squares the density).
+            v[TERRA_VEG_SHRUB] = lerpf(v[TERRA_VEG_SHRUB], fminf(0.75f + 0.2f * cl + 0.3f * wline, 1.0f) * (1 - dpan) * (1 - 0.12f * dpave) * sstep(0.0f, 0.3f, grow + 0.2f), d);   // dwarf shrubs stand on the stony flats too (gibber plains)
         }
         // The strand: behind the beach, on low ground near the sea (not cliffs), the forest gives way over
         // 40-80 m to an open belt of palms in groves and salt-hardy scrub on sandy ground (the splat above),

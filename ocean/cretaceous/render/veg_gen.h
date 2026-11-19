@@ -1566,8 +1566,53 @@ static void gen_gunnera(Gen* g) {
     // The flower spike: a tall knobbly cone of tiny red-brown flowers.
     float h = grr(g, 0.4f, 0.7f); ball(g, v3(0, h * 0.5f, 0), v3(0, 1, 0), h * 0.16f, 3.0f, SKIN_PALM, 8, 6, (Wnd){0.2f, 0, 0, 0, 0});
 }
+// Dwarf shrub (round 3, dry): the low grey bush of the near-desert flats (Karoo bush, saltbush), 0.2-0.55 m
+// tall and up to a metre across. A dense dome of wiry silver-grey stems (the weathered-wood bark tone) from
+// one rootstock, each forking into a few twigs, small grey-olive leaves in tufts over the outer half of the
+// dome (part dry, so the bush reads grey-olive with straw, not green). Hundreds stand on the flats.
+static void gen_dwarf(Gen* g) {
+    float R = grr(g, 0.28f, 0.5f), H = R * grr(g, 0.75f, 1.1f);   // half width, height (m)
+    int nst = g->lod ? 6 : 10 + (int)grr(g, 0, 5), bt = g->bark_tone;
+    LeafPts L = {0}; V3 c = v3(0, H * 0.45f, 0);
+    g->bark_tone = 11;
+    for (int k = 0; k < nst; k++) {
+        float az = k * 2.39996f + grr(g, -0.4f, 0.4f), el = grr(g, 0.2f, 1.15f), ph = gr(g);
+        // Reach the dome (an ellipsoid R wide, H high) along the stem's line, a little short of it.
+        V3 d = dir_ae(az, el); float len = 1.0f / sqrtf((d.x * d.x + d.z * d.z) / (R * R) + d.y * d.y / (H * H)) * grr(g, 0.8f, 1.0f);
+        Path P; P.n = 4; P.len = len; V3 b = vmul(dir_az(az), grr(g, 0.0f, 0.03f)); b.y = -0.03f;
+        for (int q = 0; q < 4; q++) {
+            float t = q / 3.0f; V3 dq = dir_ae(az + 0.25f * sinf(ph * 6.283f + t * 3.0f), el + 0.35f * (1 - t) - 0.15f);   // rises steeply from the root, then leans out
+            P.p[q] = q == 0 ? b : vadd(P.p[q - 1], vmul(dq, len / 3)); P.r[q] = lerpf(0.009f, 0.003f, t); P.hw[q] = t; P.ws[q] = t;
+        }
+        g->fine = 1; tube(g, &P, 3, 1, 0.15f, 0, ph, 0, g->bark_layer, 0, 0); g->fine = 0;
+        // Two or three twigs off the outer part; leaf tufts along them and at the stem's end.
+        int ntw = g->lod ? 1 : 2 + (int)grr(g, 0, 1.99f);
+        for (int j = 0; j < ntw; j++) {
+            float t = grr(g, 0.45f, 0.85f); V3 p0 = vlerp(P.p[1], P.p[3], (t - 0.33f) / 0.67f);
+            V3 dt = vnorm(vadd(dir_ae(az + grr(g, -1.2f, 1.2f), el + grr(g, -0.3f, 0.4f)), v3(0, 0.2f, 0)));
+            float lt = len * grr(g, 0.25f, 0.45f); Path T; T.n = 2; T.len = lt;
+            T.p[0] = p0; T.p[1] = vadd(p0, vmul(dt, lt)); T.r[0] = 0.003f; T.r[1] = 0.0015f; T.hw[0] = t; T.hw[1] = 1; T.ws[0] = t; T.ws[1] = 1;
+            if (!g->lod) { g->fine = 1; tube(g, &T, 3, 1, 0.1f, 0, ph, gr(g), g->bark_layer, 0, 0); g->fine = 0; }
+            lp_add(&L, vlerp(T.p[0], T.p[1], 0.6f), dt, (Wnd){1, ph, 1, gr(g), 0}, 1.0f);
+            lp_add(&L, T.p[1], dt, (Wnd){1, ph, 1, gr(g), 0}, 1.0f);
+        }
+        lp_add(&L, P.p[3], vnorm(vsub(P.p[3], P.p[2])), (Wnd){1, ph, 1, 0, 0}, 1.2f);
+        lp_add(&L, P.p[2], vnorm(vsub(P.p[2], P.p[1])), (Wnd){0.7f, ph, 0.7f, 0, 0}, 0.8f);
+        lp_add(&L, vlerp(P.p[1], P.p[2], 0.3f), vnorm(vsub(P.p[2], P.p[1])), (Wnd){0.4f, ph, 0.4f, 0, 0}, 0.5f);   // leafy down to the ground, not a puff on stems
+    }
+    g->bark_tone = bt;
+    // Its leaves in two lots, olive-khaki and straw (frond dryness), so the bush reads dry and pale, not green.
+    float d0 = grr(g, 105, 130);
+    for (int h = 0; h < 2; h++) {
+        g->dry = (int)(d0 + (h ? 30 : -30));
+        leaf_cards(g, &L, 55 + (int)(R * 90), c, L_CL_SPRAY, 0.09f + 0.07f * R, 1.0f, 0.2f, 0.4f, 2, L_SHRUB, 0.18f + 0.18f * R, 3);
+    }
+    g->dry = 0;
+    free(L.a);
+}
 static void gen_shrub(Gen* g, int sp) {
     if (sp == FL_HERB) { gen_herb(g); return; }
+    if (sp == FL_DWARF) { gen_dwarf(g); return; }
     if (sp == FL_GUNNERA) { gen_gunnera(g); return; }
     bool berry = sp == FL_BERRY_SHRUB; float R = berry ? grr(g, 0.7f, 1.1f) : grr(g, 0.8f, 1.3f);
     Crown C = {.H = R * 1.5f, .r0 = 0.05f, .fork = 0.12f, .stems = 3 + (int)grr(g, 0, 2.99f), .leader = 0, .sp1 = 0.35f, .el1 = 0.7f,

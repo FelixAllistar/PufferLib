@@ -26,3 +26,14 @@ plain (Atriplex vesicaria, SW Queensland), Atriplex glauca up close, a cracked r
    Kept: `pG` (on a pan, 1.8 m) is sun-baked polygons of cracked mud; `pA` and `dAir` show pale pans down the
    valley floors. Still: the pan is near white from 480 m and sand at the desert's very edge keeps the beach's
    gold.
+3. Fault: the desert scrub is 1-2 m green bushes, a few dozen to the hectare; no low dwarf shrub. Change:
+   `veg_gen.h` `gen_dwarf`, a new shrub-layer species (`flora.h` `FL_DWARF`, listed last so no other species
+   moves; it takes the second seeds of gunnera and evergreen scrub): a dome 0.2-0.55 m high and up to a metre
+   across of 10-15 wiry stems of weathered grey wood, forking into twigs, leaf tufts of the fine scale-leaf
+   spray down to the ground, in two lots of dryness (khaki and straw). Its habitat: dry (moisture under 0.3),
+   open to half-shaded, not in hollows, so the evergreen scrub keeps the washes and hollows. `terra.c`: the
+   desert's shrub layer stands near full on the flats, stony ones too (the scatter squares the layer, which was
+   0.2-0.4 there, so a few percent of the sites held a plant). Probe (a throwaway world reader): over 108 desert
+   points the shrub layer is 0.41-0.59 (was 0.2-0.4), the dwarf shrub 55% of it, evergreen scrub 32%. Kept:
+   `dPan` (25 m up) shows hundreds of small bushes in loose stands where there were a few dozen. Still: they
+   read light olive-green, not grey; on the ground (`desG`) the view is still the old tufts.
