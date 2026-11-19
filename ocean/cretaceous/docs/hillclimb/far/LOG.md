@@ -38,3 +38,9 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
    the impostor's coverage boost per mip level 0.5 -> 0.3. Reverted: the counts came down a little (1.31, 1.27,
    1.33) and tone held, but in `val3`, `hill` and `skyh` the far stands only got a shade thinner, showing more
    ground; no visible gain.
+6. Fault: a forest across a valley (`val3`, `hill`) was a palisade of the same cone in the same tone; the
+   reference photo of a Sierra conifer valley is a mottle of lighter and darker crowns. Change: past 30-80 m each
+   tree's leaf tone spreads by up to +-32% (from its phase) and its yellow/blue hue shift by 2.6 times, in
+   veg.vs and veg_imp.vs alike, so a tree keeps its tone through the swap. A first try at +-16% and 1.8 times
+   was too faint to see through the haze. Kept: the far stands read as single crowns of different tones; the
+   near trees (under 30 m) are untouched.

@@ -1,5 +1,7 @@
 #version 330
 #include "depth.glsl"
+// Far stands: per-tree spread of leaf tone and hue (main; the same in veg.vs).
+const float VEG_FAR_TONE = 0.32, VEG_FAR_HUE = 1.6;
 layout(location = 0) in vec2 a_corner;   // x -1..1, y 0..1
 layout(location = 4) in vec4 i_ps;
 layout(location = 5) in vec4 i_rot;
@@ -43,6 +45,8 @@ void main() {
     v_uv = vec2(a_corner.x * 0.5 + 0.5, a_corner.y);
     v_world = wp; v_base = base; v_fade = fade; v_hue = i_rot.z; v_rot = i_rot.xy;
     v_tone = u_imp_tone[clamp(int(i_extra.y + 0.5) / u_views, 0, 63)];
+    float fw = smoothstep(30.0, 80.0, d);   // far stands: as veg.vs
+    v_tone *= 1.0 + VEG_FAR_TONE * (fract(i_rot.w * 7.123) * 2.0 - 1.0) * fw; v_hue *= 1.0 + VEG_FAR_HUE * fw;
     vec4 clip = u_viewproj * vec4(wp, 1.0);
     v_w = clip.w; gl_Position = scene_clip(clip);
 }
