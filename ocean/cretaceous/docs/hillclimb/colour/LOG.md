@@ -39,3 +39,8 @@ green under it, and the teal is mostly the haze.
    saturation 0.49). Change: the ground cover's saturation offset in `veg_shade` -0.22 -> -0.38. Kept: the
    fronds read as a natural mid green in sun and shade, the prairie at `ga0` no longer glows; lime share
    24-25% -> 15-17%, saturation 0.49 -> 0.44-0.46; trees untouched.
+6. Fault: in `mid` a third of the broadleaf crowns in sun are a candy or lime green, and the whole stand
+   more saturated than the reference forest photos. Change: the leaves' saturation boost under a high sun
+   0.05-0.2 -> 0-0.1 (the ground cover's offset -0.38 -> -0.33, so it ends a little further down than in
+   pass 5). Kept: the stand reads as photographed rather than painted, the lime crowns calm down; lime
+   share mid 28% -> 20%, ga0 15% -> 10%; conifer slopes unchanged.
