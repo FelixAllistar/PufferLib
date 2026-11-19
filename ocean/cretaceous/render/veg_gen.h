@@ -265,6 +265,20 @@ static float bark(Gen* g, const Path* P, float v0, float ph, float phs, float lo
     float vt = clampf(2 * VPI * r0 / urep, 0.08f, 1.8f) * bark_tile_aspect(g->bark_layer);
     bool trunk = P->p[0].y < 0.05f && r0 > 0.05f && g->rf.seed;
     if (!trunk && !(r0 > 0.025f && g->rf.seed)) return tube(g, P, sides_for(g, r0), urep, vt, v0, ph, phs, g->bark_layer, 0, lobes);
+    // Full mesh: a Catmull-Rom midpoint between every two skeleton points, so a limb or trunk bends in a curve
+    // instead of a polyline's elbows (the skeleton, and so every child's place on it, is unchanged).
+    Path Sm;
+    if (!g->lod && g->kind != VEG_SNAG && P->n >= 3 && 2 * P->n - 1 <= PMAX) {   // (snags: broken, angular, and a cheap mesh)
+        Sm.n = 0; Sm.len = P->len;
+        for (int k = 0; k < P->n; k++) {
+            Sm.p[Sm.n] = P->p[k]; Sm.r[Sm.n] = P->r[k]; Sm.hw[Sm.n] = P->hw[k]; Sm.ws[Sm.n] = P->ws[k]; Sm.n++;
+            if (k == P->n - 1) break;
+            V3 p0 = P->p[k > 0 ? k - 1 : 0], p1 = P->p[k], p2 = P->p[k + 1], p3 = P->p[k + 2 < P->n ? k + 2 : P->n - 1];
+            Sm.p[Sm.n] = vadd(vmul(vadd(p1, p2), 0.5625f), vmul(vadd(p0, p3), -0.0625f));
+            Sm.r[Sm.n] = 0.5f * (P->r[k] + P->r[k + 1]); Sm.hw[Sm.n] = 0.5f * (P->hw[k] + P->hw[k + 1]); Sm.ws[Sm.n] = 0.5f * (P->ws[k] + P->ws[k + 1]); Sm.n++;
+        }
+        P = &Sm;
+    }
     Path Q; Q.n = 0; Q.len = P->len;
     // Limbs a little heavier than grown (the skeleton keeps its points): they thinned too fast from trunk to twig.
     Path W; if (!trunk) { W = *P; for (int k = 0; k < W.n; k++) W.r[k] *= 1.2f; P = &W; }
