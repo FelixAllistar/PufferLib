@@ -22,12 +22,12 @@
 
 enum {
     PIV2_DRAPES,PIV2_DRESSER,PIV2_FRIDGE,PIV2_COFFEE,PIV2_ASHTRAY,PIV2_HEATER,
-    PIV2_CLOSET,PIV2_SMOKE,PIV2_WAITING,PIV2_PLANT,PIV2_COOLER,PIV2_BROCHURE,
+    PIV2_CLOSET,PIV2_WAITING,PIV2_PLANT,PIV2_COOLER,PIV2_BROCHURE,
     PIV2_CART,PIV2_SHELF,PIV2_DRAPES_B,SWAT_PROPS_V2_ASSETS
 };
 static const char* const props_v2_files[SWAT_PROPS_V2_ASSETS]={
     "drapes.glb","dresser.glb","mini_fridge.glb","coffee_maker.glb","ashtray.glb","wall_heater.glb",
-    "closet_rod.glb","smoke_detector.glb","waiting_chairs.glb","potted_plant.glb","water_cooler.glb",
+    "closet_rod.glb","waiting_chairs.glb","potted_plant.glb","water_cooler.glb",
     "brochure_rack.glb","laundry_cart.glb","linen_shelf.glb","drapes_avocado.glb"};
 
 // World-space mount (metres, engine yaw; model front faces local +Z).
@@ -53,18 +53,24 @@ static const SwatPropV2Piece props_v2_pieces[]={
     // X+1.35 leaves a 0.53 m dead strip beside it. West wall (face X-1.905):
     // the entrance door opens flat against it up to its bumper at z -0.95;
     // the desk starts at z -1.74, so the nook between holds a 0.5 m fridge.
-    // Open closet (shelf, rod, hangers) over the luggage rack: 101, 102.
-    {PIV2_CLOSET,106,PIV2_ROOM(0)+1.95f,.0f,-.82f,-SWAT_PI*.5f,true},
+    // Placement is checked against recorded squad/hostile/civilian runs
+    // (tools/props_interior_clearance.py): every floor piece keeps >= 0.3 m
+    // from all actor feet. An occupant stands in Room 102's west nook and the
+    // player clears Room 101's east strip next to the luggage rack, so those
+    // spots stay empty.
+    // Open closet (shelf, rod, hangers) over the luggage rack: 102, 103.
     {PIV2_CLOSET,107,PIV2_ROOM(1)+1.95f,.0f,-.82f,-SWAT_PI*.5f,true},
-    // Low dresser with its tall mirror beside the bed: 101, 103, 104.
-    {PIV2_DRESSER,9,PIV2_ROOM(0)+1.905f,.0f,-2.02f,-SWAT_PI*.5f,false},
+    {PIV2_CLOSET,108,PIV2_ROOM(2)+1.95f,.0f,-.82f,-SWAT_PI*.5f,true},
+    // Low dresser with its tall mirror beside the bed: deep (pillow end) in
+    // 101/102, mid-bed in 103/104 (104's nightstand holds the pillow end).
+    {PIV2_DRESSER,9,PIV2_ROOM(0)+1.905f,.0f,-2.80f,-SWAT_PI*.5f,false},
+    {PIV2_DRESSER,33,PIV2_ROOM(1)+1.905f,.0f,-2.80f,-SWAT_PI*.5f,false},
     {PIV2_DRESSER,57,PIV2_ROOM(2)+1.905f,.0f,-1.95f,-SWAT_PI*.5f,false},
     {PIV2_DRESSER,81,PIV2_ROOM(3)+1.905f,.0f,-1.95f,-SWAT_PI*.5f,false},
-    // Mini fridge in the west nook, coffee maker on top: 102, 103, 104.
-    {PIV2_FRIDGE,33,PIV2_ROOM(1)-1.905f,.0f,-1.33f,SWAT_PI*.5f,false},
-    {PIV2_FRIDGE,57,PIV2_ROOM(2)-1.905f,.0f,-1.33f,SWAT_PI*.5f,false},
+    // Mini fridge in the west nook, coffee maker on top: 101, 104.
+    {PIV2_FRIDGE,9,PIV2_ROOM(0)-1.905f,.0f,-1.33f,SWAT_PI*.5f,false},
     {PIV2_FRIDGE,81,PIV2_ROOM(3)-1.905f,.0f,-1.33f,SWAT_PI*.5f,false},
-    {PIV2_COFFEE,33,PIV2_ROOM(1)-1.86f,.85f,-1.27f,SWAT_PI*.5f+.15f,false},
+    {PIV2_COFFEE,9,PIV2_ROOM(0)-1.86f,.85f,-1.27f,SWAT_PI*.5f+.15f,false},
     {PIV2_COFFEE,81,PIV2_ROOM(3)-1.86f,.85f,-1.40f,SWAT_PI*.5f-.2f,false},
     // Ashtrays (tabletop): free corner of the desk in 101/103 (102/104
     // carry the beer bottles there), the reception counter beside the phone

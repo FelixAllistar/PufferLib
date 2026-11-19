@@ -11,6 +11,9 @@
 # local x -0.98..+0.98; the wide (west) stack overlaps its frame edge, the
 # narrow (east) stack is pushed into the 0.1 m corner by the party wall
 # (local x >= -1.08).
+# Route clearance (in-game iteration 3, tools/props_interior_clearance.py):
+# officers post beside the entrance door 0.3-0.5 m off the facade, so the
+# wide stack is kept to local x 0.86..1.06 (+ hem flare) and 0.13 m deep.
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from props_int_v2_common import *
@@ -20,10 +23,10 @@ P = dict(
     top=2.74,          # Fabric top under the ceiling track (world y).
     hem=0.025,         # Hem above the carpet.
     folds_w=5, folds_e=3,
-    amp=.11,           # Fold depth (half) in the body.
+    amp=.062,          # Fold depth (half) in the body.
     head=.10,          # Pinch-pleat header height.
-    flare=.12,         # Extra stack width at the hem.
-    standoff=.075,     # Track centre from the wall.
+    flare=.08,         # Extra stack width at the hem.
+    standoff=.06,      # Track centre from the wall.
     hue=(0.90, 0.64, 0.38), shade=(0.58, 0.30, 0.14),   # Gold damask light/dark.
     hue_b=(0.62, 0.62, 0.34), shade_b=(0.30, 0.31, 0.13), # Avocado.
 )
@@ -108,11 +111,11 @@ def part_add_raw(part, bm, m):
 
 def drapes(name, cloth):
     part = Part()
-    stack(part, 0.86, 1.33, P["folds_w"], 11, 1.10, cloth)
+    stack(part, 0.86, 1.06, P["folds_w"] - 2, 11, .96, cloth)
     stack(part, -1.07, -0.86, P["folds_e"], 12, -1.07, cloth)
     # Ceiling traverse track with end brackets.
-    part.add(bm_box((.13, P["top"] - MOUNT_Y + .025, P["standoff"]), (1.21, .012, .018), bevel=.003), metal)
-    for x in (1.32, -1.06):
+    part.add(bm_box((-.005, P["top"] - MOUNT_Y + .025, P["standoff"]), (1.065, .012, .018), bevel=.003), metal)
+    for x in (1.05, -1.06):
         part.add(bm_box((x, P["top"] - MOUNT_Y + .02, P["standoff"] / 2), (.012, .012, P["standoff"] / 2)), metal)
     return export(name, part)
 

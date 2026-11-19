@@ -12,4 +12,5 @@ Reference: John Margolies, "Fallsview Room 293, $48 day, $296 wk, Ellenville, Ne
 - drapes iter 10: flare anchored on the corner edge so the narrow stack never enters the party wall; mirrored for yaw = pi mount; closer: same look (fit fix)
 - drapes in-game 1: placed on the four facades; read too saturated against the dim yellow rooms -> damask darkened/desaturated; closer: yes
 - drapes in-game 2: second colourway (avocado) for 102/104 so rooms differ; gold stays in 101/103; closer: yes
+- drapes in-game 3: route check (tools/props_interior_clearance.py over 7 recorded squad/hostile runs) showed officers posting beside the entrance 0.4-0.5 m off the facade, 0.13 m from the wide stack -> stack narrowed to 0.20 m (+hem flare) and folds flattened to 0.12 m deep; all tracks clear at a 0.25 m body radius; still reads as stacked drapes; closer: same look, route-safe
 Remaining: folds are smooth tubes, no pinch-pleat header detail at the track; no sheers (the window's own drawn curtain fills the glass).
