@@ -1294,7 +1294,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
             float d = desert, cl = sstep(0.05f, 0.3f, n2 + 0.25f * n3);
             v[TERRA_VEG_CONIFER] *= 1 - 0.93f * d; v[TERRA_VEG_BROADLEAF] *= 1 - 0.95f * d; v[TERRA_VEG_TREEFERN] *= 1 - d; v[TERRA_VEG_PALM] *= 1 - 0.7f * d;
             v[TERRA_VEG_FERN] *= 1 - 0.85f * d; v[TERRA_VEG_HORSETAIL] *= 1 - d;
-            v[TERRA_VEG_CYCAD] = lerpf(v[TERRA_VEG_CYCAD], grow * 0.5f * cl, d);
+            v[TERRA_VEG_CYCAD] = lerpf(v[TERRA_VEG_CYCAD], grow * 0.22f * cl, d);   // sparse: a cycad here and there in the scrub
             v[TERRA_VEG_SHRUB] = lerpf(v[TERRA_VEG_SHRUB], grow * 0.55f * (0.3f + 0.7f * cl), d);
         }
         if (sea[i] || h < 0.3f) for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = 0;
