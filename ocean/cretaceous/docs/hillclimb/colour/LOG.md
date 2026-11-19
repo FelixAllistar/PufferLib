@@ -80,3 +80,8 @@ green under it, and the teal is mostly the haze.
    end draws a line. Change tried: an olive tint (x1.1/1/0.82) on the sward and tall-grass kinds in
    `LEAF_TINT`. Reverted: nothing moved, so the green there is not the plant meshes' (most likely the
    terrain's own ground material, `terrain.fs`, outside this track).
+12. Fault: in `redwood` (3 m, under a stand) and `ground` the ferns in shade are an emerald green that
+   glows against the dull floor: their light there is mostly sky fill, which goes through the leaves'
+   green filter at full weight. Change: ground cover takes the filter at 0.4 instead of 0.75 (trees
+   unchanged). Kept: the shaded ferns sit in the floor's shade as a muted green, sunlit fronds unchanged;
+   ground lime share 10.6% -> 5.5%, ga0 10% -> 8%.

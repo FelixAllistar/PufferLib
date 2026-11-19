@@ -116,7 +116,9 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // first, which filters it green (and keeps sunlit ferns from going mint
     // under a blue sky). Gentler with a low sun: in the shade at golden hour
     // the full filter turned crowns a saturated emerald.
-    amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * 0.75 * (1.0 - 0.6 * veg_dry));
+    // Ground cover takes a lighter share (round 3): ferns in a forest's shade, filled mostly by this sky light,
+    // drew emerald against the dull floor.
+    amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * mix(0.75, 0.4, u_understory) * (1.0 - 0.6 * veg_dry));
     // Ground bounce lights undersides and trunks (forest floor albedo ~0.15).
     // veg_bounce: the trunks of cycads, palms and tree ferns take more (veg.fs; terrain.fs takes about three
     // times as much): standing under their own low crown, the lit ground round them is most of what shows
