@@ -48,3 +48,7 @@ plain (Atriplex vesicaria, SW Queensland), Atriplex glauca up close, a cracked r
    air. Change: `terrain.fs` the pale grey-buff of pans and washes reaches wherever the ground is at all dry (the
    beach never is) and greys by a fifth from 60 to 400 m. Kept: in `pA` the gold rim along the forest edge is
    gone; `dAir`'s pans a little less stark (small).
+7. Fault: from 260 m (`desB`) the desert is an even brown; the dwarf shrubs' speckle beyond the drawn plants
+   (the terrain's scrub dots) is too faint and too even. Change: `terrain.fs` the dots gather into 27 m stands
+   (nearly half their weight, was a quarter), a little denser and stronger. Kept, small: `desB` shows darker
+   scrub stands and paler bare ground across the desert; `desA` unchanged.

@@ -433,9 +433,12 @@ void main() {
     {
         float de = texture(t_biome, uv).g * clamp(shv.z * 1.3, 0.0, 1.0);
         if (de > 0.0) {
-            float dots = noise_qp(p.xz, 3.1, 0.17).r * 0.75 + noise_qp(p.xz, 31.0, 0.53).g * 0.25;   // dots, gathered in loose stands
+            // (round 3, dry) The dwarf shrubs stand a metre or two apart in stands with bare ground between: the
+            // stands (27 m) now weigh nearly half, so from 300 m the desert is mottled grey-olive scrub and paler
+            // bare patches, not an even brown.
+            float dots = noise_qp(p.xz, 3.1, 0.17).r * 0.55 + noise_qp(p.xz, 27.0, 0.53).g * 0.45;
             float far_ = smoothstep(25.0, 80.0, dist) * (1.0 - smoothstep(1500.0, 3000.0, dist));
-            albedo = mix(albedo, vec3(0.055, 0.058, 0.042) * mix(0.8, 1.2, nz2.x), smoothstep(0.55, 0.65, dots) * de * far_ * 0.6);
+            albedo = mix(albedo, vec3(0.06, 0.06, 0.045) * mix(0.8, 1.2, nz2.x), smoothstep(0.5, 0.63, dots) * de * far_ * 0.7);
         }
     }
     float lum = dot(albedo, vec3(0.3, 0.55, 0.15));
