@@ -925,6 +925,7 @@ typedef struct {
     float point;           // > 0: the crown narrows to a point, full below 1 - 1/point of its height
     float pad;             // pad size scale (1: podocarp)
     float base;            // the crown's base, a share of the height
+    int lod_div;           // the reduced mesh keeps every lod_div-th card (0: 7)
 } PadCrown;
 static void pad_conifer(Gen* g, const PadCrown* K) {
     float H, r0; species_dims(VEG_CONIFER, g->variant, &H, &r0);
@@ -982,7 +983,7 @@ static void pad_conifer(Gen* g, const PadCrown* K) {
         V3 o = vnorm(v3(grr(g, -1, 1), grr(g, -0.6f, 1.0f), grr(g, -1, 1))); float rr = 1.1f * sqrtf(grr(g, 0.15f, 1.0f));
         lp_add(&L, vadd(top, v3(o.x * rr, o.y * rr, o.z * rr)), vnorm(vadd(o, v3(0, 0.4f, 0))), (Wnd){0.4f, 0, 0.6f, 0, 0}, 1);
     }
-    leaf_cards(g, &L, K->ncards, v3(0, H * 0.6f, 0), K->layer, K->size, 1.0f, 0.15f, 0.45f, K->segs, K->layer, K->lod_size, 7);
+    leaf_cards(g, &L, K->ncards, v3(0, H * 0.6f, 0), K->layer, K->size, 1.0f, 0.15f, 0.45f, K->segs, K->layer, K->lod_size, K->lod_div > 0 ? K->lod_div : 7);
     free(L.a);
 }
 static void gen_podocarp(Gen* g) {
@@ -1829,7 +1830,8 @@ static void gen_cover(Gen* g, int kind, int variant) {
 // branchlets serve): steep limbs, pads taller than wide, the trunk often
 // leaning a little.
 static void gen_cheirolep(Gen* g) {
-    PadCrown K = {.width = 0.11f, .el0 = 0.8f, .el1 = 1.15f, .tall = 1.6f, .lean = 0.08f, .layer = L_CL_ROPE, .ncards = 2500, .size = 0.7f, .lod_size = 1.5f, .segs = 1, .point = 1.6f, .pad = 0.7f, .base = 0.1f};
+    PadCrown K = {.width = 0.11f, .el0 = 0.8f, .el1 = 1.15f, .tall = 1.6f, .lean = 0.08f, .layer = L_CL_ROPE, .ncards = 4300, .size = 0.52f, .lod_size = 1.5f, .segs = 1, .point = 1.6f, .pad = 0.7f, .base = 0.1f, .lod_div = 12};
+    // (round 2: 2500 cards of 0.7 m read as hanging finger-fans from under it; smaller, more, the reduced mesh's count kept)
     pad_conifer(g, &K);
 }
 // Ginkgo: a straight leader with long limbs that leave it low and rise
