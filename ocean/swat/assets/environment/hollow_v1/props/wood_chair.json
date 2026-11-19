@@ -1,0 +1,17 @@
+{
+ "file": "wood_chair.glb",
+ "triangles": 72,
+ "materials": 1,
+ "bytes": 98200,
+ "sha256": "39e2a7795f0fb5d0",
+ "min": [
+  -0.21,
+  0.0,
+  -0.21
+ ],
+ "max": [
+  0.21,
+  1.05,
+  0.21
+ ]
+}

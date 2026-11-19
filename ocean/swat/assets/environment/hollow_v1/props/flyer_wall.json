@@ -1,0 +1,17 @@
+{
+ "file": "flyer_wall.glb",
+ "triangles": 12,
+ "materials": 1,
+ "bytes": 710416,
+ "sha256": "6f36e0a5a648f161",
+ "min": [
+  -0.006,
+  0.6,
+  -0.9
+ ],
+ "max": [
+  0.006,
+  2.3,
+  0.9
+ ]
+}

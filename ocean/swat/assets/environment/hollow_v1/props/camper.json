@@ -1,0 +1,17 @@
+{
+ "file": "camper.glb",
+ "triangles": 340,
+ "materials": 6,
+ "bytes": 225372,
+ "sha256": "41beec9e9efc9285",
+ "min": [
+  -1.16,
+  0.008,
+  -3.0
+ ],
+ "max": [
+  1.17,
+  2.5,
+  4.1
+ ]
+}

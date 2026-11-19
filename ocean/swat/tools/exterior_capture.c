@@ -6,6 +6,7 @@
 //                    [--eye X,Y,Z --target X,Y,Z --fov F --name NAME]   (one custom view)
 //                    [--ortho]  custom view is orthographic, F = view height in metres,
 //                               up = -z (north up, street at the bottom) for top-down plans
+//                    [--mission hollow]   (The Hollow and its review views instead of the motel)
 // --breach blows a wall-breacher opening in the rear wall beside the VEXO tag
 // first (decal clipping review); it uses the ordinary world breach path.
 // SWAT_TIME=night renders the night mode.
@@ -29,11 +30,26 @@ static const ExteriorView views[]={
     {"ext7_roofline",     {5.0f,5.5f,9.5f},{-2.0f,2.6f,-1.0f},50},
 };
 #define VIEW_COUNT (int)(sizeof(views)/sizeof(views[0]))
+// --mission hollow: the Hollow review set (HOLLOW.md, reports/cloud/level-hollow).
+static const ExteriorView hollow_views[]={
+    {"hollow0_lane",       {-3.0f,1.7f,-21.0f},{17.0f,2.6f,-4.0f},55},
+    {"hollow1_front",      {18.0f,1.7f,-17.0f},{18.0f,3.0f,-3.0f},50},
+    {"hollow2_porch",      {13.2f,1.8f,-10.2f},{19.5f,1.6f,-6.3f},60},
+    {"hollow3_downstairs", {14.6f,1.9f,-5.5f},{18.5f,1.0f,-1.0f},72},
+    {"hollow4_kitchen",    {18.6f,1.9f,3.1f},{15.0f,1.0f,1.0f},72},
+    {"hollow5_upstairs",   {21.6f,4.6f,-5.6f},{18.5f,3.4f,-1.5f},72},
+    {"hollow6_barn",       {36.5f,1.7f,-14.0f},{36.5f,2.4f,0.0f},58},
+    {"hollow7_barn_inside",{33.0f,1.8f,-7.2f},{39.5f,1.0f,2.0f},72},
+    {"hollow8_smokehouse", {25.5f,1.6f,.8f},{25.5f,1.0f,5.5f},62},
+    {"hollow9_cellar",     {20.1f,-.05f,14.9f},{17.2f,-1.2f,17.8f},78},
+    {"hollow10_cellar_door",{18.0f,1.7f,6.5f},{18.0f,1.0f,12.0f},55},
+    {"hollow11_topdown",   {24.0f,72.0f,-2.0f},{24.0f,0.0f,-1.5f},46},
+};
 
 int main(int argc,char** argv) {
     if(argc<2) { fprintf(stderr,"usage: %s OUT_DIR [--view N] [--width W --height H] [--breach] [--lights-off MASK] [--jpg]\n",argv[0]); return 2; }
     const char* out=argv[1]; int only=-1,width=1600,height=900;unsigned lights_off=0;bool jpg=false,breach=false;
-    ExteriorView custom={"custom",{0,1.6f,10},{0,1.6f,0},50};bool use_custom=false,ortho=false;
+    ExteriorView custom={"custom",{0,1.6f,10},{0,1.6f,0},50};bool use_custom=false,ortho=false,hollow=false;
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"--view") && i+1<argc) only=atoi(argv[++i]);
         else if(!strcmp(argv[i],"--width") && i+1<argc) width=atoi(argv[++i]);
@@ -46,10 +62,11 @@ int main(int argc,char** argv) {
         else if(!strcmp(argv[i],"--fov") && i+1<argc) custom.fov=strtof(argv[++i],NULL);
         else if(!strcmp(argv[i],"--name") && i+1<argc) custom.name=argv[++i];
         else if(!strcmp(argv[i],"--ortho")) ortho=true;
+        else if(!strcmp(argv[i],"--mission") && i+1<argc) hollow=!strcmp(argv[++i],"hollow");
     }
     SetTraceLogLevel(LOG_WARNING);
     SwatSim* sim=calloc(1,sizeof(*sim));
-    SwatConfig config=swat_default_config(); config.mission=SWAT_MOTEL; config.layout_seed=42;
+    SwatConfig config=swat_default_config(); config.mission=hollow?SWAT_HOLLOW:SWAT_MOTEL; config.layout_seed=42;
     config.tactical_rules=true; config.squad_bots=3; config.hostile_fire=false; config.max_ticks=100000;
     swat_sim_init(sim,config,42);
     SetConfigFlags(FLAG_WINDOW_HIDDEN|FLAG_MSAA_4X_HINT); InitWindow(width,height,"exterior capture");
@@ -72,9 +89,10 @@ int main(int argc,char** argv) {
         for(int t=0;t<10;t++) swat_sim_step(sim,&in);
     }
     char path[1024];
-    for(int v=0;v<(use_custom?1:VIEW_COUNT);v++) {
+    const ExteriorView* set=hollow?hollow_views:views;int set_count=hollow?(int)(sizeof(hollow_views)/sizeof(hollow_views[0])):VIEW_COUNT;
+    for(int v=0;v<(use_custom?1:set_count);v++) {
         if(!use_custom && only>=0 && only!=v) continue;
-        const ExteriorView* view_def=use_custom?&custom:&views[v];
+        const ExteriorView* view_def=use_custom?&custom:&set[v];
         Camera3D cam={view_def->eye,view_def->target,{0,1,0},view_def->fov,CAMERA_PERSPECTIVE};
         if(use_custom && ortho){cam.up=(Vector3){0,0,-1};cam.projection=CAMERA_ORTHOGRAPHIC;}
         for(int f=0;f<4;f++) { BeginDrawing(); swat_view_draw_cinematic(&view,sim,cam); EndDrawing(); }
@@ -82,6 +100,7 @@ int main(int argc,char** argv) {
         Image im=LoadImageFromScreen();
         snprintf(path,sizeof(path),"%s/%s.%s",out,view_def->name,jpg?"jpg":"png"); ExportImage(im,path); UnloadImage(im);
         printf("wrote %s\n",path);
+        if(hollow){SwatSurfaceDecalStats ds=swat_environment_surface_decal_stats(&view.environment);printf("decals %d placed, %d unresolved\n",ds.decals,ds.unresolved);}
     }
     swat_view_close(&view); swat_sim_close(sim); free(sim); return 0;
 }

@@ -35,6 +35,10 @@ static const char* vertex_source=
     "gl_Position=mvp*vec4(p0,1.0); }\n";
 // Shared linear daylight environment: the visible sky and reflected radiance
 // agree. Roughness blends toward its broad irradiance approximation.
+// Hollow dusk horizon radiance; its fog colour is the same value (hollow_apply).
+#define HOLLOW_HORIZON_C .215f,.215f,.222f
+#define HOLLOW_BULB .42f
+#define HOLLOW_HORIZON "vec3(0.215,0.215,0.222)"
 #define SWAT_SKY_GLSL \
     "uniform float night; uniform vec3 moonDirection;" \
     /* Procedural night sky: deep blue zenith, a warm light-pollution band */ \
@@ -52,7 +56,16 @@ static const char* vertex_source=
     "sky+=vec3(1.6,1.55,1.4)*smoothstep(0.99990,0.99994,m);}" \
     "sky=mix(vec3(0.0025,0.0028,0.0034),sky,smoothstep(-0.06,0.03,d.y));" \
     "return mix(sky,vec3(0.010,0.013,0.021),r*r*0.65);}" \
-    "vec3 skyRadiance(vec3 d,float r){if(night>0.5)return nightSky(d,r);float h=clamp(d.y,0.0,1.0);" \
+    /* The Hollow: overcast dusk. Low slate cloud deck, a dull warm band where */ \
+    /* the sun went down behind the ridge, and dark ground below the horizon. */ \
+    "vec3 duskSky(vec3 d,float r){float h=clamp(d.y,0.0,1.0);float s=max(dot(normalize(vec3(d.x,0.0,d.z)+vec3(0.0,1e-4,0.0)),normalize(vec3(moonDirection.x,0.0,moonDirection.z))),0.0);" \
+    "vec3 sky=mix(" HOLLOW_HORIZON ",vec3(0.085,0.089,0.098),pow(h,0.55));" \
+    "sky+=vec3(0.16,0.075,0.030)*pow(s,3.0)*exp(-h*7.0);" \
+    "float clouds=pow(max(0.0,sin(d.x*5.0+d.z*1.7)*sin(d.z*6.5-d.x*2.3)),2.0)*smoothstep(0.02,0.4,h);" \
+    "sky=mix(sky,sky*0.72,clouds*(1.0-r));" \
+    "sky=mix(vec3(0.012,0.012,0.014),sky,smoothstep(-0.05,0.02,d.y));" \
+    "return mix(sky," HOLLOW_HORIZON "*0.6,r*r*0.6);}" \
+    "vec3 skyRadiance(vec3 d,float r){if(night>1.5)return duskSky(d,r);if(night>0.5)return nightSky(d,r);float h=clamp(d.y,0.0,1.0);" \
     "vec3 sky=mix(vec3(0.62,0.68,0.73),vec3(0.25,0.43,0.66),pow(h,0.45));" \
     "float clouds=pow(max(0.0,sin(d.x*9.0+d.z*3.0)*sin(d.z*11.0-d.x*2.0)),4.0);" \
     "sky=mix(sky,vec3(0.76,0.78,0.79),clouds*(1.0-r)*(1.0-r)*smoothstep(0.02,0.28,h)*0.65);" \
@@ -206,6 +219,9 @@ static const char* fragment_source=
     "if(usePbr!=0||useEnvironment!=0)reflection+=sunEnergy*sunVisibility*specular(n,v,sun,f0,roughness);"
     "for(int i=0;i<rooms;i++){ vec3 delta=position-centers[i];"
     "if(abs(delta.x)>halves[i].x+0.12||abs(delta.z)>halves[i].z+0.12||abs(delta.y)>halves[i].y+0.15)continue;"
+    /* The Hollow (night>1.5): single-board walls are thinner than the margin; */
+    /* their outward face belongs to the dusk outside, not to the room's lamp. */
+    "if(night>1.5&&any(greaterThan(abs(delta),halves[i]))&&dot(n,delta)>0.0)continue;"
     "insideRoom=true;insideLamp=max(insideLamp,roomPower[i]);"
     "vec3 gap=max(halves[i]-abs(delta),vec3(0.0));"
     // A bounded room approximation darkens ambient near adjacent planes only.
@@ -229,7 +245,7 @@ static const char* fragment_source=
     // fixtures: the nearest (capped) lights are shaded per pixel and replace
     // their share of the baked pool map; the rest come from the pool alone.
     "if(night>0.5){"
-    "if(!insideRoom){illumination=mix(vec3(0.0030,0.0032,0.0044),vec3(0.0145,0.020,0.038),n.y*0.5+0.5);"
+    "if(!insideRoom){illumination=night>1.5?mix(vec3(0.060,0.060,0.070),vec3(0.165,0.165,0.185),n.y*0.5+0.5):mix(vec3(0.0030,0.0032,0.0044),vec3(0.0145,0.020,0.038),n.y*0.5+0.5);"
     "vec2 pu=(position.xz-nightPoolBounds.xy)/nightPoolBounds.zw;float far=0.0;vec3 pool=vec3(0.0);"
     "float lift=clamp(1.0-(position.y+0.08)/7.0,0.0,1.0)*(0.3+0.7*max(n.y,0.0));"
     "if(all(greaterThanEqual(pu,vec2(0.0)))&&all(lessThanEqual(pu,vec2(1.0))))pool=textureLod(nightPool,pu,0.0).rgb;"
@@ -472,7 +488,21 @@ static SwatNightLight night_point(Vector3 p,Vector3 color,float radius,float glo
 static SwatNightLight night_spot(Vector3 p,Vector3 d,float cone,Vector3 color,float radius,float glow,SwatNightKind kind) {
     return (SwatNightLight){p,Vector3Normalize(d),color,radius,cone,glow,kind};
 }
+// The Hollow's exterior fixtures: a sodium dusk-to-dawn yard light on a pole
+// between house and barn, and bare bulbs over the porch, barn and cellar doors.
+static int hollow_night_lights(SwatNightLight* l) {
+    const Vector3 bulb={1.0f,.62f,.30f},sodium={1.0f,.50f,.17f};int n=0;
+    l[n++]=night_spot((Vector3){27.4f,6.55f,-3.6f},(Vector3){-.25f,-1,.1f},.12f,Vector3Scale(sodium,32),15,.9f,SWAT_NIGHT_LOT);
+    l[n++]=night_point((Vector3){16.0f,2.40f,-6.35f},Vector3Scale(bulb,2.6f),7,.45f,SWAT_NIGHT_PORCH);
+    l[n++]=night_point((Vector3){36.5f,3.48f,-8.3f},Vector3Scale(bulb,3.2f),9,.5f,SWAT_NIGHT_PORCH);
+    l[n++]=night_point((Vector3){18.0f,2.12f,11.75f},Vector3Scale(bulb,1.8f),6,.4f,SWAT_NIGHT_PORCH);
+    return n;
+}
 int swat_lighting_night_lights(const SwatWorld* world,SwatNightLight* out,int capacity) {
+    if(world && world->hollow && out) {
+        SwatNightLight l[SWAT_NIGHT_LIGHTS];int n=hollow_night_lights(l);if(n>capacity)n=capacity;
+        memcpy(out,l,(size_t)n*sizeof(*l));return n;
+    }
     if(!world || !world->motel || !out)return 0;
     SwatNightLight l[SWAT_NIGHT_LIGHTS];int n=0;
     const Vector3 warm={1.0f,.60f,.30f},sodium={1.0f,.50f,.17f},halide={.82f,.90f,1.0f};
@@ -534,7 +564,7 @@ static Vector3 night_radiance(const SwatNightLight* light,Vector3 p,Vector3* l) 
 #define NIGHT_POOL_W 288
 #define NIGHT_POOL_H 240
 static void night_world(SwatLighting* light,const SwatWorld* world) {
-    light->night_world_ready=true;light->night_world_motel=world->motel;
+    light->night_world_ready=true;light->night_world_motel=world->motel;light->night_world_hollow=world->hollow;
     light->night_light_count=swat_lighting_night_lights(world,light->night_lights,SWAT_NIGHT_LIGHTS);
     if(light->night_pool.id){UnloadTexture(light->night_pool);light->night_pool=(Texture2D){0};}
     // Ground irradiance of every fixture at y = -0.08, 0.5 m texels.
@@ -591,9 +621,34 @@ static void day_snapshot(SwatLighting* light) {
     light->day.fog_color=light->fog_color;light->day.fog_density=light->fog_density;light->day.exposure=light->exposure;
     light->day.bloom_strength=light->bloom_strength;light->day.bloom_threshold=light->bloom_threshold;
 }
+// The Hollow is always at dusk under overcast: it runs the night pipeline
+// (lamp-lit interiors, exterior bulbs and halos) with its own sky, a low warm
+// sun behind the western ridge and dense valley fog. Leaving restores exactly.
+static void hollow_apply(SwatLighting* light) {
+    light->sun_direction=Vector3Normalize((Vector3){-.86f,.20f,.30f});
+    light->sun_energy=(Vector3){.34f,.27f,.25f};
+    light->fog_color=(Vector3){HOLLOW_HORIZON_C};
+    light->fog_density=light->day.fog_density>0?.019f:0;
+    light->exposure=light->day.exposure*1.15f;
+    light->bloom_strength=fminf(1,light->day.bloom_strength*1.25f);light->bloom_threshold=light->day.bloom_threshold*.85f;
+    light->emission_scale=8;
+}
+static void hollow_mode(SwatLighting* light,const SwatWorld* world) {
+    bool on=world && world->hollow;
+    if(!light->initialized || on==light->hollow)return;
+    if(on) {
+        light->hollow_saved_night=light->night;
+        if(!light->night)day_snapshot(light);
+        light->night=true;light->hollow=true;hollow_apply(light);
+    } else {
+        light->hollow=false;light->night=light->hollow_saved_night;night_apply(light);
+    }
+    light->night_world_ready=false;
+}
 void swat_lighting_set_night(SwatLighting* light,bool night) {
     if(!light)return;
     if(!light->initialized){light->night=night;return;}
+    if(light->hollow){light->hollow_saved_night=night;return;}
     if(night==light->night)return;
     // Day values are captured at the switch, so switching back is exact.
     if(night)day_snapshot(light);
@@ -1125,6 +1180,7 @@ static bool room_actor_due(const SwatLighting* light,int room,int tick) {
     return tick_quarter(tick-phase)!=tick_quarter(light->room_actor_tick[room]-phase);
 }
 static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cutaway,SwatShadowScene draw,SwatShadowSceneContext contextual,SwatShadowSceneContext actors,void* context) {
+    hollow_mode(light,sim?&sim->world:NULL);
     if(!light->enabled) return;
     (void)eye; // Every room owns a stable tile; the camera never selects a winner.
     const SwatWorld* world=&sim->world;
@@ -1244,6 +1300,7 @@ static void art_shader(SwatEnvironmentArt* art,Shader shader) {
     for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) model_shader(art->props[i],shader);
 }
 void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatWorld* world,Vector3 camera) {
+    hollow_mode(light,world);
     if(!light->enabled || !light->prepared) return;
     Vector3 centers[SWAT_MAX_ROOMS],halves[SWAT_MAX_ROOMS],origins[SWAT_MAX_ROOMS],directions[SWAT_MAX_ROOMS]={0};float room_power[SWAT_MAX_ROOMS];
     for(int i=0;i<world->room_count;i++) {
@@ -1252,12 +1309,13 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         halves[i]=(Vector3){r->half.x,r->half.y,r->half.z}; origins[i]=room_light_origin(world,i);
         SwatRoomLight source=swat_world_room_light(world,i);
         directions[i]=(Vector3){source.direction.x,source.direction.y,source.direction.z};room_power[i]=source.power;
+        if(world->hollow)room_power[i]*=HOLLOW_BULB; // one dim bare bulb per room (presentation only)
     }
-    float night=light->night?1:0;
+    float night=light->hollow?2:light->night?1:0;
     Vector4 night_position[SWAT_NIGHT_DYNAMIC],night_color[SWAT_NIGHT_DYNAMIC],night_direction[SWAT_NIGHT_DYNAMIC];
     light->night_active=0;
     if(light->night) {
-        if(!light->night_world_ready || light->night_world_motel!=world->motel)night_world(light,world);
+        if(!light->night_world_ready || light->night_world_motel!=world->motel || light->night_world_hollow!=world->hollow)night_world(light,world);
         night_select(light,camera);
         for(int i=0;i<light->night_active;i++) {
             const SwatNightLight* l=&light->night_lights[light->night_selected[i]];
@@ -1364,7 +1422,7 @@ void swat_lighting_sky(SwatLighting* light,Camera3D camera,int width,int height)
     SetShaderValue(light->sky,light->sky_scale,&scale,SHADER_UNIFORM_VEC2);
     Vector2 size={(float)width,(float)height}; SetShaderValue(light->sky,light->sky_size,&size,SHADER_UNIFORM_VEC2);
     SetShaderValue(light->sky,light->sky_exposure,&light->exposure,SHADER_UNIFORM_FLOAT);
-    int ibl=light->environment_sky.id!=0 && !light->night;float night=light->night?1:0;
+    int ibl=light->environment_sky.id!=0 && !light->night;float night=light->hollow?2:light->night?1:0;
     SetShaderValue(light->sky,light->sky_night,&night,SHADER_UNIFORM_FLOAT);
     SetShaderValue(light->sky,light->sky_moon,&light->sun_direction,SHADER_UNIFORM_VEC3);
     SetShaderValue(light->sky,light->sky_ibl,&ibl,SHADER_UNIFORM_INT);

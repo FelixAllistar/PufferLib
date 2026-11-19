@@ -88,6 +88,7 @@ void swat_sim_reset(SwatSim* s) {
         else if(config.mission==SWAT_RANGE) swat_mission_build_test_range(&s->world);
         else if(config.mission==SWAT_BREACH_LAB)swat_mission_build_breach_lab(&s->world);
         else if(config.mission==SWAT_WEAPON_RANGE) swat_mission_build_weapon_range(&s->world);
+        else if(config.mission==SWAT_HOLLOW) swat_mission_build_hollow(&s->world);
         else if(config.mission==SWAT_GENERATED) {
             bool valid=swat_layout_generate(&s->layout,config.layout_seed,config.difficulty,(SwatGenerator)config.generator);
             // A known valid layout is the last-resort fallback for a badly
@@ -141,6 +142,14 @@ void swat_sim_reset(SwatSim* s) {
             swat_sim_spawn_actor(s,6,SWAT_CIVILIAN,(b3Pos){3,0,-2},SWAT_PI*.5f);
             swat_sim_spawn_actor(s,7,SWAT_CIVILIAN,(b3Pos){-1,0,-8},SWAT_PI*.5f);
             swat_sim_spawn_actor(s,8,SWAT_SUSPECT,(b3Pos){4.5f,0,-8},SWAT_PI*.5f);
+            s->actor_count=9; s->extraction=s->mission.extraction;
+        }
+        if(config.mission==SWAT_HOLLOW) {
+            // Actor slots follow Cedar House: 1 and 8 armed, 2 the hostage.
+            swat_sim_spawn_actor(s,0,SWAT_OFFICER,s->mission.staging,0);
+            swat_sim_spawn_actor(s,1,SWAT_SUSPECT,SWAT_HOLLOW_OWNER,SWAT_PI*.5f);
+            swat_sim_spawn_actor(s,2,SWAT_CIVILIAN,SWAT_HOLLOW_HOSTAGE,SWAT_PI);
+            swat_sim_spawn_actor(s,8,SWAT_SUSPECT,SWAT_HOLLOW_ACCOMPLICE,SWAT_PI*.5f);
             s->actor_count=9; s->extraction=s->mission.extraction;
         }
         if(config.mission==SWAT_RANGE || config.mission==SWAT_BREACH_LAB) {

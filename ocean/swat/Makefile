@@ -156,7 +156,7 @@ motel-occupancy-completion-test: motel-completion-test-build
 	ulimit -c 0; $(BUILD)/test_motel_completion $(BUILD)/motel-mixed-hostile.sgrp combat interroom squad search seed=2026 occupancy=2 layout-seed=7
 net-probe: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) net_probe.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/net_probe
-test: surface-decals-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test
+test: hollow-test surface-decals-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test
 wall-support-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_wall_support.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_wall_support
 	$(BUILD)/test_wall_support $(BUILD)/wall-support-test.sgrp
@@ -488,3 +488,8 @@ motel-picnic-art-test-build: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel_picnic_art.c character_asset.c lighting.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_motel_picnic_art
 motel-site-dump: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/motel_site_dump.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/motel_site_dump
+
+.PHONY: hollow-test
+hollow-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_hollow.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_hollow
+	ulimit -c 0; $(BUILD)/test_hollow
