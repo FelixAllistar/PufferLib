@@ -42,6 +42,21 @@ static const SwatPropV2Piece props_v2_pieces[]={
     {PIV2_DRAPES_B,37,PIV2_ROOM(1)+.8f,2.5f,-.1f,SWAT_PI,true},
     {PIV2_DRAPES,61,PIV2_ROOM(2)+.8f,2.5f,-.1f,SWAT_PI,true},
     {PIV2_DRAPES_B,85,PIV2_ROOM(3)+.8f,2.5f,-.1f,SWAT_PI,true},
+    // Baseboard heater under each window, between the drape stacks
+    // (floor piece, back on the facade's interior plane).
+    {PIV2_HEATER,9,PIV2_ROOM(0)+.75f,.0f,-.095f,SWAT_PI,false},
+    {PIV2_HEATER,33,PIV2_ROOM(1)+.75f,.0f,-.095f,SWAT_PI,false},
+    {PIV2_HEATER,57,PIV2_ROOM(2)+.75f,.0f,-.095f,SWAT_PI,false},
+    {PIV2_HEATER,81,PIV2_ROOM(3)+.75f,.0f,-.095f,SWAT_PI,false},
+    // Reception lobby (customer side of the counter, x -11.88..-8.12,
+    // z -0.12..-3.2). The east wall is a dead end: water cooler in the front
+    // corner, tandem waiting chairs under the clock, a snake plant by the
+    // counter end. Brochure rack on the west wall between the entrance
+    // door's swing (z > -0.94) and the noticeboard (z < -2.24).
+    {PIV2_COOLER,2,-8.10f,.0f,-.48f,-SWAT_PI*.5f,false},
+    {PIV2_WAITING,2,-8.10f,.0f,-1.55f,-SWAT_PI*.5f,false},
+    {PIV2_PLANT,2,-8.10f,.0f,-2.72f,-SWAT_PI*.5f,false},
+    {PIV2_BROCHURE,104,-11.95f,.75f,-1.55f,SWAT_PI*.5f,true},
     // Laundry: linen shelving in the nook between the north wall and the
     // desk (west wall), canvas cart against the east wall north of the
     // service opening (z -7.37..-8.63 stays clear).

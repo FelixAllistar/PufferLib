@@ -1,0 +1,17 @@
+{
+ "file": "water_cooler.glb",
+ "triangles": 2108,
+ "materials": 7,
+ "bytes": 137952,
+ "sha256": "a5d09ea0e5ed2dc2",
+ "min": [
+  -0.164,
+  0.0,
+  -0.004
+ ],
+ "max": [
+  0.238,
+  1.393,
+  0.324
+ ]
+}
