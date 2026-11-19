@@ -22,7 +22,7 @@ the bus and the junk cars, with puddles; leaf drifts along the house, barn,
 smokehouse and shed walls and the dog-pen fence; scattered patches.
 Presentation only (surface_decals.h): nothing touches collision or navigation.
 Sources: Poly Haven (CC0) brown_mud_dry, muddy_tracks, brown_mud_02,
-forest_leaves_03, gravel_floor_02, leafy_grass, dirt; see hollow_v1/README.md.
+dry_decay_leaves, gravel_floor_02, leafy_grass; see hollow_woods/README.md.
 """
 import os, sys, math, urllib.request
 import numpy as np

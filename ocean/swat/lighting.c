@@ -42,7 +42,7 @@ static const char* vertex_source=
 // Hollow dusk horizon radiance; its fog colour is the same value (hollow_apply).
 #define HOLLOW_HORIZON_C .215f,.215f,.222f
 #define HOLLOW_BULB .42f
-#define HOLLOW_FOG_START 12.0f // metres; valley fog between the trees (woods v2)
+#define HOLLOW_FOG_START 16.0f // metres; valley fog between the trees (woods v2)
 #define HOLLOW_HORIZON "vec3(0.215,0.215,0.222)"
 #define SWAT_SKY_GLSL \
     "uniform float night; uniform vec3 moonDirection;" \

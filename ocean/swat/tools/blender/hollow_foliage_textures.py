@@ -138,33 +138,38 @@ def needle_shoot(rng, pen, x, y, ang, L, needle, col, density=1.0, flat=True):
             pen.seg((px, py), (px + nl * math.sin(a), py - nl * math.cos(a)), 2.2 * SS, c)
 
 def hemlock_spray(rng, variant):
+    """A hemlock limb end: a drooping axis carrying many small flat 2-ranked
+    fronds (real needle scale on a ~2 m card), not one giant frond."""
     img = new_cell(); pen = Pen(img)
-    dark = (34, 50, 36); mid = (46, 64, 44)
-    # Main axis arches outward then droops at the tip (cards hang from a branch).
-    x, y = N / 2, N * .995; ang = rng.normal(0, .08); L = N * .9
-    pts = []
-    steps = 14
-    for s in range(steps):
-        ang += .045 * (1 if variant else -1) + rng.normal(0, .03)
+    dark = (22, 34, 26); mid = (32, 46, 34)
+    def frond(x, y, ang, L):
+        steps = 9; pts = []
+        for s_ in range(steps):
+            ang += .04 * (1 if variant else -1) + rng.normal(0, .04)
+            nx, ny = x + L / steps * math.sin(ang), y - L / steps * math.cos(ang)
+            pen.seg((x, y), (nx, ny), (3 - 1.5 * s_ / steps) * SS, (56, 46, 38)); pts.append((x, y, ang, s_ / steps)); x, y = nx, ny
+        for (px, py, a, t) in pts[1:]:
+            for side in (-1, 1):
+                if rng.random() < .15: continue
+                sa = a + side * rng.uniform(.8, 1.15)
+                needle_shoot(rng, pen, px, py, sa, L * (.32 - .2 * t) * rng.uniform(.8, 1.1), 4 * SS, dark if rng.random() < .65 else mid, .95)
+    # drooping limb axis with fronds along it
+    x, y = N / 2, N * .995; ang = rng.normal(0, .1); L = N * .92; steps = 12
+    for s_ in range(steps):
+        ang += .05 * (1 if variant else -1) + rng.normal(0, .03)
         nx, ny = x + L / steps * math.sin(ang), y - L / steps * math.cos(ang)
-        pen.seg((x, y), (nx, ny), (6 - 4 * s / steps) * SS, (60, 48, 40)); pts.append((x, y, ang, s / steps)); x, y = nx, ny
-    # Side shoots: 2-ranked, getting shorter to the tip, each feathered with needles.
-    for (px, py, a, t) in pts[1:]:
-        for side in (-1, 1):
-            if rng.random() < .15: continue
-            sa = a + side * rng.uniform(.75, 1.1)
-            sl = N * (.30 - .22 * t) * rng.uniform(.75, 1.1)
-            needle_shoot(rng, pen, px, py, sa, sl, 9 * SS, dark if rng.random() < .6 else mid, .95)
-            # second-order shoots
-            for q in range(2):
-                tt = rng.uniform(.3, .8); qx, qy = px + tt * sl * math.sin(sa), py - tt * sl * math.cos(sa)
-                qa = sa + rng.choice([-1, 1]) * rng.uniform(.6, 1.0)
-                needle_shoot(rng, pen, qx, qy, qa, sl * .45, 7 * SS, dark, .9)
+        pen.seg((x, y), (nx, ny), (5 - 3 * s_ / steps) * SS, (60, 48, 40))
+        if s_ >= 1:
+            for side in (-1, 1):
+                if rng.random() < .2: continue
+                frond(nx, ny, ang + side * rng.uniform(.5, .9), N * rng.uniform(.16, .26) * (1 - .4 * s_ / steps))
+        x, y = nx, ny
+    frond(x, y, ang, N * .2)
     return img
 
 def pine_plume(rng, variant):
     img = new_cell(); pen = Pen(img)
-    twig = (70, 58, 46); needle = (52, 74, 58) if variant == 0 else (46, 66, 54)
+    twig = (60, 50, 40); needle = (36, 54, 44) if variant == 0 else (32, 48, 40)
     def branch(x, y, ang, L, depth, w):
         steps = 4
         for s in range(steps):

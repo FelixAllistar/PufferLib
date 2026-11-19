@@ -43,7 +43,7 @@ typedef struct SwatHollowWoods {
     float* depth_key[HW_MAX_MESHES]; int* sort_index; Matrix* sort_scratch;
     Vector3 eye; bool eye_known;
     int draws,tris; // last lit pass, for review tools
-    float lod0,lod1; int no_far;
+    float lod0,lod1;
     int layers; // SWAT_HOLLOW_WOODS_LAYERS diagnostic mask: 1 trees, 2 shrubs, 4 floor scatter (default 7)
 } SwatHollowWoods;
 
@@ -160,13 +160,12 @@ static SwatHollowWoods* hollow_woods_load(void) {
     if(!ok || !w->instance_count) { TraceLog(LOG_WARNING,"SWAT: hollow woods unavailable; using the old woods"); hollow_woods_close(w); return NULL; }
     { const char* e=getenv("SWAT_HOLLOW_WOODS_LAYERS"); w->layers=e?atoi(e):7; }
     w->lod0=HW_LOD0;w->lod1=HW_LOD1;
-    { const char* e=getenv("HWLOD"); if(e) sscanf(e,"%f,%f,%d",&w->lod0,&w->lod1,&w->no_far); }
     TraceLog(LOG_INFO,"SWAT: hollow woods: %d meshes, %d sets, %d instances",w->mesh_count,w->set_count,w->instance_count);
     return w;
 }
 
 #define HW_SCATTER_FAR 42.0f
-#define HW_SHRUB_FAR 75.0f
+#define HW_SHRUB_FAR 45.0f
 static const float* hw_sort_keys;
 static int hw_sort_compare(const void* a,const void* b) {
     float x=hw_sort_keys[*(const int*)a],y=hw_sort_keys[*(const int*)b];
@@ -200,7 +199,6 @@ static void hollow_woods_draw(const SwatEnvironmentArt* art,SwatHollowWoods* w,b
         else if(set[2]>=0 || set[1]>=0) {
             float s=fmaxf(in->scale,.5f);
             lod=d<w->lod0*s?0:(d<w->lod1*s || set[2]<0)?1:2;
-            if(lod==2 && w->no_far) continue;
             if(set[2]<0 && set[1]>=0 && d>HW_SHRUB_FAR) continue;  // understory shrubs fade into the fog
         } else { if(d>HW_SCATTER_FAR) continue; lod=0; }
         if(set[lod]<0) lod=0;
@@ -273,8 +271,5 @@ static void hollow_woods_draw(const SwatEnvironmentArt* art,SwatHollowWoods* w,b
             }
         }
     }
-    if(getenv("HWSTAT") && !shadow) { static int once=0; if(!once++) { int per[3]={0},tl[3]={0};
-        for(int i=0;i<w->mesh_count;i++){int l=strstr(w->mesh_names[i],"lod2")?2:strstr(w->mesh_names[i],"lod1")?1:0;per[l]+=w->list_count[i];tl[l]+=w->list_count[i]*w->meshes[i].tris;}
-        printf("HWSTAT eye %.1f %.1f %.1f lod0 %d (%d tris) lod1 %d (%d) lod2 %d (%d) draws %d\n",eye.x,eye.y,eye.z,per[0],tl[0],per[1],tl[1],per[2],tl[2],w->draws);} }
     if(lit) { int zero=0; rlEnableShader(p->shader.id); if(p->instancing>=0) rlSetUniform(p->instancing,&zero,SHADER_UNIFORM_INT,1); }
 }

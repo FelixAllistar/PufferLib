@@ -56,8 +56,8 @@ BARK = {  # Poly Haven CC0 scans (1K colour + normal), see README.md.
 }
 
 # (saturation kept, value) applied to each bark colour map at export.
-BARK_GRADE = {"oak": (.35, 1.1), "poplar": (.35, 1.15), "sycamore": (.4, 1.25), "hemlock": (.6, .95),
-              "pine": (.5, 1.0), "laurel": (.5, 1.0), "rock": (.5, 1.0)}
+BARK_GRADE = {"oak": (.35, .78), "poplar": (.35, .82), "sycamore": (.4, 1.05), "hemlock": (.6, .7),
+              "pine": (.5, .75), "laurel": (.5, .8), "rock": (.5, .85)}
 
 # ------------------------------------------------------------------ mesh builder
 class MeshB:
@@ -788,14 +788,14 @@ def placement(heights):
         inst.append((S[f"wall_{k}"], 0.0, 0.0, 0.0, 0.0, 1.0, 0))
     # --- laurel / rhododendron thicket along the edge, thick in the coves.
     n_l = 0
-    for k in range(5000):
+    for k in range(7000):
         x = rng.uniform(x0 - 30, x1 + 30); z = rng.uniform(z0 - 30, z1 + 30); d = edge_dist(x, z)
         if d < .8 or d > 26: continue
         if d == 0: continue
         if HS.seg_dist(x, z, HS.LANE) < 3.3: continue
-        p = .7 * math.exp(-(d - 2.5) ** 2 / 18) + .15 * math.exp(-d / 12)
+        p = .95 * math.exp(-(d - 3.0) ** 2 / 10) + .1 * math.exp(-d / 12)
         if rng.random() > p: continue
-        put(f"laurel_{int(rng.integers(3))}", x, z, rng.uniform(0, 6.3), rng.uniform(.75, 1.3), 2 if d < 4 else 0); n_l += 1
+        put(f"laurel_{int(rng.integers(3))}", x, z, rng.uniform(0, 6.3), rng.uniform(.9, 1.5), 2 if d < 4 else 0); n_l += 1
     print("laurel", n_l)
     # --- forest floor scatter (within 34 m of the clearing).
     counts = {}
