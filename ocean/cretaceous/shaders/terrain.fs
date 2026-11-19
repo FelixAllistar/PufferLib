@@ -344,6 +344,14 @@ void main() {
         vec2 tilt = (q.ba - 0.5) * 2.0 * 0.8 + (q2.ba - 0.5) * 2.0 * 0.4;
         n = normalize(n + vec3(tilt.x, 0.0, tilt.y) * under);
     }
+    // Above the tree line (about 380 m, terra.c TREELINE) what green there is is thin alpine turf:
+    // brown-green and dry, browner with height, so no lowland green reaches up to a summit.
+    {
+        float alp = smoothstep(400.0, 560.0, p.y + 70.0 * (texture(t_noise, p.xz / 190.0 + 0.37).r - 0.5));
+        float lv = clamp(live + under, 0.0, 1.0) * alp * (1.0 - clamp(w[0] + w[1] + w[6], 0.0, 1.0));
+        float al = dot(albedo, vec3(0.3, 0.59, 0.11));
+        albedo = mix(albedo, al * vec3(1.28, 1.06, 0.68), lv * 0.65);
+    }
     // Rock reads grey-brown, not orange: desaturate the source photo.
     // Dry grassland seen from afar is straw too, not the green understorey painted above (not on rock or sand).
     {

@@ -1171,6 +1171,10 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         // bedrock shows, on anything but flat ground (more of it above the tree line).
         float tline = TREELINE + 30.0f * n1 - 70.0f * expo[i], alpine = sstep(tline - 50, tline + 40, h);
         float nearface = clampf(face[i] * 2.5f, 0, 1);
+        // The high ground above the tree line: from about 60 m over it the living fern turf thins to a
+        // brown-green alpine turf of scattered tufts in the hollows, and none is left within about 200 m of
+        // it on exposed ground; summits and crests are rock, scree and bare stony soil.
+        float summit = sstep(tline + 40, tline + 230, h + 25.0f * n2 - 40.0f * clampf(curv[i] / 4.0f, -1, 1) + 60.0f * expo[i]);
         float rockiness = sstep(1.15f, 1.75f, slope + 0.08f * (hd - 1) - 0.12f * cv + 0.18f * n3 + 0.12f * n2 - 0.15f * clampf(soil - 1.0f, 0, 2));
         float bare = 1 - sstep(0.04f, 0.45f, soil + 0.1f * n3);
         rockiness = fmaxf(rockiness, bare * sstep(0.3f, 0.7f, slope + 0.35f * alpine + 0.1f * n2) * (0.2f + 0.8f * sstep(280.0f, 420.0f, h)));
@@ -1188,17 +1192,17 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         w[TERRA_MAT_FOREST] = open * canopy * 1.1f;
         // Fern prairie is the default open ground (no grasses yet); bare soil only
         // where it is very dry or steep.
-        w[TERRA_MAT_FERN] = open * (0.5f + 0.5f * sstep(0.05f, 0.4f, moist)) * (1 - canopy * 0.35f) * (0.9f + 0.2f * n2) * (1 - sstep(1.05f, 1.5f, slope)) * (1 - 0.4f * alpine);
+        w[TERRA_MAT_FERN] = open * (0.5f + 0.5f * sstep(0.05f, 0.4f, moist)) * (1 - canopy * 0.35f) * (0.9f + 0.2f * n2) * (1 - sstep(1.05f, 1.5f, slope)) * (1 - 0.4f * alpine) * (1 - 0.92f * summit) * (1 - 0.4f * expo[i] * alpine);
         // Bare soil where the landform strips it: dry ground, sharp convex
         // ridge crests and shoulders, and erosion gullies (channelled flow
         // without standing water). Edges are broken by fine noise, not blobs.
         float gully = sstep(0.3f, 0.55f, flowlog) * (1 - riparian) * sstep(0.12f, 0.4f, slope);
         float crest = sstep(0.6f, 1.4f, -cv + 0.4f * n3) * sstep(0.35f, 0.8f, slope);
-        w[TERRA_MAT_DIRT] = open * (0.03f + sstep(0.12f, 0.0f, moist) * 0.5f + 0.35f * crest + 0.35f * gully + 0.1f * alpine) * (0.75f + 0.5f * n3);
+        w[TERRA_MAT_DIRT] = open * (0.03f + sstep(0.12f, 0.0f, moist) * 0.5f + 0.35f * crest + 0.35f * gully + 0.1f * alpine + 0.35f * summit) * (0.75f + 0.5f * n3);
         // Moss on damp, shaded hollows and around rock, not on every steep slope.
         w[TERRA_MAT_MOSS] = sstep(0.4f, 0.85f, moist) * sstep(0.2f, 0.6f, slope) * (0.4f + 0.6f * rockiness) * (0.6f + 0.8f * n3) * (0.5f + 0.5f * sstep(-0.2f, 0.6f, cv))
                           + open * sstep(0.6f, 1.1f, slope) * (0.3f + 0.6f * moist) * sstep(0.0f, 0.8f, cv) * (0.8f + 0.4f * n3)
-                          + (1 - rockiness) * (nearface + 0.6f * alpine) * (1 - sstep(0.4f, 0.8f, slope)) * (0.5f + 0.5f * moist) * (0.8f + 0.4f * n3);
+                          + (1 - rockiness) * (nearface + 0.6f * alpine * (1 - 0.7f * summit)) * (1 - sstep(0.4f, 0.8f, slope)) * (0.5f + 0.5f * moist) * (0.8f + 0.4f * n3);
         float tot = 0; for (int k = 0; k < TERRA_MAT_COUNT; k++) { w[k] = fmaxf(w[k], 0); w[k] *= w[k]; tot += w[k]; }
         if (tot < 1e-6f) { w[TERRA_MAT_DIRT] = 1; tot = 1; }
         int acc = 0, big = 0;
@@ -1220,7 +1224,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         v[TERRA_VEG_CONIFER] = forest * conshare * sstep(0.0f, 8.0f, temp) * (1 - sstep(tline - 30, tline + 50, h));
         v[TERRA_VEG_BROADLEAF] = forest * (1 - conshare) * sstep(12.0f, 18.0f, temp) * (1 - sstep(tline - 90, tline, h));
         v[TERRA_VEG_CYCAD] = grow * sstep(0.55f, 0.2f, moist) * sstep(16.0f, 22.0f, temp) * (0.3f + 0.4f * n2) * (1 - alpine);
-        v[TERRA_VEG_FERN] = grow * (0.55f + 0.45f * sstep(0.1f, 0.5f, moist)) * (0.65f + 0.35f * n2) * (1 - 0.5f * alpine);
+        v[TERRA_VEG_FERN] = grow * (0.55f + 0.45f * sstep(0.1f, 0.5f, moist)) * (0.65f + 0.35f * n2) * (1 - 0.5f * alpine) * (1 - 0.85f * summit);
         v[TERRA_VEG_TREEFERN] = grow * sstep(0.7f, 0.95f, moist) * sstep(0.0f, 3.0f, curv[i]) * sstep(15.0f, 20.0f, temp) * (1 - alpine) * (1 - nearface);
         v[TERRA_VEG_HORSETAIL] = (1 - sstep(0.1f, 0.3f, slope)) * sstep(0.4f, 0.9f, riparian) * (wetcell ? 0.3f : 1.0f);
         v[TERRA_VEG_PALM] = grow * sstep(0.2f, 0.6f, coast[i] * 2) * (1 - sstep(8.0f, 30.0f, h)) * sstep(20.0f, 24.0f, temp) * (0.3f + 0.7f * clump2);
