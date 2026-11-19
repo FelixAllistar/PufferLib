@@ -1866,7 +1866,7 @@ static void gen_cover(Gen* g, int kind, int variant) {
 // branchlets serve): steep limbs, pads taller than wide, the trunk often
 // leaning a little.
 static void gen_cheirolep(Gen* g) {
-    PadCrown K = {.width = 0.11f, .el0 = 0.8f, .el1 = 1.15f, .tall = 1.6f, .lean = 0.08f, .layer = L_CL_ROPE, .ncards = 4300, .size = 0.52f, .lod_size = 1.5f, .segs = 1, .point = 1.6f, .pad = 0.7f, .base = 0.1f, .lod_div = 12};
+    PadCrown K = {.width = 0.11f, .el0 = 0.8f, .el1 = 1.15f, .tall = 1.6f, .lean = 0.08f, .layer = L_CL_ROPE, .ncards = 6800, .size = 0.4f, .lod_size = 1.5f, .segs = 1, .point = 1.6f, .pad = 0.7f, .base = 0.1f, .lod_div = 19};
     // (round 2: 2500 cards of 0.7 m read as hanging finger-fans from under it; smaller, more, the reduced mesh's count kept)
     pad_conifer(g, &K);
 }
@@ -1963,43 +1963,54 @@ static void krumm_pad(Gen* g, LeafPts* L, V3 c, V3 R, float hw, float ph, int n)
         lp_add(L, lp, vnorm(vadd(o, v3(0.35f, 0.4f, 0))), (Wnd){fminf(hw + 0.1f * rr, 1), ph, 0.3f + 0.4f * rr, phs, 0}, 1);
     }
 }
+// One flagged krummholz stem at o (the trunk's foot), H tall: its trunk, skirt and lee-side flag.
+static void krumm_flag(Gen* g, LeafPts* L, V3 o, float H, float r0) {
+    // The trunk: leaning downwind and bowed further at the top, where the wind presses it over.
+    float lean = grr(g, 0.1f, 0.22f);
+    Path T; grow(g, &T, vadd(o, v3(0, -0.3f, 0)), vnorm(v3(lean, 1, grr(g, -0.05f, 0.05f))), H + 0.3f, 10, r0, 0.03f, -0.0f, 0.12f, NULL, 0, 0, 0.2f, 0, 0);
+    for (int k = 0; k < T.n; k++) { float t = (float)k / (T.n - 1); T.p[k].x += 0.12f * H * t * t; T.r[k] = lerpf(r0, 0.025f, powf(t, 0.75f)) + 0.3f * r0 * expf(-t * 10); }
+    bark(g, &T, 0, 0, 0, 0.3f);
+    // The skirt: a dense low thicket round the foot, longer downwind, under the winter snow.
+    float sk = grr(g, 0.7f, 1.0f), sl = 0.55f * H;
+    for (int b = 0; b < 7; b++) {
+        float az = grr(g, -1.6f, 1.6f) * (b < 2 ? 2.0f : 1.0f), len = sl * (0.45f + 0.55f * cosf(az * 0.5f)) * grr(g, 0.7f, 1.1f), ph = gr(g);
+        V3 p0; path_at(&T, 0.08f, &p0, NULL, NULL, NULL, NULL);
+        Path B; grow(g, &B, p0, dir_ae(az, grr(g, 0.05f, 0.3f)), len, 4, 0.035f, 0.012f, -0.25f, 0.6f, NULL, 0, 0.02f, 0.25f, 0, 0);
+        if (!g->lod) bark(g, &B, 0, ph, 0, 0);
+        for (int k = 1; k <= 2; k++) { V3 c; path_at(&B, k * 0.5f, &c, NULL, NULL, NULL, NULL); krumm_pad(g, L, vadd(c, v3(0, 0.0f, 0)), v3(0.55f * sk, 0.55f * sk, 0.55f * sk), 0.2f, ph, 40); }
+    }
+    // The flag: limbs from above the skirt, only on the lee side; shorter, then sparse, toward the top.
+    for (float h = 0.75f; h < H * 0.92f; h += grr(g, 0.16f, 0.3f)) {
+        float hr = h / H, t = (h + 0.3f) / (H + 0.3f), az = grr(g, -1.1f, 1.1f), ph = gr(g);
+        V3 pt; float rt, hwt; path_at(&T, t, &pt, NULL, &rt, &hwt, NULL);
+        bool wind = gr(g) < 0.3f;   // a windward limb: killed by the ice, a grey stub
+        if (wind) az += VPI;
+        float len = wind ? grr(g, 0.15f, 0.4f) : (0.35f + 0.5f * H * (1 - hr) * (0.5f + 0.5f * cosf(az))) * grr(g, 0.7f, 1.1f);
+        Path P; grow(g, &P, pt, dir_ae(az, grr(g, -0.15f, 0.25f)), len, 4, fminf(rt * 0.5f, 0.02f + 0.02f * len), 0.008f, 0.1f, 0.4f, NULL, 0, hwt, fminf(hwt + 0.4f, 1), 0, 0);
+        int bt = g->bark_tone; if (wind) g->bark_tone = 11;
+        if (!g->lod || P.r[0] > 0.03f) bark(g, &P, 0, ph, 0, 0);
+        g->bark_tone = bt;
+        if (wind) continue;
+        V3 c; path_at(&P, 0.7f, &c, NULL, NULL, NULL, NULL);
+        float pr = 0.25f + 0.35f * len;
+        krumm_pad(g, L, vadd(c, v3(0.15f * len, 0.05f, 0)), v3(pr * 1.1f, pr * 0.5f, pr * 0.8f), hwt, ph, (int)(14 + 30 * pr));
+    }
+    V3 top = T.p[T.n - 1]; krumm_pad(g, L, vadd(top, v3(0.2f, -0.1f, 0)), v3(0.45f, 0.35f, 0.35f), 0.4f, 0, 40);
+}
 static void gen_krummholz(Gen* g, int v) {
     float H, r0; species_dims(VEG_SNAG, v, &H, &r0);
     bool podo = v & 1, mat = v >= 6;
     g->bark_tone = 3; g->bark_layer = podo ? L_BARK_PODO : L_BARK_CON;
     LeafPts L = {0};
     if (!mat) {
-        // The trunk: leaning downwind and bowed further at the top, where the wind presses it over.
-        float lean = grr(g, 0.1f, 0.22f);
-        Path T; grow(g, &T, v3(0, -0.3f, 0), vnorm(v3(lean, 1, grr(g, -0.05f, 0.05f))), H + 0.3f, 10, r0, 0.03f, -0.0f, 0.12f, NULL, 0, 0, 0.2f, 0, 0);
-        for (int k = 0; k < T.n; k++) { float t = (float)k / (T.n - 1); T.p[k].x += 0.12f * H * t * t; T.r[k] = lerpf(r0, 0.025f, powf(t, 0.75f)) + 0.3f * r0 * expf(-t * 10); }
-        bark(g, &T, 0, 0, 0, 0.3f);
-        // The skirt: a dense low thicket round the foot, longer downwind, under the winter snow.
-        float sk = grr(g, 0.7f, 1.0f), sl = 0.55f * H;
-        for (int b = 0; b < 7; b++) {
-            float az = grr(g, -1.6f, 1.6f) * (b < 2 ? 2.0f : 1.0f), len = sl * (0.45f + 0.55f * cosf(az * 0.5f)) * grr(g, 0.7f, 1.1f), ph = gr(g);
-            V3 p0; path_at(&T, 0.08f, &p0, NULL, NULL, NULL, NULL);
-            Path B; grow(g, &B, p0, dir_ae(az, grr(g, 0.05f, 0.3f)), len, 4, 0.035f, 0.012f, -0.25f, 0.6f, NULL, 0, 0.02f, 0.25f, 0, 0);
-            if (!g->lod) bark(g, &B, 0, ph, 0, 0);
-            for (int k = 1; k <= 2; k++) { V3 c; path_at(&B, k * 0.5f, &c, NULL, NULL, NULL, NULL); krumm_pad(g, &L, vadd(c, v3(0, 0.0f, 0)), v3(0.55f * sk, 0.55f * sk, 0.55f * sk), 0.2f, ph, 40); }
+        // A tree island: the mother stem and two or three younger stems layered from her branches downwind
+        // (a clone creeping with the wind, as real krummholz islands do), each flagged, their skirts merging.
+        krumm_flag(g, &L, v3(0, 0, 0), H, r0);
+        int nk = 2 + (gr(g) < 0.5f);
+        for (int k = 0; k < nk; k++) {
+            V3 o = v3(grr(g, 1.2f, 2.2f) * (k + 1), 0, grr(g, -1.4f, 1.4f));
+            krumm_flag(g, &L, o, H * grr(g, 0.3f, 0.6f), r0 * 0.55f);
         }
-        // The flag: limbs from above the skirt, only on the lee side; shorter, then sparse, toward the top.
-        for (float h = 0.75f; h < H * 0.92f; h += grr(g, 0.16f, 0.3f)) {
-            float hr = h / H, t = (h + 0.3f) / (H + 0.3f), az = grr(g, -1.1f, 1.1f), ph = gr(g);
-            V3 pt; float rt, hwt; path_at(&T, t, &pt, NULL, &rt, &hwt, NULL);
-            bool wind = gr(g) < 0.3f;   // a windward limb: killed by the ice, a grey stub
-            if (wind) az += VPI;
-            float len = wind ? grr(g, 0.15f, 0.4f) : (0.35f + 0.5f * H * (1 - hr) * (0.5f + 0.5f * cosf(az))) * grr(g, 0.7f, 1.1f);
-            Path P; grow(g, &P, pt, dir_ae(az, grr(g, -0.15f, 0.25f)), len, 4, fminf(rt * 0.5f, 0.02f + 0.02f * len), 0.008f, 0.1f, 0.4f, NULL, 0, hwt, fminf(hwt + 0.4f, 1), 0, 0);
-            int bt = g->bark_tone; if (wind) g->bark_tone = 11;
-            if (!g->lod || P.r[0] > 0.03f) bark(g, &P, 0, ph, 0, 0);
-            g->bark_tone = bt;
-            if (wind) continue;
-            V3 c; path_at(&P, 0.7f, &c, NULL, NULL, NULL, NULL);
-            float pr = 0.25f + 0.35f * len;
-            krumm_pad(g, &L, vadd(c, v3(0.15f * len, 0.05f, 0)), v3(pr * 1.1f, pr * 0.5f, pr * 0.8f), hwt, ph, (int)(14 + 30 * pr));
-        }
-        V3 top = T.p[T.n - 1]; krumm_pad(g, &L, vadd(top, v3(0.2f, -0.1f, 0)), v3(0.45f, 0.35f, 0.35f), 0.4f, 0, 40);
     } else {
         // The mat: prostrate stems creeping downwind from the root, the cushion over them.
         float len = H * grr(g, 1.9f, 2.6f), wid = H * grr(g, 1.2f, 1.6f);
@@ -2021,8 +2032,8 @@ static void gen_krummholz(Gen* g, int v) {
             lp_add(&L, v3(x, y, zz), vnorm(v3(grr(g, -0.5f, 1.0f), 0.8f, grr(g, -0.6f, 0.6f))), (Wnd){0.1f + 0.15f * y, gr(g), 0.3f, gr(g), 0}, 0.4f + y / H);
         }
     }
-    if (podo) leaf_cards(g, &L, mat ? 1500 : 2200, v3(mat ? H : 0.3f * H, H * (mat ? 0.2f : 0.45f), 0), L_CL_PODO, 0.42f, 1.0f, 0.15f, 0.4f, 2, L_CL_PODO, 1.0f, 7);
-    else leaf_cards(g, &L, mat ? 1600 : 2400, v3(mat ? H : 0.3f * H, H * (mat ? 0.2f : 0.45f), 0), L_CL_ROPE, 0.4f, 1.0f, 0.15f, 0.4f, 1, L_CL_ROPE, 1.1f, 8);
+    if (podo) leaf_cards(g, &L, mat ? 1500 : 3300, v3(mat ? H : 0.3f * H, H * (mat ? 0.2f : 0.45f), 0), L_CL_PODO, 0.42f, 1.0f, 0.15f, 0.4f, 2, L_CL_PODO, 1.0f, 7);
+    else leaf_cards(g, &L, mat ? 1600 : 3500, v3(mat ? H : 0.3f * H, H * (mat ? 0.2f : 0.45f), 0), L_CL_ROPE, 0.4f, 1.0f, 0.15f, 0.4f, 1, L_CL_ROPE, 1.1f, 8);
     free(L.a);
 }
 
