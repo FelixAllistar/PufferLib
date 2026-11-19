@@ -82,3 +82,8 @@ Sheets (`cret/hc` left, this branch right, 1280x720 each, Mesa llvmpipe): `01_de
 `02_desA` toward it from 120 m, `03_dAir` straight down on its heart from 480 m, `04_dPan` its valley floor from
 25 m (the dwarf shrubs), `05_pA` a pan from 40 m, `06_pG` on that pan at 1.8 m (a stony wash bed before), `07_desH`
 on a desert hillside at 2 m, `08_dW` among the shrubs at 0.9 m, `09_grB` dry grassland and forest from 180 m.
+
+Checks after pass 12: `make -i test` (every line): `test_sim` 2 and `test_net_codec` 2 fail as on an untouched tree
+in the cloud (no converted props); the rest pass. `camprobe` (210 violation frames in 160 runs) and `ecoprobe`
+(126 of 146 within budget) fail the same way on `cret/hc` built in a worktree (210 in 160, 126 of 146); budget
+files left alone. Bake version 28 (the pans and the desert shrub layer): the island re-bakes once.
