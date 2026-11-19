@@ -673,6 +673,12 @@ wall's cut edge are not bevelled into the masonry edge. Decals blend their lit
 colour, so a decal on strongly normal-mapped stucco locally replaces the
 stucco relief by the decal's own normal within its coverage. No night tuning
 (emissive/wetness) yet.
+## Materials v3 (presentation only)
+
+Scanned CC0 materials for the motel's walls, trim, roof, walkway, lot, road,
+ground and interiors: see [ENVIRONMENT_MATERIALS.md](ENVIRONMENT_MATERIALS.md),
+"Materials v3". `SWAT_MATERIALS_V3=0` restores the previous maps.
+
 ## Night mode (presentation only)
 
 `SWAT_TIME=night` (or `time_of_day = night` in the player settings file;

@@ -5,7 +5,7 @@
 CACHE_DIR comes from materials_v3_fetch.py. For every material in
 materials_v3_recipe.json (or only the NAMEs given) this writes
 OUT_DIR/<name>_basecolor.jpg (sRGB), <name>_normal.jpg (OpenGL +Y, linear)
-and <name>_roughness.jpg (linear grey in RGB, so R and G both carry it). Steps, all wrap-around so the scans stay
+and <name>_roughness.jpg (linear grey in RGB at half resolution, so R and G both carry it). Steps, all wrap-around so the scans stay
 seamless: integer area downsample to `res`; multiplicative low-frequency
 flatten (removes blotches that read as repetition from a distance);
 saturation/contrast; per-channel gain to the hill-climbed `target` mean
@@ -136,7 +136,8 @@ def bake(name, m, src, out):
     n /= np.linalg.norm(n, axis=2, keepdims=True)
     save_jpg(os.path.join(out, name + '_basecolor.jpg'), lin_to_srgb(lin), 92)
     save_jpg(os.path.join(out, name + '_normal.jpg'), n * 0.5 + 0.5, 95)
-    save_jpg(os.path.join(out, name + '_roughness.jpg'), r, 90)
+    # Roughness carries little high-frequency detail: half resolution.
+    save_jpg(os.path.join(out, name + '_roughness.jpg'), downsample(r, res // 2), 90)
     srgb = np.round(255 * lin_to_srgb(lin).reshape(-1, 3).mean(axis=0)).astype(int).tolist()
     print('baked', name, res, 'mean sRGB', srgb, 'rough %.2f' % float(r.mean()))
 

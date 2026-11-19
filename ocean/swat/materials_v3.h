@@ -29,7 +29,7 @@
 // weight, its UV factor, and (gravel only) the zoning dirt repeat factor.
 typedef struct SwatMaterialV3Def { const char* name; bool flip; float tile_m,uv_per_m; float macro[3],detail[3]; } SwatMaterialV3Def;
 static const SwatMaterialV3Def mv3_defs[MV3_COUNT]={
-    [MV3_STUCCO]={"stucco",false,3.0f,1.1f,{.08f,.35f,.05f},{.5f,.43f,0}},
+    [MV3_STUCCO]={"stucco",false,4.0f,1.1f,{.10f,.22f,.05f},{.5f,.43f,0}},
     [MV3_REPAIR]={"repair",false,1.0f,1.1f,{.05f,.5f,0},{0,0,0}},
     [MV3_TRIM]={"trim",false,2.0f,1.1f,{.05f,.5f,0},{0,0,0}},
     [MV3_FASCIA]={"fascia",false,1.0f,1.1f,{.06f,.5f,.05f},{0,0,0}},
@@ -45,7 +45,7 @@ static const SwatMaterialV3Def mv3_defs[MV3_COUNT]={
     [MV3_CARPET]={"carpet",false,1.0f,1.1f,{.08f,.6f,0},{0,0,0}},
     [MV3_DRYWALL]={"drywall",true,2.0f,1/.6f,{.04f,.6f,0},{0,0,0}},
     [MV3_CEILING]={"ceiling",false,0.6f,1.1f,{.05f,.6f,0},{0,0,0}},
-    [MV3_BATH_FLOOR]={"bath_floor",false,1.0f,1.1f,{.04f,.8f,0},{0,0,0}},
+    [MV3_BATH_FLOOR]={"bath_floor",false,1.0f,1.1f,{.12f,.8f,0},{0,0,0}},
     [MV3_BATH_WALL]={"bath_wall",false,1.0f,1.1f,{.03f,.8f,0},{0,0,0}},
     [MV3_RECEPTION_FLOOR]={"reception_floor",false,1.8f,1.1f,{.05f,.6f,0},{0,0,0}},
     [MV3_LAUNDRY_FLOOR]={"laundry_floor",false,0.75f,1.1f,{.12f,.5f,.05f},{0,0,0}},
