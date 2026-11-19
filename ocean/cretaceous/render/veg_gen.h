@@ -1258,6 +1258,19 @@ static void gen_cycad(Gen* g, int s) {
     if (s == 1) for (int k = 0; k < 5; k++) { float t = k / 4.0f; T.r[k] = r0 * (1.12f - 0.5f * t * t) + 0.03f * sinf(VPI * t); }
     tube(g, &T, sides_for(g, r0) + 2, fmaxf(1, roundf(r0 * 6)), 0.6f, 0, 0, 0, g->bark_layer, 0, 0);
     V3 top = T.p[4];
+    // (round 2) The trunked cycads: a collar of old leaf bases where the trunk meets the crown, stubby petioles
+    // standing out and up round its top, so it does not end in a flat cut. Full mesh only, on a stream forked on both.
+    if (s != 1) {
+        VRng sv = fork_in(g); int nb = g->lod ? 0 : 22 + (int)grr(g, 0, 8); float rt = T.r[4];   // (forked on both meshes: the crown's draws stay in step)
+        for (int k = 0; k < nb; k++) {
+            float az = k * 2.39996f + grr(g, -0.2f, 0.2f), y = grr(g, -0.22f, 0.02f), el = grr(g, 0.55f, 1.1f), L = grr(g, 0.1f, 0.2f);
+            V3 o = dir_az(az), b0 = vadd(top, vadd(vmul(o, rt * 0.75f), v3(0, y, 0))), d = vnorm(vadd(vmul(o, cosf(el)), v3(0, sinf(el), 0)));
+            Path P; P.n = 3;
+            for (int q = 0; q < 3; q++) { float t = q / 2.0f; P.p[q] = vadd(b0, vmul(d, L * t)); P.r[q] = lerpf(0.04f, 0.018f, t); P.hw[q] = 0.03f; P.ws[q] = 0; }
+            tube(g, &P, 4, 1, 0.3f, 0, 0, 0, g->bark_layer, 0, 0);
+        }
+        fork_out(g, sv);
+    }
     // A taller trunk carries a bigger crown: longer fronds and more of them
     // (a 3.5 m Cycas has a full rosette, not the knee-high plant's tuft).
     float tall = fmaxf(H - 1.2f, 0.0f);
