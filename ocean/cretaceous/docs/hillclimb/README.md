@@ -39,8 +39,10 @@ the final world.
   (`tree_lod_dist`, `CRET_VEG_TREE_LOD`): 33.1 and 31.2 ms, with no visible
   difference side by side. 18 m gains under 1 ms more. What is left is mostly
   the terrain shader (river 3.3 to 6.8 ms, canopy 8.9 to 11.3 ms: the rock
-  fracture and dry-country terms). The aerial, ridge and coast views were not
-  timed on the final build.
+  fracture and dry-country terms). All five views on the shipped build, 5.0
+  before the pass against now: aerial 18.0 and 19.6 ms, canopy 27.4 and 30.7,
+  coast 32.6 and 29.4, ridge 24.0 and 21.8, river 27.9 and 33.0 (one run
+  each; the coast and ridge views show different country now).
 - The dwarf shrub reads lime-olive, not grey (it needs a `LEAF_TINT` entry);
   the cheirolep's reduced crown and the krummholz mats want `LOD_TONE` entries.
 - The grass sward in the foreground is still a bright lime.
