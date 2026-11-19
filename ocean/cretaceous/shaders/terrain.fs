@@ -273,7 +273,10 @@ void main() {
     {
         vec4 bio = texture(t_biome, uv) * (1.0 - clamp(w[0] + w[1], 0.0, 1.0)); float bl = dot(albedo, vec3(0.3, 0.59, 0.11));   // not on rock or scree
         albedo = mix(albedo, bl * vec3(1.32, 0.86, 0.6), bio.r * 0.8);   // red-brown, a little darker than the soil
-        albedo = mix(albedo, bl * vec3(1.65, 1.35, 0.78) * 0.98, bio.g * 0.8);
+        // Bare earth in dry country (the near-desert scrub, terra.c) stays earth: red-brown and darker
+        // than the straw of the dry grass round it.
+        float earth = clamp(w[2] * 1.4 - 0.2, 0.0, 1.0);
+        albedo = mix(albedo, bl * mix(vec3(1.65, 1.35, 0.78) * 0.98, vec3(1.45, 1.0, 0.68) * 0.92, earth), bio.g * 0.8);
     }
     // Far forest. Between distant crowns the ground is the shaded floor, and
     // past the impostor range the terrain is the canopy: coloured by the
@@ -359,7 +362,7 @@ void main() {
     // Rock reads grey-brown, not orange: desaturate the source photo.
     // Dry grassland seen from afar is straw too, not the green understorey painted above (not on rock or sand).
     {
-        float dryf = texture(t_biome, uv).g * (1.0 - clamp(w[0] + w[1] + w[6], 0.0, 1.0)) * smoothstep(20.0, 90.0, dist);
+        float dryf = texture(t_biome, uv).g * (1.0 - clamp(w[0] + w[1] + w[6], 0.0, 1.0)) * smoothstep(20.0, 90.0, dist) * (1.0 - 0.6 * clamp(w[2] * 1.4 - 0.2, 0.0, 1.0));
         float dl = dot(albedo, vec3(0.3, 0.59, 0.11));
         albedo = mix(albedo, max(dl, 0.045) * vec3(1.55, 1.3, 0.72) * 1.25, dryf * 0.85);
     }

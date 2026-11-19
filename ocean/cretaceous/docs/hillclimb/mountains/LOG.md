@@ -38,3 +38,11 @@ brief's world shots; renders at 960x540 on Mesa llvmpipe.
     material build is about 30% above the rock's even at tint 0.48; in the frame it was 171 against the
     rock's 133. Change: scree tint 0.4 (cool grey). Kept: 153 against 135 in the frame, the high slopes
     read as one grey stone mass with lighter talus (`mtD`, `alp2`, `skyh`).
+11. Fault: no dry country; the island is fern and forest from the beach to the tree line. Change: `terra.c`
+    near-desert scrub: a 1.5 km noise plus the mountains' rain shadow picks a few lowland regions (under
+    140-260 m, off the rivers, banks and wet hollows; 8.8% of the land, its heart near 2944, 3584): bare
+    earth and sand, ferns -85%, trees -93%, cycads and scrub in clumps with bare ground between, moisture
+    -75% so the rest of the bake follows. New views `des1` (2 m up) and `des2` (120 m up). Kept: a place
+    that reads as a different country from the air and on the ground (trees 213,715 to 187,775).
+12. Fault: the desert read as pale beach dunes (too much sand, whose tint is 2.2x) and even straw. Change:
+    sand only in pans on the flats; `terrain.fs` bare earth in dry country is red-brown, not straw. Kept.

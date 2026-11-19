@@ -1139,6 +1139,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
     // Talus: under a rock face the rock that falls off it lies in scree fans. From each sample walk up the
     // fall line; a face within the fan's reach (20-55 m, by a noise along the foot so the fans come and go)
     // and at least 4 m above gives scree, fading out with distance from the face's foot.
+    float* dgrid = fgrid(n);
     float* talus = fgrid(n); float* crag = fgrid(n);   // crag: rock steeper than about 40 degrees, the scree's source
     #pragma omp parallel for schedule(static)
     for (int z = 1; z < n - 1; z++) for (int x = 1; x < n - 1; x++) {
@@ -1162,7 +1163,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         talus[i] = best;
     }
     box_blur(talus, n, 1, 1);
-    if (getenv("CRET_TALUS_DBG")) { long a = 0, b = 0, f = 0, l = 0; for (size_t i = 0; i < N; i++) { if (m->height[i] < 1) continue; l++; a += talus[i] > 0.1f; b += talus[i] > 0.4f; f += crag[i] > 0.5f; } fprintf(stderr, "talus: >0.1 %.2f%% >0.4 %.2f%% face %.2f%% of land\n", 100.0 * a / l, 100.0 * b / l, 100.0 * f / l); }
+    if (getenv("CRET_TERRA_DBG")) { long a = 0, b = 0, f = 0, l = 0; for (size_t i = 0; i < N; i++) { if (m->height[i] < 1) continue; l++; a += talus[i] > 0.1f; b += talus[i] > 0.4f; f += crag[i] > 0.5f; } fprintf(stderr, "talus: >0.1 %.2f%% >0.4 %.2f%% face %.2f%% of land\n", 100.0 * a / l, 100.0 * b / l, 100.0 * f / l); }
     free(crag);
     float rmax = 0; for (size_t i = 0; i < N; i++) rmax = fmaxf(rmax, m->rain[i]);
     #pragma omp parallel for schedule(dynamic, 16)
@@ -1181,6 +1182,13 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float riparian = clampf(wet[i] * 3.0f, 0, 1);
         float flowlog = clampf(log10f(m->flow[i] / (p->rain * cell * cell) + 1) / 4.0f, 0, 1);
         moist = clampf(moist * 0.7f + 0.5f * riparian + 0.25f * flowlog + 0.15f * clampf(curv[i] / 4.0f, -1, 1) + 0.1f * n1, 0, 1);
+        // Near-desert scrub: a few large regions of the lowlands, more in the mountains' rain shadow, kept
+        // off the rivers and their banks, the wet hollows and the high ground. Bare, cracked earth and sand
+        // with sparse clumps of cycads and scrub and hardly a tree; its edges blend over a few hundred metres.
+        float region = fbm(wx / 1500.0f, wz / 1500.0f, s + 21, 3, 2, 0.5f) + 0.5f * (0.9f - m->rain[i] / p->rain);
+        float desert = sstep(0.12f, 0.32f, region) * (1 - sstep(140.0f, 260.0f, h)) * (1 - sstep(0.15f, 0.6f, riparian)) * (1 - sstep(0.35f, 0.6f, flowlog)) * sstep(1.0f, 4.0f, h);
+        moist *= 1 - 0.75f * desert;
+        dgrid[i] = desert;
         float soil = m->soil[i], hd = hard ? hard[i] : 1;
         // Beaches: a sand berm up to 3.5-10 m along any sea shore that is not
         // a cliff (coastal slopes here are mostly 0.1-0.5, so the berm sets the
@@ -1233,6 +1241,12 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         w[TERRA_MAT_MOSS] = sstep(0.4f, 0.85f, moist) * sstep(0.2f, 0.6f, slope) * (0.4f + 0.6f * rockiness) * (0.6f + 0.8f * n3) * (0.5f + 0.5f * sstep(-0.2f, 0.6f, cv))
                           + open * sstep(0.6f, 1.1f, slope) * (0.3f + 0.6f * moist) * sstep(0.0f, 0.8f, cv) * (0.8f + 0.4f * n3)
                           + (1 - rockiness) * (nearface + 0.6f * alpine * (1 - 0.7f * summit)) * (1 - sstep(0.4f, 0.8f, slope)) * (0.5f + 0.5f * moist) * (0.8f + 0.4f * n3);
+        if (desert > 0) {
+            float d = desert;
+            w[TERRA_MAT_DIRT] += open * d * (0.9f + 0.5f * n3);
+            w[TERRA_MAT_SAND] += open * d * 0.6f * sstep(0.1f, 0.4f, n2 + 0.3f * n1) * (1 - sstep(0.06f, 0.16f, slope));   // sandy pans on the flats
+            w[TERRA_MAT_FERN] *= 1 - 0.85f * d; w[TERRA_MAT_MOSS] *= 1 - d; w[TERRA_MAT_FOREST] *= 1 - 0.9f * d; w[TERRA_MAT_MUD] *= 1 - d;
+        }
         float tot = 0; for (int k = 0; k < TERRA_MAT_COUNT; k++) { w[k] = fmaxf(w[k], 0); w[k] *= w[k]; tot += w[k]; }
         if (tot < 1e-6f) { w[TERRA_MAT_DIRT] = 1; tot = 1; }
         int acc = 0, big = 0;
@@ -1266,12 +1280,28 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         v[TERRA_VEG_HORSETAIL] = (1 - sstep(0.1f, 0.3f, slope)) * sstep(0.4f, 0.9f, riparian) * (wetcell ? 0.3f : 1.0f);
         v[TERRA_VEG_PALM] = grow * sstep(0.2f, 0.6f, coast[i] * 2) * (1 - sstep(8.0f, 30.0f, h)) * sstep(20.0f, 24.0f, temp) * (0.3f + 0.7f * clump2);
         v[TERRA_VEG_SHRUB] = grow * (0.25f + 0.4f * sstep(0.6f, 0.3f, moist) + 0.35f * alpine) * (0.5f + 0.5f * n2) * (1 - sstep(tline + 60, tline + 170, h));
+        if (desert > 0) {   // a tree only here and there; cycads and scrub in clumps with bare ground between
+            float d = desert, cl = sstep(0.05f, 0.3f, n2 + 0.25f * n3);
+            v[TERRA_VEG_CONIFER] *= 1 - 0.93f * d; v[TERRA_VEG_BROADLEAF] *= 1 - 0.95f * d; v[TERRA_VEG_TREEFERN] *= 1 - d; v[TERRA_VEG_PALM] *= 1 - 0.7f * d;
+            v[TERRA_VEG_FERN] *= 1 - 0.85f * d; v[TERRA_VEG_HORSETAIL] *= 1 - d;
+            v[TERRA_VEG_CYCAD] = lerpf(v[TERRA_VEG_CYCAD], grow * 0.5f * cl, d);
+            v[TERRA_VEG_SHRUB] = lerpf(v[TERRA_VEG_SHRUB], grow * 0.55f * (0.3f + 0.7f * cl), d);
+        }
         if (sea[i] || h < 0.3f) for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = 0;
         for (int k = 0; k < TERRA_VEG_COUNT; k++) m->veg[i * TERRA_VEG_COUNT + k] = (uint8_t)(255 * clampf(v[k], 0, 1));
         m->hardness[i] = (uint8_t)(clampf(hd / 2.2f, 0, 1) * 255);
     }
     (void)rmax;
-    free(wet); free(coast); free(curv); free(hb); free(face); free(talus);
+    if (getenv("CRET_TERRA_DBG")) {   // where the near-desert lies: its share of the land and its most desert 256 m block
+        long l = 0, d = 0; float best = -1; int bx = 0, bz = 0; int B = imax(1, (int)(256 / cell));
+        for (size_t i = 0; i < N; i++) if (m->height[i] > 1) { l++; d += dgrid[i] > 0.5f; }
+        for (int z = 0; z + B < n; z += B / 2) for (int x = 0; x + B < n; x += B / 2) {
+            float a = 0; for (int k = 0; k < B; k += 4) for (int j = 0; j < B; j += 4) a += dgrid[(size_t)(z + k) * n + x + j];
+            if (a > best) { best = a; bx = x + B / 2; bz = z + B / 2; }
+        }
+        fprintf(stderr, "terra: near-desert on %.1f%% of the land; its heart near %.0f %.0f\n", 100.0 * d / (l ? l : 1), bx * cell, bz * cell);
+    }
+    free(wet); free(coast); free(curv); free(hb); free(face); free(talus); free(dgrid);
 }
 
 // ---------------------------------------------------------------- rock shoulders
