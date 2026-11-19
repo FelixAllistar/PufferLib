@@ -341,3 +341,21 @@ def finish(name, build, defaults, render_view):
         render(a["render"], **render_view(p))
     if a["export"]:
         reset(); build(p); join_by_material(name); export(name)
+
+def car_wheel(x, y_out, r, side, rubber, rim_m, rim_col, cap_m, cap_col, width=0.22, rim_r=0.24, seed=4):
+    """Tyre + rim + hubcap; y_out is the outer face of the tyre (signed)."""
+    s = side; hw = width / 2
+    tyre = lathe("tyre", [(rim_r - 0.04, -hw), (r - 0.04, -hw), (r, -hw + 0.04), (r, hw - 0.04), (r - 0.04, hw), (rim_r - 0.04, hw)], 24, rubber, (0.13, 0.13, 0.13))
+    tyre.rotation_euler = (math.pi / 2, 0, 0); tyre.location = (x, y_out - s * hw, r); cyl_uv(tyre, 4, 0.3)
+    paint(tyre, (0.13, 0.13, 0.13), noise=0.1, seed=seed)
+    rim = lathe("rim", [(0.0, 0.01), (rim_r * 0.55, 0.01), (rim_r, -0.01), (rim_r + 0.01, -0.06)], 20, rim_m, rim_col)
+    rim.rotation_euler = (s * -math.pi / 2, 0, 0); rim.location = (x, y_out - s * 0.01, r); cyl_uv(rim, 1, 0.3)
+    paint(rim, rim_col, noise=0.05)
+    cap = lathe("cap", [(0.0, 0.06), (rim_r * 0.42, 0.05), (rim_r * 0.65, 0.015)], 16, cap_m, cap_col)
+    cap.rotation_euler = (s * -math.pi / 2, 0, 0); cap.location = (x, y_out - s * 0.01, r); cyl_uv(cap, 1, 0.3)
+
+def quad(name, pts, mat, color):
+    """Two-sided flat panel (the engine culls back faces)."""
+    bm = bmesh.new(); vs = [bm.verts.new(v) for v in pts]; bm.faces.new(vs)
+    bm.faces.new([bm.verts.new(v) for v in reversed(pts)])
+    return new_obj(name, bm, mat, color)

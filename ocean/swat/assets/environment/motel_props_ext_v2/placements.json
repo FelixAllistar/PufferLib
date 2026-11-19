@@ -1,6 +1,5 @@
 {
-  "props": ["BC2_PICKUP01"],
-  "placements": [
-    ["BC2_PICKUP01", 17.5, -0.08, 15.6, 90, 1.0, true, "front bay row"]
-  ]
-}
+ "props": ["BC2_PICKUP01", "BC2_VAN01"],
+ "placements": [
+  ["BC2_PICKUP01", 17.5, -0.08, 15.6, 90, 1.0, true, "front bay row"],
+  ["BC2_VAN01", -20.6, -0.08, -6.0, 0, 1.0, true, "west bays, backed in"]]}

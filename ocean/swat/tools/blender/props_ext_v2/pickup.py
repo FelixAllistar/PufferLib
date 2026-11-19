@@ -41,7 +41,8 @@ def build(p):
     box_uv(cab, 1.5); paint(cab, pc, noise=0.04, seed=2, grad=(0.3, 1.9, 0.85))
     # glass: side windows and windshield, rear window
     def quad(name, pts):
-        bm = bmesh.new(); vs = [bm.verts.new(v) for v in pts]; bm.faces.new(vs); return new_obj(name, bm, glass, (0.10, 0.11, 0.12))
+        bm = bmesh.new(); bm.faces.new([bm.verts.new(v) for v in pts]); bm.faces.new([bm.verts.new(v) for v in reversed(pts)])
+        return new_obj(name, bm, glass, (0.10, 0.11, 0.12))
     yw = p["cab_w"] / 2 + 0.006
     for s in (-1, 1):
         a, b = H + 0.045, p["roof"] - 0.06

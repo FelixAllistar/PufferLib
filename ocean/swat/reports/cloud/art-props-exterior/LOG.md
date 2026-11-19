@@ -46,3 +46,24 @@ half-ton, short bed, no badges.
 13. pickup game 4: bumper on the paint material (cream, non-metal), chrome metal 0.9 -> 0.5, paint (0.50,0.65,0.73); closer: yes. Stop (in-game matches hue/value; remaining gaps are body-crease detail).
 
 Budget: 3,520 triangles, 5 materials, one shared 512 px grain JPEG; GLB 217 KB.
+14. pickup (later): side/rear glass made two-sided (the engine culls back faces; the left windows were inward-facing).
+
+## Panel van (BC2_VAN01)
+
+Reference: https://commons.wikimedia.org/wiki/File:1965_Ford_Econoline_HD_Van_(54486012308).jpg
+by Mustang Joe (CC0; copy in refs/van_ref.jpg). Generic mid-60s forward-control
+panel van, warm grey, no badges or lettering.
+
+1. van iter 1: block-out (profile body, flat front, wheels, glass, door seams); reads as a box truck: front too flat and square; closer: baseline
+2. van iter 2: camera closer/lower, body bevel 0.07 -> 0.13 (rounded roof and corners); closer: yes
+3. van iter 3: rounded nose volume (r 0.17 bevel) unioned on the lower front; closer: yes (but buried lamps/grille)
+4. van iter 4: lamps, pods, grille and bumper moved onto the nose surface; closer: yes
+5. van iter 5: detail offset corrected (were floating 9 cm ahead), camera matched; closer: yes
+6. van iter 6: windshield raked (top x 2.02 -> 1.92), belt 1.08 -> 1.02, arches r 0.46; closer: yes
+7. van iter 7: warmer paint, grain 0.25 -> 0.16, roughness 0.55 -> 0.40; closer: yes (small)
+8. van game 1: west bays nose-out (yaw 180): backlit, unreadable; moved/turned, closer: n/a
+9. van game 2: backed into west bay (-20.6, -6.0), front east: lit; paint far too light/cream in engine; closer: yes
+10. van game 3: two-sided glass (side windows were culled), paint (0.50,0.48,0.44); closer: yes
+11. van game 4: paint (0.42,0.40,0.37), now the ref's warm grey; closer: yes. Stop.
+
+Budget: 3,728 triangles, 5 materials, shared 512 px grain; GLB ~220 KB.
