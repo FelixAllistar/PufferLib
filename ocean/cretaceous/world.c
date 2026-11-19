@@ -561,7 +561,10 @@ static void grassland_build(CretWorld* w) {
         float dg = w->grassland[j] / 255.0f, prairie = g - dg;   // the dry part and the moist part
         uint8_t* v = m->veg + ((size_t)sz * n + sx) * TERRA_VEG_COUNT;
         float trees = 1 - 0.94f * g, ferns = (1 - 0.75f * dg) * (1 + 0.6f * prairie);
-        if (ferns > 1) { float f = v[TERRA_VEG_FERN] * ferns + 60.0f * prairie; v[TERRA_VEG_FERN] = (uint8_t)(f > 255 ? 255 : f); ferns = 1; }
+        if (ferns > 1) {   // the prairie thickens its ferns, but not on sand (a beach in it stays bare)
+            float bare = m->splat[((size_t)sz * n + sx) * TERRA_MAT_COUNT + TERRA_MAT_SAND] / 255.0f;
+            float f = (v[TERRA_VEG_FERN] * ferns + 60.0f * prairie) * (1 - bare); v[TERRA_VEG_FERN] = (uint8_t)(f > 255 ? 255 : f); ferns = 1;
+        }
         v[TERRA_VEG_CONIFER] = (uint8_t)(v[TERRA_VEG_CONIFER] * trees); v[TERRA_VEG_BROADLEAF] = (uint8_t)(v[TERRA_VEG_BROADLEAF] * trees);
         v[TERRA_VEG_TREEFERN] = (uint8_t)(v[TERRA_VEG_TREEFERN] * trees); v[TERRA_VEG_PALM] = (uint8_t)(v[TERRA_VEG_PALM] * trees);
         v[TERRA_VEG_FERN] = (uint8_t)(v[TERRA_VEG_FERN] * ferns); v[TERRA_VEG_HORSETAIL] = (uint8_t)(v[TERRA_VEG_HORSETAIL] * ferns);

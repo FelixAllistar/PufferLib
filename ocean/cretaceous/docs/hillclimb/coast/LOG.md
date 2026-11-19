@@ -13,3 +13,8 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
    nearest river's level, carried with the distance transform, + 0.3 m, rising 4 % away from it), and ground already
    lower than the beach profile is sanded instead of left as it was. Kept: `airW`, `topW` and `aerial` show continuous
    sand with a thin stream channel across it; `mouthA` lost its block of fern ground on the beach.
+2. Fault: plants on the wet sand: a row of ferns and shrubs at the water's edge at the river mouth (`coast`), and fern
+   tufts scattered over open sand where a beach lies in fern prairie (`mouthA`: the prairie added ferns even where the
+   sand had cleared them). Change: `render/veg_place.h` `placeable` refuses sand within 0.6 m of the water beside it or
+   below 0.9 m over the sea; `world.c` the prairie does not thicken ferns on sand. Kept: `coast` and `mouthA` are bare
+   sand at the water, `bchS` and `airW` unchanged.
