@@ -86,3 +86,22 @@ with a skirt of dead fronds: the tall element the skyline was missing.
 10. palm game 2: skirt (0.40,0.35,0.29), leaves (0.42,0.49,0.36), dead fans darker; closer: yes. Stop.
 
 Budget: 7,722 triangles (two-sided leaves), 3 materials, palm_tree_bark + grain 512 px; GLB ~0.45 MB.
+
+## Station wagon (BC2_WAGON01)
+
+Reference: https://commons.wikimedia.org/wiki/File:1970s_Toyota_Corolla_estate_(wagon)_1.2_Deluxe_(E30)_(10562484414).jpg
+by Charlie from United Kingdom (CC BY 2.0; copy in refs/wagon_ref.jpg). Generic
+1970s compact wagon, dirty white, black steel wheels, no badges or plates.
+
+1. wagon iter 1: block-out from the pickup recipe (body profile, long-roof cabin, three side windows); camera too far/side-on, glass black; closer: baseline
+2. wagon iter 2: camera to the ref's front-quarter, glass lighter; closer: yes (glass still black)
+3. wagon iter 3: camera closer (26 mm); closer: yes
+4. wagon iter 4: front door window rebuilt to follow the A-pillar, B/C pillars moved to -0.35/-1.15 m (was a degenerate triangle); closer: yes
+5. wagon iter 5: two-sided glass twin set back 3 mm (the coincident twin self-shadowed black in Cycles); glass now grey like the ref; closer: yes
+6. wagon iter 6: hood front 0.74 -> 0.80 m, belt 0.86 -> 0.90, camera lowered to the ref's 1.3 m; closer: yes (small)
+7. wagon iter 7: full-width grille band with the headlamps inside it; closer: yes
+8. wagon game 1: south-west bays nose-in: lit side away from camera, windshield blown white (glass 0.45, rough 0.08); closer: n/a
+9. wagon game 2: backed in (nose to the street), glass (0.30, rough 0.25): reads; paint blown to pure white; closer: yes
+10. wagon game 3: paint (0.70,0.69,0.64) dirty off-white; closer: yes. Stop.
+
+Budget: 3,192 triangles, 5 materials, shared grain; GLB ~0.2 MB.

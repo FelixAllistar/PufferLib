@@ -1,9 +1,10 @@
 {
- "props": ["BC2_PICKUP01", "BC2_VAN01", "BC2_PALM01"],
+ "props": ["BC2_PICKUP01", "BC2_VAN01", "BC2_PALM01", "BC2_WAGON01"],
  "placements": [
   ["BC2_PICKUP01", 17.5, -0.08, 15.6, 90, 1.0, true, "front bay row"],
   ["BC2_VAN01", -20.6, -0.08, -6.0, 0, 1.0, true, "west bays, backed in"],
   ["BC2_PALM01", 13.6, -0.08, 9.6, 20, 1.0, true, "beside roadside sign"],
   ["BC2_PALM01", 5.6, -0.08, 30.0, 140, 0.88, true, "street verge east of driveway"],
   ["BC2_PALM01", -11.0, -0.08, 29.5, 250, 1.12, true, "street verge west"],
-  ["BC2_PALM01", -27.5, -0.08, -14.0, 75, 0.95, true, "west verge"]]}
+  ["BC2_PALM01", -27.5, -0.08, -14.0, 75, 0.95, true, "west verge"],
+  ["BC2_WAGON01", -14.5, -0.08, 15.4, -90, 1.0, true, "south-west bays, backed in"]]}

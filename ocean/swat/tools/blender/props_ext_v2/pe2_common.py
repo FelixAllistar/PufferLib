@@ -356,6 +356,7 @@ def car_wheel(x, y_out, r, side, rubber, rim_m, rim_col, cap_m, cap_col, width=0
 
 def quad(name, pts, mat, color):
     """Two-sided flat panel (the engine culls back faces)."""
-    bm = bmesh.new(); vs = [bm.verts.new(v) for v in pts]; bm.faces.new(vs)
-    bm.faces.new([bm.verts.new(v) for v in reversed(pts)])
+    bm = bmesh.new(); vs = [bm.verts.new(v) for v in pts]; f = bm.faces.new(vs)
+    f.normal_update(); off = -0.003 * f.normal  # twin set back so Cycles does not self-shadow
+    bm.faces.new([bm.verts.new(Vector(v) + off) for v in reversed(pts)])
     return new_obj(name, bm, mat, color)
