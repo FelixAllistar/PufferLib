@@ -41,3 +41,6 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
 7. Fault (from pass 2): the palms of the upper beach went too (`bchS` lost its three): the wet-sand rule refused all sand
    below 0.9 m over the sea, which on a 1.2 % beach is its front 45 m. Change: 0.6 m. Kept, small: a palm stands on the
    upper beach in `bchS` again; `coast` and `mouthA` stay clear at the water.
+8. Fault: in `bchS` the steep hillside behind the beach is sand to 15 m up. Change: the load's beach sand fades on
+   ground that stays steep after the cut. Reverted: no visible change in `bchS`, `airN`, `airS` or `topW`; that face's
+   sand does not come from `beaches_build`.
