@@ -1175,7 +1175,9 @@ static void gen_metasequoia(Gen* g) {
     free(L.a);
 }
 // Cycad crown on top of a trunk at `top`.
-static void cycad_crown(Gen* g, V3 top, int s, float scale, int nf) {
+// nx: more fronds between the others on the full mesh only (their own stream: the reduced mesh, whose fewer
+// leaflets are wider, stays the same plant).
+static void cycad_crown(Gen* g, V3 top, int s, float scale, int nf, int nx) {
     VRng sv = fork_in(g);
     for (int f = 0; f < 5; f++) {   // dead fronds hanging against the trunk (one ribbon each on the reduced mesh)
         g->dry = (int)grr(g, 170, 255); float az = f * 2.39996f + grr(g, 0, 1), e0 = grr(g, -1.2f, -0.6f), tw = grr(g, -0.3f, 0.3f), L = grr(g, 0.9f, 1.4f) * scale, ph = gr(g);
@@ -1208,6 +1210,18 @@ static void cycad_crown(Gen* g, V3 top, int s, float scale, int nf) {
         if (g->lod) F.lmax *= 1.15f;
         frond(g, &F);
     }
+    if (nx > 0 && !g->lod) {
+        VRng sx = fork_in(g);
+        for (int f = 0; f < nx; f++) {
+            float age = grr(g, 0.15f, 0.9f), az = (f + 0.5f) * 2.39996f * 1.618f + grr(g, -0.2f, 0.2f);
+            float L = grr(g, 1.4f, 2.1f) * lerpf(1.0f, 0.75f, age) * scale, e0 = lerpf(0.1f, 0.95f, age) + grr(g, -0.08f, 0.08f);
+            Frond F = {.base = vadd(top, vmul(dir_az(az), 0.12f * scale)), .az = az, .e0 = e0, .droop = grr(g, 0.35f, 0.7f), .twist = grr(g, -0.15f, 0.15f), .L = L, .bare = 0.1f,
+                       .pairs = 34 + (int)grr(g, 0, 10), .lmax = L * 0.16f, .lw = 0.2f, .ang = 1.2f, .keel = 0.3f, .curl = 0.1f, .profile = 0, .layer = L_LEAFLET, .cols = 8,
+                       .rachis_r = 0.016f * scale, .segs = 6, .lsegs = 1, .ph = gr(g), .flex = 0.35f};
+            frond(g, &F);
+        }
+        fork_out(g, sx);
+    }
     g->dry = 0;
     fork_out(g, sv);
 }
@@ -1231,7 +1245,7 @@ static void gen_cycad(Gen* g, int s) {
             VRng sf = fork_in(g);   // its ring of bracts, open like a flower
             flower(g, vadd(tip, v3(0, 0.02f, 0)), v3(0, 1, 0), grr(g, 0.12f, 0.16f), PET_BRACT, 11, 0.55f, -1, 0, (Wnd){0.3f, 0, 0, 0, 0});
             fork_out(g, sf);
-            cycad_crown(g, tip, 0, 0.8f, 15);
+            cycad_crown(g, tip, 0, 0.8f, 15, 8);   // (round 2: 15 fronds a crown were thin tufts; the full mesh adds 8)
         }
         return;
     }
@@ -1247,7 +1261,7 @@ static void gen_cycad(Gen* g, int s) {
     // (a 3.5 m Cycas has a full rosette, not the knee-high plant's tuft).
     float tall = fmaxf(H - 1.2f, 0.0f);
     int nf = 20 + (int)grr(g, 0, 8) + (int)(3.0f * tall);
-    cycad_crown(g, top, s, s == 1 ? 0.9f : 1.0f + 0.12f * tall, nf);
+    cycad_crown(g, top, s, s == 1 ? 0.9f : 1.0f + 0.12f * tall, nf, 0);
     // Seeds: the squat cycad's big central cone; the trunked one's ring of
     // orange seeds on brown felted megasporophylls in the crown's middle.
     VRng sf = fork_in(g); Wnd w = {0.05f, 0, 0, 0, 0};
