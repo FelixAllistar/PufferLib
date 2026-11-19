@@ -62,3 +62,11 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
    try at 12% on every broadleaf left the plane and the chloranth thinner than their full crowns, 0.86 and
    0.83), leaf tones nudged to hold (`LOD_TONE`). Kept: 1.14, 1.10, 1.10, 1.02; side by side at 30 m the reduced
    crowns now have the full crowns' outline; tone within 5%; triangles unchanged.
+10. Fault: past 150 m an impostor was a soft smear (a redwood a blurred green spindle with a diagonal seam of
+    light and shade, a katsura a solid mushroom) next to the mesh it replaced, which keeps its lit sprays, dark
+    undersides and sky gaps pixel by pixel. Change: the impostor reads its albedo, normal and coverage one mip
+    level sharper than its footprint (`IMP_BIAS` -1 in veg_imp.fs and veg_imp_depth.fs), impostor tones
+    re-fitted (they came out 1-6% darker). Kept: the redwood's tiers and the katsura's lobes show at 150 m, the
+    seam is gone, far stands in `val3` and `skyh` have crowns with shade inside them; pixels against the full
+    mesh fell a little (redwood 1.26 -> 1.15 at 150 m); every impostor within 2.5% of the full mesh but the palm
+    (1.06).

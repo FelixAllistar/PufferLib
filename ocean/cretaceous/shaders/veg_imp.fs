@@ -10,6 +10,7 @@ flat in vec2 v_rot;
 uniform sampler2DArray t_imp_albedo, t_imp_normal;
 uniform int u_imp_blend;   // 1: blend the two nearest views (high, medium); 0: one per pixel by a dither (low)
 out vec4 o;
+const float IMP_BIAS = -1.0;   // mip bias of the impostor's reads (main; veg_imp_depth.fs the same)
 void main() {
     // The two baked views either side of the view azimuth are blended: they
     // are premultiplied by coverage (veg.c bake_impostors), so a linear mix is
@@ -23,13 +24,16 @@ void main() {
     float wb = smoothstep(0.2, 0.8, v_blend);
     bool blend = u_imp_blend != 0 && wb > 0.0 && wb < 1.0;
     float l0 = u_imp_blend != 0 ? (wb >= 1.0 ? v_layer1 : v_layer0) : (ign(gl_FragCoord.xy, 0) < v_blend ? v_layer1 : v_layer0);
-    vec4 a = texture(t_imp_albedo, vec3(v_uv, l0));
-    if (blend) a = mix(a, texture(t_imp_albedo, vec3(v_uv, v_layer1)), wb);
+    // Read one mip level sharper than the footprint (IMP_BIAS): at the footprint's own level a far crown
+    // averaged its lit sprays, their shaded undersides and the sky between into one soft smear, flatter than
+    // the mesh it replaces, which keeps that contrast pixel by pixel.
+    vec4 a = texture(t_imp_albedo, vec3(v_uv, l0), IMP_BIAS);
+    if (blend) a = mix(a, texture(t_imp_albedo, vec3(v_uv, v_layer1), IMP_BIAS), wb);
     // Mip-aware alpha: averaged coverage shrinks in small mips, which made
     // distant crowns thin and speckled, and left a tiered conifer as a bare
     // stick once its sprays fell under a pixel. Each mip level down raises
     // the coverage by half, so a far crown keeps the body it has up close.
-    vec2 tx = v_uv * 256.0; float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
+    vec2 tx = v_uv * 256.0; float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx)))) + IMP_BIAS;
     if (a.a * (1.0 + max(lod, 0.0) * 0.5) < 0.45) discard;
     // Fades by cells of the card (1/40 of it, 25-50 cm of crown) rather than a screen dither, as the meshes
     // do (common.glsl veg_fade_key): the meshes fade out by their own cells and the card fills in at the same rate.
@@ -41,10 +45,10 @@ void main() {
     a.rgb /= max(a.a, 0.02);
     float cl = max(lod, 1.0);
     float cov_n = textureLod(t_imp_albedo, vec3(v_uv, l0), cl).a;
-    vec4 nn = texture(t_imp_normal, vec3(v_uv, l0));
+    vec4 nn = texture(t_imp_normal, vec3(v_uv, l0), IMP_BIAS);
     if (blend) {
         cov_n = mix(cov_n, textureLod(t_imp_albedo, vec3(v_uv, v_layer1), cl).a, wb);
-        nn = mix(nn, texture(t_imp_normal, vec3(v_uv, v_layer1)), wb);
+        nn = mix(nn, texture(t_imp_normal, vec3(v_uv, v_layer1), IMP_BIAS), wb);
     }
     nn = min(nn / max(cov_n, 0.02), 1.0);
     vec3 n = nn.xyz * 2.0 - 1.0; float c = v_rot.x, s = v_rot.y;
