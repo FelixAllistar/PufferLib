@@ -968,8 +968,11 @@ static void gen_cycad(Gen* g, int s) {
     if (s == 2) for (int k = 0; k < 5; k++) { float t = k / 4.0f; T.p[k].x += 0.25f * t * t; }
     tube(g, &T, sides_for(g, r0) + 2, fmaxf(1, roundf(r0 * 6)), 0.6f, 0, 0, 0, g->bark_layer, 0, 0);
     V3 top = T.p[4];
-    int nf = 20 + (int)grr(g, 0, 8);
-    cycad_crown(g, top, s, s == 1 ? 0.9f : 1.0f, nf);
+    // A taller trunk carries a bigger crown: longer fronds and more of them
+    // (a 3.5 m Cycas has a full rosette, not the knee-high plant's tuft).
+    float tall = fmaxf(H - 1.2f, 0.0f);
+    int nf = 20 + (int)grr(g, 0, 8) + (int)(3.0f * tall);
+    cycad_crown(g, top, s, s == 1 ? 0.9f : 1.0f + 0.12f * tall, nf);
     // Seeds: the squat cycad's big central cone; the trunked one's ring of
     // orange seeds on brown felted megasporophylls in the crown's middle.
     VRng sf = fork_in(g); Wnd w = {0.05f, 0, 0, 0, 0};
