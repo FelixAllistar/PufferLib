@@ -22,6 +22,7 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 #define CRET_UNDER_NEAR 0.55
 #endif
 const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
+const float SCREE_COPY = 0.5;   // scale of scree's second copy (sample_mat): stones twice the size
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
 // under a Cretaceous canopy (photo sources are mostly brown leaf litter).
@@ -70,8 +71,9 @@ Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
         // steep ground take the planar branch's scheme (below): the same
         // tile, rotated, under the noise mask, since magnified litter and
         // soil photos read as brush strokes.
+        // Scree's copy is twice the size: talus mixes big blocks and small ones (SCREE_COPY).
         bool rock = k == 0;
-        float s2 = rock ? s * 0.27 : s, wm = rock ? 0.45 : g_mix; bool macro = u_detail > 0 && wm > 0.0;
+        float s2 = rock ? s * 0.27 : (k == 1 ? s * SCREE_COPY : s), wm = rock ? 0.45 : g_mix; bool macro = u_detail > 0 && wm > 0.0;
         const mat2 R = mat2(0.8, -0.6, 0.6, 0.8);
         vec4 a = vec4(0.0), a2 = vec4(0.0), bx = vec4(0.0), by = vec4(0.0), bz = vec4(0.0);
         if (w.x > 0.0) {
@@ -106,7 +108,8 @@ Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
         vec4 a = textureGrad(t_mat_a, vec3(uv, k), gx, gy), b = textureGrad(t_mat_b, vec3(uv, k), gx, gy);
         if (g_mix > 0.0) {
             const mat2 R = mat2(0.8, -0.6, 0.6, 0.8);
-            vec4 a2 = textureGrad(t_mat_a, vec3(R * (p.xz + g_warp) * s + 0.37, k), R * gx, R * gy);
+            float s2 = k == 1 ? s * SCREE_COPY : s;
+            vec4 a2 = textureGrad(t_mat_a, vec3(R * (p.xz + g_warp) * s2 + 0.37, k), R * g_dx * s2, R * g_dy * s2);
             a = mix(a, a2, g_mix);
         }
         m.albedo = a.rgb; m.height = a.a;
