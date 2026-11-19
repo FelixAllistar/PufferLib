@@ -84,12 +84,13 @@ static float gal_row_z(int row) { static const float Z[GI_ROWS] = {-75, -25, 20,
 static const char* gal_plant_name(int kind, int var) {
     static const char* DROP_N[DROP_KINDS] = {"fallen araucaria cone", "fallen podocarp seeds", "fallen magnolia fruit", "fallen laurel drupes",
                                              "fallen ginkgo seeds", "fallen cycad seeds", "fallen palm fruit", "fallen berries"};
-    static const char* SNAG_N[4] = {"dead conifer", "broken conifer", "dead broadleaf", "leaning broken trunk"};
+    static const char* SNAG_N[8] = {"dead conifer", "broken conifer", "dead broadleaf", "leaning broken trunk",
+                                    "krummholz cypress, flagged", "krummholz podocarp, flagged", "krummholz cypress, mat", "krummholz podocarp, mat"};
     static const char* LILY_N[4] = {"water lily pads", "water lily, white", "water lily, pink", "water lily, bud"};
     static const char* FUNGUS_N[4] = {"bracket shelves", "big bracket", "brown mushrooms", "pale mushrooms"};
     int sp = flora_species(kind, var);
     if (sp >= 0) return FLORA[sp].name;
-    if (kind == VEG_SNAG && var < 4) return SNAG_N[var];
+    if (kind == VEG_SNAG && var < 8) return SNAG_N[var];
     if (kind == VEG_LILY && var < 4) return LILY_N[var];
     if (kind == VEG_DROP && var < DROP_KINDS) return DROP_N[var];
     if (kind == VEG_FUNGUS && var < 4) return FUNGUS_N[var];

@@ -75,7 +75,9 @@ static inline bool placeable(const TerraMap* m, float x, float z, float max_slop
     if (wet && w - h > wade) return false;
     *y = h - 0.15f; return true;
 }
-static inline int veg_nvar(int kind) { return kind == VEG_GRASS || kind == VEG_SNAG || kind == VEG_LILY || kind == VEG_FUNGUS ? 4 : kind == VEG_CARPET ? 6 : VEG_VARIANTS; }
+// Standing dead trees use slots 0-3; 4-7 hold the krummholz, the stunted, wind-shaped conifers of the
+// tree line (veg_krummholz), which share the kind's spare slots.
+static inline int veg_nvar(int kind) { return kind == VEG_GRASS || kind == VEG_LILY || kind == VEG_FUNGUS ? 4 : kind == VEG_CARPET ? 6 : VEG_VARIANTS; }
 // Density of a kind's scatter at (x, z) before the habitat multiplier: its
 // bake layer, or for standing dead trees the canopy layers in old stands.
 static inline float veg_layer_density(const TerraMap* m, int kind, float x, float z) {
@@ -153,6 +155,26 @@ static inline float vp_clump(const TerraMap* m, float x, float z) {
     float n = 0.7f * fl_vnoise(m->seed * 0x1b873593u + 5u, u / 25.0f, w / 25.0f) + 0.3f * fl_vnoise(m->seed * 0xcc9e2d51u + 9u, w / 9.0f, u / 9.0f);
     return 0.55f + 0.75f * fl_sstep(0.3f, 0.6f, n);
 }
+// Krummholz: the last conifers at the tree line are not full-height trees but stunted, wind-shaped ones.
+// From the bake's nominal tree line (terra.c TREELINE, 380 m; the last full trees stand at about 420 m)
+// a conifer turns, with a chance that grows with its height, into a flagged tree (4.5-7.5 m, limbs only on
+// the lee side over a dense skirt), and from about 415 m some into a low mat trimmed by the wind (at most
+// 45%: the flagged trees are what reads from afar); from 440 m none is a full tree. They are built leaning and flagged toward their +x and turned to face downwind (terra.c's default
+// prevailing wind, 0.6 rad: the tree islands' scrub skirts reach the same way). Kept as standing-tree
+// slots 4-7 (VEG_SNAG's spare variants): a cheirolep and a podocarp (snow totara-like) of each form.
+#define VEG_KRUMM_LO 375.0f
+#define VEG_KRUMM_HI 455.0f
+static inline void veg_krummholz(VegInstance* in) {
+    float y = in->y, t = (y - VEG_KRUMM_LO) / (VEG_KRUMM_HI - VEG_KRUMM_LO);
+    if (t <= 0) return;
+    VpRng r = {vp_hash((uint32_t)(int)(in->x * 7.0f) * 2246822519u ^ (uint32_t)(int)(in->z * 7.0f) * 3266489917u ^ 0x6b7au)};
+    float u = vp_r(&r), m = vp_r(&r);
+    if (u > fminf(1.0f, 1.3f * t)) return;   // some full trees still stand in the lowest shelter
+    int podo = flora_species(VEG_CONIFER, in->variant) == FL_PODOCARP || (flora_species(VEG_CONIFER, in->variant) != FL_CHEIROLEP && vp_r(&r) < 0.5f);
+    int mat = m < (t - 0.5f) * 0.9f;   // mats from halfway up, nearly half of them at the top
+    in->kind = VEG_SNAG; in->variant = (uint16_t)(4 + (mat ? 2 : 0) + podo);
+    in->yaw = 0.6f + vp_rr(&r, -0.3f, 0.3f); in->scale = vp_rr(&r, 0.8f, 1.2f);
+}
 // Scatter one kind over a tile on a jittered lattice; deterministic per tile.
 static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstance* out, int cap) {
     float sp = SPACING[kind]; int cnt = 0, steps = (int)(VEG_TILE / sp);
@@ -179,6 +201,7 @@ static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstan
         if (cnt == cap) return cnt;
         out[cnt++] = (VegInstance){x, y, z, vp_rr(&r, SCALE_LO[kind], SCALE_HI[kind]), vp_rr(&r, 0, 6.2831853f), vp_rr(&r, -1, 1), vp_rr(&r, 0, 6.283f),
                                    (uint16_t)kind, (uint16_t)pick_variant(m, kind, x, z, &site, &r), 0, 0};
+        if (kind == VEG_CONIFER) veg_krummholz(&out[cnt - 1]);
         out[cnt - 1].cos_yaw = cosf(out[cnt - 1].yaw); out[cnt - 1].sin_yaw = sinf(out[cnt - 1].yaw);
     }
     return cnt;
@@ -210,10 +233,14 @@ static inline void veg_species_dims(int kind, int variant, float* H, float* r0) 
     case FL_SABAL: h = vp_rr(&r, 4.0f, 8.5f); rr = 0.27f; break;
     case FL_FEATHER_PALM: h = vp_rr(&r, 3.0f, 6.5f); rr = 0.24f; break;
     case -2:   // standing dead trees: whole and broken conifers, a dead broadleaf, a leaning broken trunk
-        if (variant == 0) { h = vp_rr(&r, 11, 18); rr = 0.12f + 0.02f * h; }
+        if (variant == 0) { h = vp_rr(&r, 18, 27); rr = 0.1f + 0.014f * h; }   // a dead araucaria, near the living ones' height
         else if (variant == 1) { h = vp_rr(&r, 3.5f, 7); rr = 0.35f; }
         else if (variant == 2) { h = vp_rr(&r, 7, 11); rr = 0.08f + 0.024f * h; }
-        else { h = vp_rr(&r, 4, 7.5f); rr = 0.26f; }
+        else if (variant == 3) { h = vp_rr(&r, 4, 7.5f); rr = 0.26f; }
+        // Krummholz (veg_krummholz): 4, 5 flagged trees (cheirolep, podocarp) with a skirt at the foot,
+        // 6, 7 wind-trimmed mats (the same two) under 1.6 m.
+        else if (variant < 6) { h = vp_rr(&r, 4.5f, 7.5f); rr = 0.07f + 0.03f * h; }
+        else { h = vp_rr(&r, 1.0f, 1.7f); rr = 0.1f; }
         break;
     default: h = 1; rr = 0; break;
     }

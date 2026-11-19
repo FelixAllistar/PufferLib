@@ -561,6 +561,15 @@ typedef struct {
     int twig_every;             // the full mesh draws every n-th twig (0: all)
     float inner;                // leaf weight deep inside the crown, against 1 at its surface (0: 0.12)
 } Crown;
+// A twig: a three-sided bark tube (the fine index list, full mesh only) that tapers to a point instead of
+// ending as a blunt cut tube, its bark at the scan's own scale round it (one tile round, square texels).
+static void twig(Gen* g, const Path* T, float ph, float phs) {
+    Path Q = *T; int bt = g->bark_tone;
+    for (int k = 0; k < Q.n; k++) { float t = (float)k / (Q.n - 1); Q.r[k] = T->r[0] * (1 - 0.85f * powf(t, 1.3f)); }
+    g->fine = 1; g->bark_tone = 6;
+    tube(g, &Q, 3, 1, clampf(2 * VPI * T->r[0], 0.03f, 0.12f) * bark_tile_aspect(g->bark_layer), 0, ph, phs, g->bark_layer, 0, 0);
+    g->fine = 0; g->bark_tone = bt;
+}
 static void crown_tree(Gen* g, const Crown* C, const Env* E) {
     LeafPts L = {0}; float H = C->H; int ntw = 0;
     // Stems.
@@ -650,7 +659,7 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
                 Path T; grow(g, &T, p3, dt, lt, 2, fminf(r3 * 0.7f, 0.012f), 0.004f, C->trop3, 0.8f, NULL, 0, hw3, fminf(hw3 + 0.15f, 1), ws3, fminf(ws3 + 0.35f, 1));
                 tip_add(g, T.p[T.n - 1], vnorm(vsub(T.p[T.n - 1], T.p[T.n - 2])), (Wnd){T.hw[T.n - 1], lb->ph, T.ws[T.n - 1], phs, 0}, env_depth(E, T.p[T.n - 1]));
                 // Every other twig is drawn (C->twig_every): inside a full crown the rest are hidden by their leaves.
-                if (!g->lod && (ntw++ % (C->twig_every > 0 ? C->twig_every : 1)) == 0) { int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &T, 3, 1, 0.12f, 0, lb->ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt; }
+                if (!g->lod && (ntw++ % (C->twig_every > 0 ? C->twig_every : 1)) == 0) twig(g, &T, lb->ph, phs);
                 for (float u = 0.3f; u <= 1.001f; u += 0.24f) {
                     V3 q, dq; float hq, wq; path_at(&T, u, &q, &dq, NULL, &hq, &wq);
                     float dep = env_depth(E, q);
@@ -960,7 +969,7 @@ static void pad_conifer(Gen* g, const PadCrown* K) {
                 V3 st; path_at(&P, tp * grr(g, 0.75f, 0.95f), &st, NULL, NULL, NULL, NULL);
                 Path Q; Q.n = 3; Q.len = vlen(vsub(e, st));
                 for (int m = 0; m < 3; m++) { Q.p[m] = vlerp(st, e, m * 0.5f); Q.r[m] = lerpf(0.014f, 0.005f, m * 0.5f); Q.hw[m] = hp; Q.ws[m] = m * 0.3f; }
-                int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &Q, 3, 1, 0.12f, 0, ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt;
+                twig(g, &Q, ph, phs);
             }
             fork_out(g, s2);
             int nq = (int)(22 * pr * pr) + 6;
@@ -1062,7 +1071,7 @@ static void gen_araucaria(Gen* g, bool umbrella) {
                 for (int k = 0; k < B.n; k++) { B.p[k] = P.p[k + cut]; B.r[k] = P.r[k + cut] + 0.012f; B.hw[k] = P.hw[k + cut]; B.ws[k] = P.ws[k + cut]; }
                 bark(g, &A, 0, ph, 0, 0);
                 tube(g, &B, g->lod ? 3 : 4, 1, 0.3f, 0, ph, 0, L_SCALES, 1, 0);
-            } else tube(g, &P, g->lod ? 3 : 5, 1, 0.25f, 0, ph, 0, g->bark_layer, 0, 0);
+            } else bark(g, &P, 0, ph, 0, 0);   // a bark limb: a collar at the trunk, a curve, the bark at its own scale
             if (dead) continue;
             tip_add(g, P.p[n], vnorm(vsub(P.p[n], P.p[n - 1])), (Wnd){P.hw[n], ph, 0, 0, 0}, hr);
             // Branchlets: the same places on both meshes (one forked draw each);
@@ -1162,7 +1171,7 @@ static void gen_metasequoia(Gen* g) {
                 V3 dt = vnorm(vadd(vadd(vmul(dp, cosf(a)), vmul(sd0, side * sinf(a))), v3(0, grr(g, -0.3f, 0.2f), 0)));
                 float lt = fminf(lerpf(1.3f, 0.45f, t) * grr(g, 0.8f, 1.1f), 0.35f + 0.5f * bl); float phs = gr(g);
                 Path Q; grow(g, &Q, p, dt, lt, 2, 0.01f, 0.004f, -0.2f, 0.5f, NULL, 0, hw, fminf(hw + 0.15f, 1), 0, 0.6f);
-                if (!g->lod && lt > 0.95f) { int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &Q, 3, 1, 0.12f, 0, ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt; }
+                if (!g->lod && lt > 0.95f) twig(g, &Q, ph, phs);
                 for (float u = 0.15f; u <= 1.001f; u += 0.28f) {
                     V3 q, dq; float hq, wq; path_at(&Q, u, &q, &dq, NULL, &hq, &wq);
                     lp_add(&L, q, vnorm(vadd(dq, v3(0, -0.3f, 0))), (Wnd){hq, ph, wq, phs, 0}, 1);
@@ -1914,8 +1923,25 @@ static void gen_snag(Gen* g, int v) {
             tube(g, &S, 4, 1, 0.4f, vv, 0, 0, g->bark_layer, 0, 0);
         }
     }
-    // Limbs: stubs of whorls on dead conifers, a few broken forks on the rest.
-    int nl = v == 0 ? 10 + (int)grr(g, 0, 6) : v == 2 ? 4 + (int)grr(g, 0, 3) : 2 + (int)grr(g, 0, 2);
+    // A dead araucaria (the commonest conifer of the uplands) keeps its habit: its bark plates, and whorls
+    // of four or five level branch stubs every 1.5-2.2 m up its upper two thirds, longest at mid height,
+    // some fallen. Its own stream: the whorls do not move the other limbs' draws.
+    if (v == 0) {
+        g->bark_layer = L_BARK_ARAU; VRng sv = fork_in(g);
+        for (float h = H * grr(g, 0.25f, 0.35f); h < H * 0.92f; h += grr(g, 1.5f, 2.2f)) {
+            float t = (h + 0.3f) / (H + 0.3f), a0 = grr(g, 0, 2 * VPI); int nb = 4 + (gr(g) < 0.5f);
+            V3 p; float rt; path_at(&T, t, &p, NULL, &rt, NULL, NULL);
+            for (int b = 0; b < nb; b++) {
+                if (gr(g) < 0.35f) continue;   // fallen
+                float len = grr(g, 0.4f, 1.0f) * (0.4f + 2.2f * t * (1.15f - t)) + rt;
+                Path B; grow(g, &B, p, dir_ae(a0 + b * 2 * VPI / nb + grr(g, -0.2f, 0.2f), grr(g, -0.12f, 0.08f)), len, 2, fminf(rt * 0.45f, 0.03f + 0.025f * len), 0.015f, -0.1f, 0.2f, NULL, 0, 0.05f, 0.1f, 0, 0);
+                bark(g, &B, 0, 0, 0, 0);
+            }
+        }
+        fork_out(g, sv);
+    }
+    // Limbs: a few stubs left on dead conifers, a few broken forks on the rest.
+    int nl = v == 0 ? 2 + (int)grr(g, 0, 3) : v == 2 ? 4 + (int)grr(g, 0, 3) : 2 + (int)grr(g, 0, 2);
     for (int i = 0; i < nl; i++) {
         float t = v == 0 ? grr(g, 0.3f, 0.95f) : v == 2 ? grr(g, 0.55f, 0.95f) : grr(g, 0.4f, 0.9f), a = grr(g, 0, 2 * VPI);
         V3 p; float rt; path_at(&T, t, &p, NULL, &rt, NULL, NULL);
@@ -1929,6 +1955,84 @@ static void gen_snag(Gen* g, int v) {
             bark(g, &C, 0, 0, 0, 0);
         }
     }
+}
+
+// Krummholz (slots 4-7 of VEG_SNAG, placed by veg_krummholz at the tree line): the stunted, wind-shaped
+// conifers of the last metres of forest, built flagged toward +x (the placement turns +x downwind).
+// 4, 5: a flagged tree: a short stout trunk leaning and bent downwind, its limbs only on the lee side
+// (the windward ones dead stubs), clipped short toward the top, over a dense skirt that snow sheltered
+// at the foot, reaching downwind. 6, 7: a mat a metre or so high, a few prostrate stems creeping
+// downwind under a dense cushion that rises from a low, wind-clipped windward edge. 4 and 6 wear the
+// cheirolep's scale-leaf ropes, 5 and 7 podocarp foliage (snow totara, Podocarpus nivalis, forms such mats).
+static void krumm_pad(Gen* g, LeafPts* L, V3 c, V3 R, float hw, float ph, int n) {   // leaf points in a flattened lump, biased to its skin
+    float phs = gr(g);
+    for (int q = 0; q < n; q++) {
+        V3 o = vnorm(v3(grr(g, -1, 1), grr(g, -0.5f, 1.0f), grr(g, -1, 1))); float rr = sqrtf(grr(g, 0.25f, 1.0f));
+        V3 lp = vadd(c, v3(o.x * rr * R.x, o.y * rr * R.y, o.z * rr * R.z));
+        lp_add(L, lp, vnorm(vadd(o, v3(0.35f, 0.4f, 0))), (Wnd){fminf(hw + 0.1f * rr, 1), ph, 0.3f + 0.4f * rr, phs, 0}, 1);
+    }
+}
+static void gen_krummholz(Gen* g, int v) {
+    float H, r0; species_dims(VEG_SNAG, v, &H, &r0);
+    bool podo = v & 1, mat = v >= 6;
+    g->bark_tone = 3; g->bark_layer = podo ? L_BARK_PODO : L_BARK_CON;
+    LeafPts L = {0};
+    if (!mat) {
+        // The trunk: leaning downwind and bowed further at the top, where the wind presses it over.
+        float lean = grr(g, 0.1f, 0.22f);
+        Path T; grow(g, &T, v3(0, -0.3f, 0), vnorm(v3(lean, 1, grr(g, -0.05f, 0.05f))), H + 0.3f, 10, r0, 0.03f, -0.0f, 0.12f, NULL, 0, 0, 0.2f, 0, 0);
+        for (int k = 0; k < T.n; k++) { float t = (float)k / (T.n - 1); T.p[k].x += 0.12f * H * t * t; T.r[k] = lerpf(r0, 0.025f, powf(t, 0.75f)) + 0.3f * r0 * expf(-t * 10); }
+        bark(g, &T, 0, 0, 0, 0.3f);
+        // The skirt: a dense low thicket round the foot, longer downwind, under the winter snow.
+        float sk = grr(g, 0.7f, 1.0f), sl = 0.55f * H;
+        for (int b = 0; b < 7; b++) {
+            float az = grr(g, -1.6f, 1.6f) * (b < 2 ? 2.0f : 1.0f), len = sl * (0.45f + 0.55f * cosf(az * 0.5f)) * grr(g, 0.7f, 1.1f), ph = gr(g);
+            V3 p0; path_at(&T, 0.08f, &p0, NULL, NULL, NULL, NULL);
+            Path B; grow(g, &B, p0, dir_ae(az, grr(g, 0.05f, 0.3f)), len, 4, 0.035f, 0.012f, -0.25f, 0.6f, NULL, 0, 0.02f, 0.25f, 0, 0);
+            if (!g->lod) bark(g, &B, 0, ph, 0, 0);
+            for (int k = 1; k <= 2; k++) { V3 c; path_at(&B, k * 0.5f, &c, NULL, NULL, NULL, NULL); krumm_pad(g, &L, vadd(c, v3(0, 0.0f, 0)), v3(0.55f * sk, 0.55f * sk, 0.55f * sk), 0.2f, ph, 40); }
+        }
+        // The flag: limbs from above the skirt, only on the lee side; shorter, then sparse, toward the top.
+        for (float h = 0.75f; h < H * 0.92f; h += grr(g, 0.16f, 0.3f)) {
+            float hr = h / H, t = (h + 0.3f) / (H + 0.3f), az = grr(g, -1.1f, 1.1f), ph = gr(g);
+            V3 pt; float rt, hwt; path_at(&T, t, &pt, NULL, &rt, &hwt, NULL);
+            bool wind = gr(g) < 0.3f;   // a windward limb: killed by the ice, a grey stub
+            if (wind) az += VPI;
+            float len = wind ? grr(g, 0.15f, 0.4f) : (0.35f + 0.5f * H * (1 - hr) * (0.5f + 0.5f * cosf(az))) * grr(g, 0.7f, 1.1f);
+            Path P; grow(g, &P, pt, dir_ae(az, grr(g, -0.15f, 0.25f)), len, 4, fminf(rt * 0.5f, 0.02f + 0.02f * len), 0.008f, 0.1f, 0.4f, NULL, 0, hwt, fminf(hwt + 0.4f, 1), 0, 0);
+            int bt = g->bark_tone; if (wind) g->bark_tone = 11;
+            if (!g->lod || P.r[0] > 0.03f) bark(g, &P, 0, ph, 0, 0);
+            g->bark_tone = bt;
+            if (wind) continue;
+            V3 c; path_at(&P, 0.7f, &c, NULL, NULL, NULL, NULL);
+            float pr = 0.25f + 0.35f * len;
+            krumm_pad(g, &L, vadd(c, v3(0.15f * len, 0.05f, 0)), v3(pr * 1.1f, pr * 0.5f, pr * 0.8f), hwt, ph, (int)(14 + 30 * pr));
+        }
+        V3 top = T.p[T.n - 1]; krumm_pad(g, &L, vadd(top, v3(0.2f, -0.1f, 0)), v3(0.45f, 0.35f, 0.35f), 0.4f, 0, 40);
+    } else {
+        // The mat: prostrate stems creeping downwind from the root, the cushion over them.
+        float len = H * grr(g, 1.9f, 2.6f), wid = H * grr(g, 1.2f, 1.6f);
+        for (int b = 0; b < 6; b++) {
+            float az = grr(g, -0.9f, 0.9f) + (b == 0 ? VPI : 0), l = (b == 0 ? 0.2f : 1.0f) * len * grr(g, 0.4f, 0.7f), ph = gr(g);
+            Path B; grow(g, &B, v3(0, -0.1f, 0), dir_ae(az, 0.45f), l, 5, b == 0 ? 0.05f : r0, 0.015f, -0.35f, 0.5f, NULL, 0, 0, 0.15f, 0, 0);
+            for (int k = 0; k < B.n; k++) if (B.p[k].y < 0.05f) B.p[k].y = 0.05f;
+            bark(g, &B, 0, ph, 0, 0.1f);
+        }
+        // The cushion: its height rises from the windward edge (x < 0) to its crest a third of the way
+        // downwind, then falls off gently to the lee end; a few lumps on top.
+        for (int q = 0; q < 900; q++) {
+            float x = grr(g, -0.25f, 1.0f) * len, zz = grr(g, -1, 1) * 0.5f * wid * (1 - 0.35f * fabsf(x / len - 0.3f));
+            float xr = x / len, prof = xr < 0.3f ? sstep(-0.3f, 0.3f, xr) : 1 - 0.55f * sstep(0.3f, 1.0f, xr);
+            float hy = H * prof * (1 - 0.6f * powf(fabsf(zz) / (0.5f * wid), 2.0f)) * grr(g, 0.85f, 1.05f);
+            // From under the ground up: on a slope the cushion's downhill side reaches down to the soil
+            // instead of floating over it as a flat disc (the mesh cannot follow the slope).
+            float y = lerpf(-0.6f * H, hy, sqrtf(grr(g, 0.15f, 1.0f)));
+            lp_add(&L, v3(x, y, zz), vnorm(v3(grr(g, -0.5f, 1.0f), 0.8f, grr(g, -0.6f, 0.6f))), (Wnd){0.1f + 0.15f * y, gr(g), 0.3f, gr(g), 0}, 0.4f + y / H);
+        }
+    }
+    if (podo) leaf_cards(g, &L, mat ? 1500 : 2200, v3(mat ? H : 0.3f * H, H * (mat ? 0.2f : 0.45f), 0), L_CL_PODO, 0.42f, 1.0f, 0.15f, 0.4f, 2, L_CL_PODO, 1.0f, 7);
+    else leaf_cards(g, &L, mat ? 1600 : 2400, v3(mat ? H : 0.3f * H, H * (mat ? 0.2f : 0.45f), 0), L_CL_ROPE, 0.4f, 1.0f, 0.15f, 0.4f, 1, L_CL_ROPE, 1.1f, 8);
+    free(L.a);
 }
 
 // The species' bark relief (Relief). Dawn redwood: a deeply fluted,
@@ -2019,7 +2123,7 @@ static void build_species(MB* m, int kind, int variant, int lod) {
     case VEG_DROP: gen_drop(&G, variant); k_ext = 0.2f; bend = 0; break;
     case VEG_FUNGUS: gen_fungus(&G, variant); k_ext = 0.2f; bend = 0; break;
     case VEG_SHRUB: G.bark_tone = 6; gen_shrub(&G, sp); k_ext = 0.6f; break;
-    case VEG_SNAG: gen_snag(&G, variant); k_ext = 0.3f; break;
+    case VEG_SNAG: if (variant >= 4) { gen_krummholz(&G, variant); k_ext = 0.5f; } else { gen_snag(&G, variant); k_ext = 0.3f; } break;
     case VEG_CARPET:
         if (variant >= 4) { gen_moss(&G, variant); k_ext = 0.3f; bend = 0.3f; break; }
         G.r = (VRng){(uint32_t)(kind * 131 + variant * 17 + 5)};   // the sward tufts keep their old streams
@@ -2041,4 +2145,10 @@ static void build_species(MB* m, int kind, int variant, int lod) {
     // darker than the full one (12% darker crowns in daylight, 40% on the
     // podocarp). Its leaves count at the full mesh's total area instead.
     bake_sky(m, k_ext, bend, G.leaf_drawn > 0 ? G.leaf_full / G.leaf_drawn : 1.0f, side);
+    // Araucaria and podocarp trunks stood out pale against the forest at 20-60 m (the plated and
+    // stringy scans are light once their furrows average out): their bark is shaded a little more.
+    if (kind == VEG_CONIFER && (sp == FL_ARAUCARIA || sp == FL_PODOCARP)) {
+        float k = lod ? 0.72f : 0.8f;
+        for (int i = 0; i < m->nv; i++) if (!m->v[i].a[2]) m->v[i].n[3] = (int8_t)(m->v[i].n[3] * k);
+    }
 }
