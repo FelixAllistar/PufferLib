@@ -1,0 +1,17 @@
+{
+ "file": "hollow_barn_interior.glb",
+ "triangles": 624,
+ "materials": 2,
+ "bytes": 146148,
+ "sha256": "a733f066478ff828",
+ "min": [
+  31.953,
+  -0.078,
+  -7.95
+ ],
+ "max": [
+  41.047,
+  8.132,
+  3.99
+ ]
+}

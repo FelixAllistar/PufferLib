@@ -190,3 +190,18 @@ fov 72.
 
 The Hollow's first frames include a one-time 414 ms shadow build (p99).
 After that it costs the same as Cedar House and less than the motel.
+
+### Barn interior vs `barn_interior_cyrus_habs.jpg`
+- The reference is HABS WV-266-C, Abraham Cyrus Farmstead barn, Wayne County
+  WV, public domain. Its loft view, `barn_loft_cyrus_habs.jpg`, is also
+  committed.
+- View: eye (35.5, 1.6, -7.5), target (37.5, 1.4, 0.5), fov 70.
+
+| Iter | Biggest differences | Change | Closer? |
+|---|---|---|---|
+| 00 | 1. The reference is heavy framing (posts, beams, joists, rafters); ours is plain walls and a floating loft slab. 2. The roof underside glows red; the reference is dark. 3. Slatted gates, open loft rail. | (baseline) | n/a |
+| 01 | 1. Framing | Posts and beam under the loft edge, loft joists, three courses of wall girts, rafters with collar ties, stair stringers | **Yes, large** |
+| 02 | 3. Rail; 2. the tarp is cartoon blue | Open two-board loft rail on posts (collision too). Tarp re-dyed as filthy, sun-faded poly. | Yes |
+| 03 | 2. Red roof inside | Barn tin graded darker and less saturated; it keeps a muted red outside (barn_06 checks the exterior) | Yes |
+| 04 | 3. Gates | Stall sides with a slatted, round-topped gate hanging open | Yes |
+| 05 | Daylight through the board joints | Emissive slivers | **No** (no visible effect: this mesh path does not render emission). Reverted; stopped. |

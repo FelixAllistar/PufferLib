@@ -265,7 +265,10 @@ void swat_mission_build_hollow(SwatWorld* w) {
     hollow_box(w,bx0+.05f,HOLLOW_LOFT-.12f,-1,bx1-.05f,HOLLOW_LOFT,bz1-.05f,SWAT_WOOD,0,SWAT_PART_SOLID);   // loft floor
     for(int i=0;i<13;i++)   // steep stair up the east wall to the loft
         hollow_box(w,bx1-1.0f,0,-1-(13-i)*.25f,bx1-.1f,(i+1)*HOLLOW_LOFT/13,-1-(12-i)*.25f,SWAT_WOOD,0,SWAT_PART_SOLID);
-    hollow_box(w,bx0+.1f,HOLLOW_LOFT,-1.04f,bx1-1.1f,HOLLOW_LOFT+.95f,-.98f,SWAT_WOOD,0,SWAT_PART_SUPPORT); // loft edge rail
+    // Loft edge: a two-board rail on posts (open between, as in the HABS barn).
+    hollow_box(w,bx0+.1f,HOLLOW_LOFT+.86f,-1.04f,bx1-1.1f,HOLLOW_LOFT+.95f,-.98f,SWAT_WOOD,0,SWAT_PART_SUPPORT);
+    hollow_box(w,bx0+.1f,HOLLOW_LOFT+.42f,-1.04f,bx1-1.1f,HOLLOW_LOFT+.51f,-.98f,SWAT_WOOD,0,SWAT_PART_SUPPORT);
+    for(int i=0;i<5;i++) hollow_box(w,bx0+.1f+i*1.9f,HOLLOW_LOFT,-1.05f,bx0+.18f+i*1.9f,HOLLOW_LOFT+.95f,-.97f,SWAT_WOOD,0,SWAT_PART_SUPPORT);
     // --- Props with real footprints: cover and set dressing (hollow_data.h).
     for(int i=0;i<SWAT_HOLLOW_PROPS;i++) {
         const SwatHollowProp* p=&swat_hollow_props[i];

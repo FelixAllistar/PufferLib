@@ -64,11 +64,20 @@ def legs(p, m, xs, zs, top, r=.025):
 
 @prop
 def stall_partition(m):
-    p = Part()
+    # Stall side: board panel on posts, with a slatted gate at the aisle end
+    # hanging slightly open (HABS WV-266-C stalls).
+    p = Part(); rng = np.random.default_rng(14)
     for i in range(5):  # horizontal boards on two posts, 1.3 m
-        p.add(bm_box((0, .12 + i * .27, 0), (1.45, .11, .025)), m["grey"])
-    for x in (-1.45, 1.45):
-        p.add(bm_box((x, .65, 0), (.06, .65, .06)), m["grey"])
+        L = 1.45 - (.42 if i % 2 else .38)
+        p.add(bm_box((-1.45 + L, .12 + i * .27, 0), (L, .11, .025)), m["grey"])
+    for x in (-1.45, .55, 1.45):
+        p.add(bm_box((x, .7, 0), (.06, .7, .06)), m["grey"])
+    gate = Part()
+    for k in range(6):  # vertical slats with a rounded top
+        z = .62 + k * .14
+        p.add(rotate_bm(bm_box((z, .65 + .05 * math.sin(k / 5 * math.pi), .07), (.035, .6 + .05 * math.sin(k / 5 * math.pi), .012)), .25, (.55, 0, 0)), m["wood"])
+    for y in (.25, 1.05):
+        p.add(rotate_bm(bm_box((1.0, y, .07), (.42, .04, .015)), .25, (.55, 0, 0)), m["wood"])
     return p
 
 @prop

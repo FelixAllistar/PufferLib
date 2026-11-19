@@ -167,7 +167,7 @@ def mattress():
 def tarp():
     rng = np.random.default_rng(5)
     n = 512
-    base = np.ones((n, n, 3), np.float32) * np.array([38, 70, 112])
+    base = np.ones((n, n, 3), np.float32) * np.array([30, 46, 62])  # sun-faded, filthy blue poly
     weave = ((np.arange(n)[:, None] // 3 + np.arange(n)[None, :] // 3) % 2) * 6
     base += weave[..., None]
     base *= (0.75 + 0.35 * noise(rng, n, 12))[..., None]

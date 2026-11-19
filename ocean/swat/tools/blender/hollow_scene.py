@@ -367,6 +367,34 @@ def outbuildings_trim(m):
     return p
 
 M2 = {}
+def barn_interior(m):
+    p = Part(); g = m["batten"]
+    # Barn inside: posts and beams carrying the loft, joists under the loft
+    # floor, open-strut stair stringers, girts on the walls, and rafters with
+    # collar ties under the tin (HABS WV-266-C, Abraham Cyrus barn).
+    bx0, bx1, bz0, bz1, eave, ridge, loft = 32, 41, -8, 4, 4.2, 8.2, 2.6
+    for x in (34.25, 36.5, 38.75):
+        p.add(bm_box((x, loft / 2, -1.0), (.09, loft / 2, .09)), m["grey"])               # posts under the loft edge
+    p.add(bm_box(((bx0 + bx1) / 2, loft - .2, -1.0), ((bx1 - bx0) / 2 - .05, .1, .08)), m["grey"])  # loft beam
+    for k in range(10):
+        x = bx0 + .45 + k * .9
+        p.add(bm_box((x, loft - .2, 1.5), (.035, .09, 2.45)), m["grey"])                  # loft joists
+    for y in (1.2, 2.4, 3.4):
+        for (x, z, hx, hz) in ((bx0 + .03, -2, .02, 5.95), (bx1 - .03, -2, .02, 5.95), (36.5, bz1 - .03, 4.45, .02)):
+            p.add(bm_box((x, y, z), (hx, .05, hz)), g)                                       # wall girts
+    for k in range(9):                                                                       # rafters + collar ties
+        z = bz0 + .3 + k * 1.42
+        for side in (-1, 1):
+            run = (bx1 - bx0) / 2; ang = math.atan2(ridge - eave, run)
+            cx = 36.5 + side * run / 2
+            p.add(tilt_bm(bm_box((cx, (eave + ridge) / 2 - .12, z), (run / math.cos(ang) / 2, .07, .035)), -side * ang, 'z', (cx, (eave + ridge) / 2 - .12, z)), m["grey"])
+        p.add(bm_box((36.5, eave + 2.0, z), (1.6, .06, .03)), m["grey"])
+    # Stair stringers and handrail up the east wall to the loft.
+    for x in (40.0, 40.8):
+        L = math.hypot(13 * .25, loft); ang = math.atan2(loft, 13 * .25)
+        p.add(tilt_bm(bm_box((x, loft / 2, -1 - 13 * .25 / 2), (.02, .1, L / 2)), -ang, 'x', (x, loft / 2, -1 - 13 * .25 / 2)), m["grey"])
+    return p
+
 def cellar_trim(m):
     """Root cellar: a segmental limewashed barrel vault under the timber
     ceiling (springing 1.95 m above the floor, crown just under the timbers),
@@ -418,7 +446,7 @@ def palette():
 
 if __name__ == "__main__":
     os.makedirs(C.OUT, exist_ok=True)
-    for name, fn in (("terrain", terrain), ("woods", woods), ("house_trim", house_trim), ("outbuildings_trim", outbuildings_trim), ("cellar_trim", cellar_trim)):
+    for name, fn in (("terrain", terrain), ("woods", woods), ("house_trim", house_trim), ("outbuildings_trim", outbuildings_trim), ("cellar_trim", cellar_trim), ("barn_interior", barn_interior)):
         if ONLY and name not in ONLY: continue
         C.reset(); C.MATS.clear(); M2.clear(); M2.update(palette())
         part = fn(M2)
