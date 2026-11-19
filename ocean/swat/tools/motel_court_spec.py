@@ -119,6 +119,14 @@ def plan_paint():
     for x in WHEEL_STOPS_X: r(x - .9, x + .9, 4.3 - .12, 4.3 + .12, (200, 200, 190))
     return out
 
+def surface_paint():
+    """Paint-only zones (planters, island) for renders of a map that has the court built."""
+    out = []
+    def r(x0, x1, z0, z1, col): out.append((((x0, z0), (x1, z0), (x1, z1), (x0, z1)), col))
+    for p in PLANTERS: r(*p, (150, 140, 100))
+    r(*ISLAND, (185, 182, 172))
+    return out
+
 def plan_labels():
     out = []
     for wg in WINGS:

@@ -29,7 +29,8 @@ GROUND = (1119, 1173)   # SWAT_MOTEL_GROUND_FIRST .. +SWAT_GROUND_PARTS
 spec = None
 def main():
     src, out = sys.argv[1], sys.argv[2]
-    court = '--court' in sys.argv
+    court = '--court' in sys.argv or '--after' in sys.argv
+    after = '--after' in sys.argv
     global spec
     if court:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -51,7 +52,7 @@ def main():
         for poly, col in spec.ground_paint():
             d.polygon([to_px(*p) for p in poly], fill=col)
     if court:
-        for poly, col in spec.plan_paint():
+        for poly, col in (spec.surface_paint() if after else spec.plan_paint()):
             d.polygon([to_px(*p) for p in poly], fill=col)
         for a, b in spec.stall_lines():
             d.line([to_px(*a), to_px(*b)], fill=(235, 235, 225), width=2)
@@ -60,7 +61,7 @@ def main():
         cx, cy, cz = float(r['cx']), float(r['cy']), float(r['cz'])
         hx, hy, hz, yaw = float(r['hx']), float(r['hy']), float(r['hz']), float(r['yaw'])
         if GROUND[0] <= i < GROUND[1]: continue
-        if i == 0 or not active or (court and i in HIDDEN): continue
+        if i == 0 or not active or (court and not after and i in HIDDEN): continue
         top = cy + hy
         if cy - hy > 2.3:   # roofs and canopies: translucent
             continue

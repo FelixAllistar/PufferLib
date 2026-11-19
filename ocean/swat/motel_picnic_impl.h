@@ -1,17 +1,18 @@
-// Original picnic table in the front court. Source is already metre/Y-up.
-static const SwatMotelInstance picnic_placement={0,{6,-.08f,7.5f},{1,1,1},0,SWAT_WOOD,false,false};
+// Original picnic table, in the court's west corner planter (MOTEL_LAYOUT.md;
+// 5.0 had it at (6, 7.5) in the open lot). Source is already metre/Y-up.
+static const SwatMotelInstance picnic_placement={0,{-12.1f,-.08f,4.6f},{1,1,1},0,SWAT_WOOD,false,false};
 const SwatRoadsidePart* swat_motel_picnic_part(int part){return part>=0&&part<SWAT_MOTEL_PICNIC_PARTS?&picnic_parts[part]:NULL;}
 const SwatPicnicComponent* swat_motel_picnic_component(int component){return component>=0&&component<80?&picnic_components[component]:NULL;}
 bool swat_motel_picnic(const SwatWorld*w,int owner,SwatMotelInstance*out){
- if(!w->motel||w->count!=SWAT_MOTEL_OBJECTS||owner<SWAT_MOTEL_PICNIC_FIRST||owner>=SWAT_MOTEL_OBJECTS)return false;
+ if(!w->motel||w->count<SWAT_MOTEL_PICNIC_END||owner<SWAT_MOTEL_PICNIC_FIRST||owner>=SWAT_MOTEL_PICNIC_END)return false;
  *out=picnic_placement;return true;
 }
 uint64_t swat_motel_picnic_mask(const SwatWorld*w){
- if(!w->motel||w->count!=SWAT_MOTEL_OBJECTS)return 0;
+ if(!w->motel||w->count<SWAT_MOTEL_PICNIC_END)return 0;
  uint64_t mask=0;for(int i=0;i<SWAT_MOTEL_PICNIC_PARTS;i++)if(w->objects[SWAT_MOTEL_PICNIC_FIRST+i].active)mask|=UINT64_C(1)<<i;return mask;
 }
 uint64_t swat_motel_picnic_unstable_roots(const SwatWorld*w){
- if(!w->motel||w->count!=SWAT_MOTEL_OBJECTS)return 0;
+ if(!w->motel||w->count<SWAT_MOTEL_PICNIC_END)return 0;
  uint64_t mask=0;
  for(int i=0;i<SWAT_MOTEL_PICNIC_PARTS;i++){
   if(picnic_parts[i].parents[0]>=0||!w->objects[SWAT_MOTEL_PICNIC_FIRST+i].active)continue;
@@ -33,7 +34,7 @@ static bool picnic_supports(const SwatWorld*w,int part,int supports[SWAT_MAX_SUP
 }
 static bool picnic_validate(const SwatWorld*w){
  if(w->count<=SWAT_MOTEL_PICNIC_FIRST)return true;
- if(w->count!=SWAT_MOTEL_OBJECTS)return false;
+ if(w->count!=SWAT_MOTEL_PICNIC_END && w->count!=SWAT_MOTEL_OBJECTS)return false;
  for(int i=0;i<SWAT_MOTEL_PICNIC_PARTS;i++){
   const SwatRoadsidePart*p=&picnic_parts[i];const SwatObject*o=&w->objects[SWAT_MOTEL_PICNIC_FIRST+i];int supports[SWAT_MAX_SUPPORTS];
   if(!picnic_supports(w,i,supports)||memcmp(supports,o->supports,sizeof(supports))||b3Distance(o->center,picnic_point(p->center))>1e-4||b3Length(b3Sub(o->half,p->half))>1e-5f||o->yaw||o->pitch||o->door||o->fractured||o->wall_group||o->part!=SWAT_PART_FIXTURE||o->material!=p->material||o->structural_thickness!=p->section||o->max_health!=picnic_health(p))return false;
@@ -41,7 +42,7 @@ static bool picnic_validate(const SwatWorld*w){
  return true;
 }
 static void picnic_bind(SwatWorld*w){
- if(w->count!=SWAT_MOTEL_OBJECTS)return;
+ if(w->count<SWAT_MOTEL_PICNIC_END)return;
  for(int i=0;i<SWAT_MOTEL_PICNIC_PARTS;i++){
   SwatObject*o=&w->objects[SWAT_MOTEL_PICNIC_FIRST+i];if(!o->active)continue;const SwatRoadsidePart*p=&picnic_parts[i];swat_world_build_progress(w);
   b3Vec3*vertices=malloc((size_t)p->vertex_count*sizeof(*vertices));assert(vertices);for(int v=0;v<p->vertex_count;v++)vertices[v]=swat_mul(p->vertices[v],100);
