@@ -265,13 +265,39 @@ How a kind's plants become a community (`render/flora.h`):
 - **Coasts**: fan palms below 40 m and feather palms on the strand below
   12 m; the canopy thins on the strand (by up to 60%) and the shrub layer
   thickens with evergreen scrub.
-- **Near-desert scrub** (`terra.c` surface, the mountains hill-climb): a 1.5 km noise and the
-  mountains' rain shadow pick a few regions of the lowlands, under 140-260 m and off the rivers, their
-  banks and the wet hollows (8.8% of the island; its heart near 2944, 3584; on the 2 km test world about
-  a quarter of the land). There the ground is bare red-brown earth with sand in pans on the flats, ferns
-  are down by 85% and trees by 93-95%, cycads stand here and there (density at most 0.22, in clumps) and
-  scrub in loose clumps with bare ground between; its edges blend over a few hundred metres. From afar
-  the ground shader dots the earth with dark dwarf scrub in loose stands.
+- **Near-desert scrub** (`terra.c` surface; the mountains hill-climb, then the biomes hill-climb): a
+  1.5 km noise and the mountains' rain shadow pick a few regions of the lowlands, under 140-260 m and off
+  the rivers, their banks and the wet hollows. The noise is in metres and its threshold is set so that
+  about 8% of the land is near-desert on any island (7.4% of the big one, its heart near 2944, 3584;
+  7.7-8.5% of the 2 and 4 km test islands, where it used to be a quarter). Within its margin it breaks
+  into tongues and islands (an 80-300 m noise), so desert and forest interfinger. Inside, the ground is
+  not one colour: bare earth; pale silt pans in the flat hollows; dry washes of gravel and some sand on
+  the valley floors and fans; stony flats and stony hillsides in 90 m and 260 m patches; broken rock on
+  the crests; litter under the scrub clumps. Ferns are down by 85% and trees by 93-95%; scrub grows in
+  loose clumps with bare ground between and thicker in a line along the washes, with the odd small tree;
+  nothing grows on the pans, less on the stony ground; tall grass takes bare earth only at 0.25 (was
+  0.55), so it reads as scrub, not a meadow. From afar the ground shader dots the earth with dark dwarf
+  scrub in loose stands.
+- **Open country** (`world.c` `grassland_build`, at load): about 14% of the land, in a few large pieces
+  picked by a 700 m noise on rotated, warped axes, loses nearly all its trees. Where that ground is dry
+  it is dry grassland (straw-coloured, ferns thinned, good grazing; 6.9%); where it is moist it is fern
+  prairie (7.0%): a closed sea of bracken and other ferns (the understorey patch rule keeps at least 75%
+  of the fern lattice where the fern layer is full and nothing shades it) with a tree here and there.
+- **Wet forest** (`terra.c`): the wettest gentle lowland ground below about 260 m carries a closed,
+  conifer-led forest (the conifer share up by 0.3: redwoods and podocarps by their habitat), 25% more
+  stems, moss patches in the litter and tree ferns under it in patches; the stand openings below fade
+  out there.
+- **River banks**: nearness to river water (the habitat's `wet`, `terra_riparian`) is 1 within about
+  20 m, a half at 26 m and nothing past 40 m (it used to be about a third on any bank, so the bank rules
+  rarely fired). Horsetails stand dense in the nearest few metres and in patchy brakes over the rest of a
+  flat bank, never on beach sand; bank mud is a strip of a few metres, sand bars only on the wide reaches.
+- **The strand**: behind the beach, on low ground near the sea, an open belt of palms in groves and
+  salt-hardy scrub on sandy ground, with broadleaves, ferns and tree ferns thinned (narrow on this
+  island, where most low coastal ground is beach).
+- **Stands** (`render/veg_place.h`): trees stand in groups with small openings between (a 25 m noise; in
+  an opening about half the lattice sites stay empty), and a conifer's age is weighed by its stand: old
+  stands (the dead-wood noise below) are mostly old trees, regrowth patches and the edges of clearings
+  young redwoods, mature trees elsewhere.
 - **Mixed stands are as dense as pure ones.** The scatter keeps a plant with a chance of its layer's
   density squared, so a stand split between conifers and broadleaves carried up to half the stems of a
   pure one and mixed lowland forest read as parkland; the bake raises both canopy layers by

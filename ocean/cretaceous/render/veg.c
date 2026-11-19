@@ -1779,7 +1779,7 @@ static float grass_density(const TerraMap* m, float x, float z, float* wet, floa
         const uint8_t* s = m->splat + ((size_t)iz * m->n + ix) * TERRA_MAT_COUNT + k;
         sp[k] = lerpf(lerpf(s[0], s[TERRA_MAT_COUNT], fx), lerpf(s[(size_t)m->n * TERRA_MAT_COUNT], s[(size_t)(m->n + 1) * TERRA_MAT_COUNT], fx), fz) / 255.0f;
     }
-    float open = sp[TERRA_MAT_FERN] + 0.55f * sp[TERRA_MAT_DIRT] + 0.75f * sp[TERRA_MAT_MUD] + 0.35f * sp[TERRA_MAT_MOSS] + 0.3f * sp[TERRA_MAT_FOREST];
+    float open = sp[TERRA_MAT_FERN] + 0.25f * sp[TERRA_MAT_DIRT] + 0.75f * sp[TERRA_MAT_MUD] + 0.35f * sp[TERRA_MAT_MOSS] + 0.3f * sp[TERRA_MAT_FOREST];
     open *= 1.0f - clampf((sp[TERRA_MAT_ROCK] + sp[TERRA_MAT_SCREE] + sp[TERRA_MAT_SAND]) * 1.6f, 0, 1);
     float canopy = veg_density(m, VEG_CONIFER, x, z) + veg_density(m, VEG_BROADLEAF, x, z) + 0.6f * veg_density(m, VEG_TREEFERN, x, z);
     *shade = sstep(0.55f, 1.25f, canopy);   // most of the island is open woodland (0.6..1): grass between the trees

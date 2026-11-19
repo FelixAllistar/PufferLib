@@ -82,6 +82,39 @@ static inline float veg_layer_density(const TerraMap* m, int kind, float x, floa
     if (kind == VEG_SNAG) return vp_clamp(veg_density(m, VEG_CONIFER, x, z) + veg_density(m, VEG_BROADLEAF, x, z), 0, 1) * flora_old(m, x, z);
     return veg_density(m, kind, x, z);
 }
+// Age of a conifer variant: 0 young, 1 mature, 2 old. The generator and the
+// heights below agree on it: young redwoods fill the understorey, old ones
+// stand tall with a high crown and a few dead limbs.
+static inline int veg_conifer_age(int kind, int variant) {
+    if (kind != VEG_CONIFER) return 1;
+    switch (flora_species(kind, variant)) {
+    case FL_REDWOOD: return variant == 3 ? 0 : variant == 7 ? 2 : 1;
+    case FL_ARAUCARIA: return variant == 4 ? 2 : 1;
+    case FL_PODOCARP: return variant == 5 ? 2 : 1;
+    default: return 1;
+    }
+}
+// Stands have an age: old stands (flora_old, the same patches that hold the dead wood) are mostly old
+// trees with some mature ones; elsewhere mature trees lead, with young ones in the regrowth round the
+// clearings (flora_gap) and in patches of their own. A species' slots of each age (veg_conifer_age) are
+// weighed by that, so ages come in patches rather than as an even dice per tree. Only redwoods have a
+// young form; araucaria and podocarp choose between mature and old.
+static inline float vp_young(const TerraMap* m, float x, float z, const FloraSite* s) {
+    return fl_sstep(0.45f, 0.7f, fl_noise(m->seed * 0x3b9ac9ffu + 0x77u, x, z, 110.0f)) * (1 - s->old) + 0.8f * (1 - s->gap);
+}
+static inline int veg_stand_age_pick(const TerraMap* m, int kind, int v, float x, float z, const FloraSite* s, float u2) {
+    int sp = flora_species(kind, v), slots[8], ns = 0; float w[8], tot = 0, young = fl_clamp(vp_young(m, x, z, s), 0, 1);
+    for (int k = 0; k < 8; k++) {
+        if (flora_species(kind, k) != sp) continue;
+        int a = veg_conifer_age(kind, k);
+        float wk = a == 0 ? 0.1f + 2.2f * young : a == 2 ? 0.08f + 2.0f * s->old * (1 - young) : 0.7f;
+        slots[ns] = k; w[ns++] = wk; tot += wk;
+    }
+    if (ns < 2) return v;
+    float t = u2 * tot;
+    for (int k = 0; k < ns; k++) { if (t < w[k]) return slots[k]; t -= w[k]; }
+    return slots[ns - 1];
+}
 // The variant of a scattered plant: a species by habitat (render/flora.h),
 // then one of its seeds. Standing dead trees follow the canopy they died in:
 // dead conifers (0, 1: whole and broken) where conifers lead, dead
@@ -92,7 +125,9 @@ static inline int pick_variant(const TerraMap* m, int kind, float x, float z, co
         float c = veg_density(m, VEG_CONIFER, x, z), b = veg_density(m, VEG_BROADLEAF, x, z);
         return u * (c + b + 1e-3f) < c ? (u2 < 0.6f ? 0 : 1) : (u2 < 0.6f ? 2 : 3);
     }
-    return flora_pick(m, kind, x, z, s, u, u2);
+    int v = flora_pick(m, kind, x, z, s, u, u2);
+    if (kind == VEG_CONIFER) v = veg_stand_age_pick(m, kind, v, x, z, s, u2);
+    return v;
 }
 // Open ground. The understory (ferns, horsetails, shrubs) stands in patches with bare ground between,
 // not as an even cover: a smooth noise of VEG_PATCH_M m cells, kept only where it runs high, so about a
@@ -110,6 +145,14 @@ static inline float vp_patch(float x, float z, int kind) {
     float k = (n - 0.52f) / 0.14f; k = k < 0 ? 0 : k > 1 ? 1 : k;
     return k * k * (3 - 2 * k);
 }
+// Trees stand in groups with small openings between (a 25 m noise on rotated axes): a closed stand
+// keeps every lattice site in a group and loses about half of them in the openings, so the canopy seen
+// from above is broken, not an even lattice of crowns.
+static inline float vp_clump(const TerraMap* m, float x, float z) {
+    float u = 0.8f * x + 0.6f * z, w = -0.6f * x + 0.8f * z;
+    float n = 0.7f * fl_vnoise(m->seed * 0x1b873593u + 5u, u / 25.0f, w / 25.0f) + 0.3f * fl_vnoise(m->seed * 0xcc9e2d51u + 9u, w / 9.0f, u / 9.0f);
+    return 0.55f + 0.75f * fl_sstep(0.3f, 0.6f, n);
+}
 // Scatter one kind over a tile on a jittered lattice; deterministic per tile.
 static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstance* out, int cap) {
     float sp = SPACING[kind]; int cnt = 0, steps = (int)(VEG_TILE / sp);
@@ -121,9 +164,16 @@ static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstan
         // DENSITY_MUL_MAX), then the site for the plants that may stand.
         float d0 = veg_layer_density(m, kind, x, z) * DENSITY[kind], u = vp_r(&r), dm = d0 * DENSITY_MUL_MAX[kind];
         if (u > dm * dm * 1.6f) continue;
-        if ((kind == VEG_FERN || kind == VEG_HORSETAIL || kind == VEG_SHRUB) && vp_r(&r) > vp_patch(x, z, kind)) continue;   // patches, open ground between
         FloraSite site = flora_site(m, x, z);
+        // Patches with open ground between; but a fern prairie (a full fern layer under open sky) closes up
+        // into a sea of fronds with only small gaps.
+        if (kind == VEG_FERN || kind == VEG_HORSETAIL || kind == VEG_SHRUB) {
+            float keep = vp_patch(x, z, kind);
+            if (kind == VEG_FERN) keep = fmaxf(keep, 0.75f * fl_sstep(0.8f, 0.95f, d0 / DENSITY[kind]) * (1 - fl_sstep(0.15f, 0.4f, site.shade)));
+            if (vp_r(&r) > keep) continue;   // the same draw as before, only for these kinds
+        }
         float d = d0 * (kind < TERRA_VEG_COUNT ? flora_density_mul(kind, &site) : site.gap);
+        if (kind == VEG_CONIFER || kind == VEG_BROADLEAF) d *= vp_lerp(vp_clump(m, x, z), 1.0f, 0.65f * fl_sstep(0.75f, 0.95f, site.moist));   // groups and small openings; the wet forest stays closed
         if (u > d * d * 1.6f) continue;
         float y; if (!placeable(m, x, z, is_tree(kind) ? 0.95f : 1.1f, kind == VEG_HORSETAIL ? 0.5f : -1.0f, &y)) continue;
         if (cnt == cap) return cnt;
@@ -138,18 +188,6 @@ static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstan
 // radius r0 (m, at scale 1). render/veg_gen.h builds the meshes from these
 // same draws (species_dims), so the colliders below match the drawn trunks.
 // Each draws exactly once from the variant's stream.
-// Age of a conifer variant: 0 young, 1 mature, 2 old. The generator and the
-// heights below agree on it: young redwoods fill the understorey, old ones
-// stand tall with a high crown and a few dead limbs.
-static inline int veg_conifer_age(int kind, int variant) {
-    if (kind != VEG_CONIFER) return 1;
-    switch (flora_species(kind, variant)) {
-    case FL_REDWOOD: return variant == 3 ? 0 : variant == 7 ? 2 : 1;
-    case FL_ARAUCARIA: return variant == 4 ? 2 : 1;
-    case FL_PODOCARP: return variant == 5 ? 2 : 1;
-    default: return 1;
-    }
-}
 static inline void veg_species_dims(int kind, int variant, float* H, float* r0) {
     VpRng r = {vp_hash((uint32_t)kind * 7919u + (uint32_t)variant * 104729u + 12345u)}; float h = 0, rr = 0;
     switch (kind == VEG_SNAG ? -2 : flora_species(kind, variant)) {
