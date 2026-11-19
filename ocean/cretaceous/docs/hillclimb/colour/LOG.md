@@ -24,3 +24,9 @@ green under it, and the teal is mostly the haze.
    is taken half way to its own grey (brightness kept), in `veg_shade`. Kept: in `canopy` the conifers
    100-400 m off lose their blue glaze and read dark green; the far stands of `skyh` go grey-green; canopy
    teal share 81% -> 74%, skyh 91% -> 85%.
+3. Fault: the conifers' own leaves are blue-green (podocarp table hue 124, araucaria ropes painted at
+   126) and all conifers are one green; the brief wants a blue-black araucaria. Change: podocarp leaf mean
+   0.024/0.056/0.026 -> 0.03/0.06/0.02 (hue 100); the araucaria and cheirolep ropes painted darker, a
+   little blue at the base and less yellow at the tips (base 0.026/0.066/0.028 -> 0.022/0.05/0.026, tip
+   0.06/0.115/0.03 -> 0.045/0.085/0.03). Kept: at 50-150 m in `canopy` the araucarias now read as dark,
+   blue-black tiers beside the greener podocarps; the shot's numbers hardly move (hue 175 -> 177).
