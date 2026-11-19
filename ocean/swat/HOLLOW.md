@@ -12,6 +12,39 @@ no real cases. Every stain and mark is a stylised decal made here.
 
 Status and the per-item hill-climb log: `reports/cloud/level-hollow/LOG.md`.
 
+## Status and how to play
+
+- **Playable end to end:**
+  - Run `./swat play --mission hollow`, or choose **The Hollow** on the
+    planning screen's Scenarios tab.
+  - For a dedicated server, run `server --mission hollow`.
+- **Test:** `make -C ocean/swat hollow-test` (part of `make test`, about 3 s).
+  It checks:
+  - The map builds and has the expected structure.
+  - Staging is screened from every house window.
+  - The map encodes, decodes and rebuilds on a replica.
+  - Every room routes from staging.
+  - A physical walk from the lane reaches the barn loft, both storeys, the
+    smokehouse, the kitchen and the cellar.
+  - The hostage is escorted out to the lane and the mission ends in success.
+- **Review captures:**
+  - `exterior_capture OUT --mission hollow [--eye X,Y,Z --target X,Y,Z --fov F]`
+    renders 12 fixed review views.
+  - `performance_tool --hollow` measures frame cost.
+- **Results:**
+  - Final overview: `reports/cloud/level-hollow/overview.jpg`.
+  - Per-item contact sheets (reference | first render | final in-game):
+    `reports/cloud/level-hollow/contact/`.
+- **Code:**
+  - Map: `hollow_impl.h`, included by mission.c.
+  - Shared prop table: `hollow_data.h`.
+  - Presentation: `hollow_art.h`, included by environment_art.c.
+  - Dusk lighting: `hollow_mode` in lighting.c.
+  - Assets: `assets/environment/hollow_v1/` and
+    `assets/environment/hollow_decals/`.
+  - Generators: `tools/blender/hollow_scene.py`, `hollow_props.py` and
+    `hollow_textures.py`.
+
 ## 1. Building type, confirmed from photographs
 
 The owner described "a big old, almost like a barn house, wood house thing ...
@@ -50,6 +83,18 @@ outbuildings, and give the colour and value of weathered boards and rusted tin.
 | `references/smokehouse_crow_farm_habs.jpg` | **Smokehouse** | HABS WV-0490, Jacob Crow Farm, Smoke House, Cameron, Marshall County, WV. William E. Barrett, 1991. https://www.loc.gov/pictures/item/wv0490.photos.373283p/. Public domain. |
 | `references/root_cellar_door_habs.jpg` | **Root cellar** entry: plank door set into a bank | HABS NE-0068, Hans Ehlers Farm, Root Cellar. https://www.loc.gov/pictures/item/ne0068.photos.103422p/. Public domain. |
 | `references/root_cellar_interior_habs.jpg` | Cellar interior: masonry vault, hooks, bench | HABS PA-0168, Stamm Farm, Root Cellar. https://www.loc.gov/pictures/item/pa0168.photos.141355p/. Public domain. |
+
+Interiors, props and mood, added during the hill-climb (all public domain, Library of Congress):
+
+| Reference | Use | Source |
+|---|---|---|
+| `references/porch_wilkins_farm_habs.jpg` | Porch, front elevation | HABS WV-0465, Wilkins Farm House, Lost City, Hardy County WV. https://www.loc.gov/pictures/item/wv0465.photos.373095p/ |
+| `references/room_smith_farm_habs.jpg` | House interior: room, fireplace, floor | HABS WV-0494, G. W. Smith Farm House, Ripley, Jackson County WV. https://www.loc.gov/pictures/item/wv0494.photos.373293p/ |
+| `references/barn_interior_cyrus_habs.jpg`, `barn_loft_cyrus_habs.jpg` | Barn interior: stalls, stair, framing, loft | HABS WV-266-C, Abraham Cyrus Farmstead Barn, Wayne County WV. https://www.loc.gov/pictures/item/wv0475/ |
+| `references/smokehouse_interior_sinclair_habs.jpg` | Smokehouse interior | HABS MO-1220, James M. Sinclair Farm Smokehouse. https://www.loc.gov/pictures/item/mo0236.photos.097484p/ |
+| `references/smokehouse_interior_locust_grove_habs.jpg` | Smokehouse interior, boards and girts | HABS DE-359, Locust Grove Smokehouse. https://www.loc.gov/pictures/item/de0359.photos.384176p/ |
+| `references/school_bus_fsa_1941.jpg` | School bus on blocks | FSA/OWI 1941, "Abandoned school bus occupied by two workers from Fort Bragg". https://www.loc.gov/pictures/item/2017793674/ |
+| `references/mood_fog_greenbrier_highsmith.jpg` | Mood: overcast, valley fog, autumn woods | Carol M. Highsmith, "Fog over the Greenbrier River near Caldwell, West Virginia". https://www.loc.gov/pictures/item/2015634485/ |
 
 Only buildings, materials and ordinary objects are used as references. No
 crime-scene or gore imagery is searched for or used.

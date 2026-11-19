@@ -40,6 +40,7 @@ make -C ocean/swat viewer
 ./swat play  # Briar Court motel, authored rooms/reception/laundry
 ./swat play --mission house  # Cedar House, the layered-construction test level
 ./swat play --mission storefront  # Morrow Block, laundromat/pawn shop/rear service
+./swat play --mission hollow  # The Hollow, a raid on a rural West Virginia property at dusk (HOLLOW.md)
 ./swat play --mission breach-lab  # Door, layered stud wall and masonry samples
 ```
 
