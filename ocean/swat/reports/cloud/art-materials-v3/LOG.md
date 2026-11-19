@@ -144,3 +144,14 @@ Built from ambientCG Tiles074 (stone checker) recoloured to two VCT colours with
 - iter 4: recolour detail 0.8 (speckle). closer: no (green marbling returns) -> reverted. 
 - iter 5 (engine 1): reception views. Diffs: 2 light tiles slightly too white; otherwise matches. 
 - iter 6 (engine 2): light (200,196,178), dark (28,100,86). closer: yes (slightly). Stop.
+
+## 12. Laundry floor (terrazzo tile)
+Reference: "Terrazzo Floor Former Woolworth", Phillip Pessar, https://www.flickr.com/photos/25955895@N03/8116145669 (CC BY 2.0): mid-century tan terrazzo tiles with divider strips.
+
+- iter 1: Terrazzo004 (grey, large chips) @1.5 m. Diffs: 2 grey vs warm tan; 3 chips large, no divider strips. closer: n/a
+- iter 2: source -> Terrazzo005 (fine dark chips), target (186,160,112), saturation 0.6, baked divider strips (both axes), roughness 0.6r+0.3. closer: yes
+- iter 3: repeat 0.75 m, contrast 0.6: chip size and panel size like the ref. closer: yes
+- iter 4: target (188,154,96), contrast 0.9, strips darker/wider. closer: yes
+- iter 5: target (176,142,88), macro 0.12. closer: marginal
+- engine 1: laundry views. Diffs: 2 floor goes saturated yellow under the warm lamp; 3 strips faint at this size. 
+- engine 2: target (166,146,110), saturation 0.7. closer: yes - tan terrazzo like the ref. Final.

@@ -20,6 +20,6 @@
   "bath_floor": {"source": "ambientcg:Tiles071", "res": 1024, "tile_m": 1.0, "target": [214, 204, 178], "contrast": 1.3, "saturation": 1.0, "flatten": 0.0, "rough": [1.0, 0.0], "normal": 1.0, "macro": [0.12, 0.8, 0.0], "detail": [0, 0, 0]},
   "bath_wall": {"source": "ambientcg:Tiles036", "res": 1024, "tile_m": 1.0, "target": [220, 218, 208], "contrast": 1.0, "saturation": 1.0, "flatten": 0.5, "rough": [1.0, 0.0], "normal": 1.0, "macro": [0.03, 0.8, 0.0], "detail": [0, 0, 0]},
   "reception_floor": {"source": "ambientcg:Tiles074", "res": 1024, "tile_m": 1.8, "target": [150, 150, 136], "contrast": 1.0, "saturation": 1.0, "flatten": 0.3, "rough": [0.4, 0.45], "normal": 1.0, "macro": [0.05, 0.6, 0.0], "detail": [0, 0, 0], "recolor": {"threshold": 0.35, "dark": [28, 100, 86], "light": [200, 196, 178], "detail": 0.3}},
-  "laundry_floor": {"source": "ambientcg:Terrazzo004", "res": 1024, "tile_m": 1.5, "target": [168, 166, 158], "contrast": 1.0, "saturation": 1.0, "flatten": 0.4, "rough": [1.0, 0.0], "normal": 1.0, "macro": [0.06, 0.5, 0.0], "detail": [0, 0, 0]}
+  "laundry_floor": {"source": "ambientcg:Terrazzo005", "res": 1024, "tile_m": 0.75, "target": [166, 146, 110], "contrast": 0.9, "saturation": 0.7, "flatten": 0.4, "rough": [0.6, 0.3], "normal": 1.0, "macro": [0.12, 0.5, 0.05], "detail": [0, 0, 0], "joints": {"axis": "uv", "width_px": 6, "darken": 0.45, "depth": 0.5}}
  }
 }
