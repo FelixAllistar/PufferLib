@@ -23,3 +23,11 @@ One line per pass: the worst fault seen, the change, kept or reverted, and why.
 19. Fault: the tree fern's dead skirt was a thin sheaf of 5-8 fronds hanging straight down the trunk. Change: 8-12 dead fronds (5 on the reduced mesh), leaving the trunk at 40-66 degrees down and drooping, slightly longer and wider (longer still on the stout fern). Kept: a flared skirt under the crown, as on Dicksonia; it still reads dark olive in the crown's shade rather than brown (the dry tint is the plant shader's, not this track's).
 20. Fault: broadleaf crowns shade evenly top to side. Change: leaf cards lean more toward the sky (upbias 0.45, was 0.25) on magnolia, laurel, katsura and chloranth. Reverted: no visible difference at 25 m; the bent normals of the sky bake already decide the shading.
 21. Fault: at 39 m the magnolia's reduced crown showed a hollow ring round the leader (its leaves were all on the crown's shell). Change: `inner` 0.6 (was 0.3), more leaf points deep in the crown. Kept: the reduced crown is closed, the full crown a little fuller, the impostor unchanged.
+
+## Sheets (left 5.0, right this branch; llvmpipe, high preset, 1280x720 halved)
+
+- `01`-`04`: the gallery's broadleaf, cycad and tree-fern pages from closer in (about 9-25 m; the camera is framed on each page's tallest plant, so the bigger trees sit further back).
+- `05`-`07`: the gallery pages at 30-45 m forced to the full mesh, the reduced mesh and the impostor.
+- `08`: the `edge_broadleaf` capture shots, 20, 80 and 300 m from a broadleaf forest edge.
+- `09`: `ga0` (tree ferns on a meadow) and `vf_forest` (adult's eye in tree-fern and broadleaf forest).
+- `10`: `gup` (45 m over the tree-fern meadow), `canopy` and `river`.
