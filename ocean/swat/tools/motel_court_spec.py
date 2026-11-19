@@ -23,7 +23,7 @@ POST_PITCH_MAX = 3.0
 #   axis 'z': rooms run along z, facade at x=line, rooms behind the facade
 #             (facing=+1: wing faces +x, rooms at x<line; -1: faces -x, rooms x>line)
 REAR_EXT = dict(name='rear wing (105)', axis='x', line=0.0, start=8.0, bays=1, facing=+1, first=105)
-EAST = dict(name='east wing (107-112)', axis='z', line=16.0, start=WALK - 0.23, bays=6, facing=-1, first=107)
+EAST = dict(name='east wing (107-112)', axis='z', line=17.0, start=WALK - 0.23, bays=6, facing=-1, first=107)
 WEST = dict(name='west wing (113-118)', axis='z', line=-16.0, start=WALK - 0.23, bays=6, facing=+1, first=113)
 WINGS = [REAR_EXT, EAST, WEST]
 
@@ -58,7 +58,7 @@ def side_posts(wg):
     return posts(wg['start'], wg['start'] + wg['bays'] * BAY)
 
 # Court = between the side-wing walkway edges and in front of the rear walkway.
-COURT_X = (WEST['line'] + WALK, EAST['line'] - WALK)      # -14.17 .. 14.17
+COURT_X = (WEST["line"] + WALK, EAST["line"] - WALK)      # -14.17 .. 15.17
 COURT_Z = (WALK, 24.0)                                      # to the lot's street edge
 SEDAN_X = -6.0                                              # roadside sedan (authoritative, unchanged)
 
@@ -96,8 +96,8 @@ SIGN = (6.6, 31.6, -0.13)        # roadside sign at the street, beside the drive
 FENCE_X, FENCE_Z0 = 23.2, 4.0    # chain-link run moved to the east property line
 PICNIC = (-12.1, 4.6)            # west corner planter
 WHEEL_STOPS_X = [-8.7, -6.0, -3.3, 2.1, 4.8]   # in rear-row stall centres
-STAGING = (13.8, -3.0)           # east breezeway (x 12..16), behind the building line
-EXTRACTION = (0.0, 10.0)
+STAGING = (14.1, -3.0)           # east breezeway (x 12..17), behind the building line
+EXTRACTION = (0.0, 12.0)
 
 def plan_paint():
     """(polygon, colour) fills for the plan render, back to front."""

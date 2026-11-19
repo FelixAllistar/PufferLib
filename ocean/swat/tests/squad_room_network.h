@@ -29,7 +29,9 @@ static void room_network(void) {
     }
     for(int n=0;n<2;n++) {
         int actor=n?4:0;SwatController* c=&authority.actors[actor].controller;
-        b3Pos feet=b3OffsetPos(point,swat_v(n?.8f:0,-authority.world.objects[door].half.y,n?1.3f:1.4f));
+        // Actor 4 parks west of the door; east of it the x=-6 walkway post
+        // (3 m post spacing, MOTEL_LAYOUT.md) would close the walkway.
+        b3Pos feet=b3OffsetPos(point,swat_v(n?-.8f:0,-authority.world.objects[door].half.y,n?1.3f:1.4f));
         b3Body_SetTransform(c->body.body,b3OffsetPos(feet,swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity);b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);
     }
     SwatController* leader=&authority.actors[0].controller;b3Vec3 aim=b3SubPos(point,swat_controller_eye(leader));

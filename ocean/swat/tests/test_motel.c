@@ -302,7 +302,8 @@ static void live_squad_and_evacuation(void) {
     // inside. The evacuated civilian remains a real body at staging.
     for(int i=0;i<s.actor_count;i++)if(s.actors[i].present && s.actors[i].mind.bot && s.actors[i].role==SWAT_OFFICER)
         s.actors[i].mind.order=SWAT_ORDER_FALL_IN;
-    for(t=0;t<2400 && swat_sim_progress(&s).officers_away;t++)swat_sim_step(&s,&(SwatInput){0});
+    // Regroup walks back to the east breezeway staging (MOTEL_LAYOUT.md).
+    for(t=0;t<3600 && swat_sim_progress(&s).officers_away;t++)swat_sim_step(&s,&(SwatInput){0});
     printf("Motel full squad regroup after %d ticks, away=%d\n",t,swat_sim_progress(&s).officers_away);fflush(stdout);
     assert(!swat_sim_progress(&s).officers_away);
     swat_sim_close(&s);

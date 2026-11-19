@@ -690,8 +690,8 @@ def build_decals():
     cv.paint((-24, 24, -24, 36), wear_dark, (0.13, 0.13, 0.14), 0.22)
     cv.paint((-56, 56, 36, 44), wear, (0.50, 0.49, 0.47), 0.16)
     # tyre-polished lanes: driveway into the aisle, and the highway wheel paths
-    for x0 in (-1.6, 1.6):
-        cv.paint((x0 - 1, x0 + 1, 7, 36), lambda X, Z, px, x0=x0: np.clip(1 - np.abs(X - x0) / 0.8, 0, 1) * 0.8, (0.11, 0.11, 0.12), 0.35)
+    for x0 in (-1.6, 1.6):   # driveway lanes stop at the court mouth (the island splits them)
+        cv.paint((x0 - 1, x0 + 1, C.ISLAND[3], 36), lambda X, Z, px, x0=x0: np.clip(1 - np.abs(X - x0) / 0.8, 0, 1) * 0.8, (0.11, 0.11, 0.12), 0.35)
     # court aisles (tools/motel_court_spec.py): the cross aisle and the two side aisles
     za = (C.WALK + C.STALL_D, C.WALK + C.STALL_D + C.AISLE)
     cv.paint((-9, 9, za[0], za[1]), lambda X, Z, px: np.clip(1 - np.abs(Z - (za[0] + za[1]) / 2) / 1.6, 0, 1) * np.clip((8.6 - np.abs(X)) / 3, 0, 1), (0.12, 0.12, 0.13), 0.28)
@@ -742,11 +742,11 @@ def build_decals():
     cv.paint((acx - 0.7, acx + 0.4, 3.4, 4.1), ring, paint, 0.85)
     # central concrete island (painted kerb, weathered concrete, yellow noses)
     ix0, ix1, iz0, iz1 = C.ISLAND
-    cv.rect(ix0, ix1, iz0, iz1, (0.60, 0.58, 0.54), 0.92, noise=lambda X, Z: 0.85 + 0.15 * np.sin(X * 7.1) * np.sin(Z * 5.3))
+    cv.rect(ix0, ix1, iz0, iz1, (0.40, 0.39, 0.36), 0.85, noise=lambda X, Z: 0.85 + 0.15 * np.sin(X * 7.1) * np.sin(Z * 5.3))
     for zc in (iz0, iz1):
-        cv.rect(ix0, ix1, zc - 0.35, zc + 0.35, (0.82, 0.68, 0.20), 0.75)
+        cv.rect(ix0, ix1, zc - 0.25, zc + 0.25, (0.62, 0.52, 0.18), 0.6)
     for (x0, z0), (x1, z1) in (((ix0, iz0), (ix0, iz1)), ((ix1, iz0), (ix1, iz1)), ((ix0, iz0), (ix1, iz0)), ((ix0, iz1), (ix1, iz1))):
-        cv.segment((x0, z0), (x1, z1), 0.09, (0.86, 0.85, 0.80), 0.8)
+        cv.segment((x0, z0), (x1, z1), 0.09, (0.62, 0.61, 0.57), 0.7)
     # corner planters and the gravel service yard / strips behind the wings
     def gravel(seed):
         def fn(X, Z):

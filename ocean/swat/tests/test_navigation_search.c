@@ -51,11 +51,17 @@ static void low_support_escort(int variant) {
         assert(hit.hit && hit.index==owner);stops++;
     }
     assert(stops==5);
-    const b3Pos original[]={{-2.9,-.065,6.3},{-2.385337114,.064999998,4.499994278}};
+    // Captured cases move with their anchors in the court layout (MOTEL_LAYOUT.md):
+// wheel stop 143 from x=-2 to -3.3 (S3), stop 144 from x=2 to 2.1 (S4) and
+// extraction from z=10 to 12 (EZ).
+#define S3 (-1.3)
+#define S4 (.1)
+#define EZ (2.0)
+    const b3Pos original[]={{-2.9+S3,-.065,6.3},{-2.385337114+S3,.064999998,4.499994278}};
     // Captured full-route failure: retain grounded state and approach velocity.
     // Dropping fresh stationary bodies at rounded coordinates misses the snag.
-    const b3Pos crowded[]={{.100002378,-.065000057,9.672427177},{.800554872,-.064999968,10.225691795},{-2.374074221,-.064999998,9.242354393},{-.525001526,-.064999998,10.288771629},{.099925950,-.064999998,8.482886314},{-2.855974436,.064999998,4.499983311},{1.144464493,.064999998,4.499990463},{1.300004363,-.064999908,7.879238605},{6,.014999986,-1.399999976}};
-    const b3Pos crowded_other[]={{.1,-.065,9.630},{-2,.015,-2},{-1.616,.065,4.5},{.234,-.065,8.738},{-1.696,-.065,11.102},{-.539,-.065,11.234},{2,.015,-2},{-1.055,-.065,7.749},{6,.015,-1.4}};
+    const b3Pos crowded[]={{.100002378,-.065000057,9.672427177+EZ},{.800554872,-.064999968,10.225691795+EZ},{-2.374074221,-.064999998,9.242354393+EZ},{-.525001526,-.064999998,10.288771629+EZ},{.099925950,-.064999998,8.482886314+EZ},{-2.855974436+S3,.064999998,4.499983311},{1.144464493+S4,.064999998,4.499990463},{1.300004363,-.064999908,7.879238605+EZ},{6,.014999986,-1.399999976}};
+    const b3Pos crowded_other[]={{.1,-.065,9.630+EZ},{-2,.015,-2},{-1.616+S3,.065,4.5},{.234,-.065,8.738+EZ},{-1.696,-.065,11.102+EZ},{-.539,-.065,11.234+EZ},{2,.015,-2},{-1.055,-.065,7.749+EZ},{6,.015,-1.4}};
     const b3Pos* positions=variant==2?crowded_other:variant?crowded:original;int count=variant?9:2,target=variant==2?2:variant?6:1;
     for(int i=0;i<count;i++) {
         SwatController* c=&sim.actors[i].controller;

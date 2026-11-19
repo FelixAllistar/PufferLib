@@ -242,7 +242,10 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
                         // The carbine is lethal force, which the ROE allows only
                         // against a suspect still holding a weapon; one who
                         // dropped it and ran is only ordered to comply.
-                        in.aim=true;in.fire=((sim.config.hostile_fire && !sim.actors[watch_actor].gear.disarmed) || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[watch_actor].gear.stunned_ticks;
+                        // Lethal force waits for the perceived ROE state: an armed
+                        // suspect still being challenged is not yet a threat.
+                        in.aim=true;in.fire=((sim.config.hostile_fire && !sim.actors[watch_actor].gear.disarmed && swat_roe_lethal_threat(sim.roe[watch_actor].state)) ||
+                            sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[watch_actor].gear.stunned_ticks;
                         in.reload=!sim.actors[0].arsenal.slots[0].chambered;
                         // Camera sight can clear a jamb before this longer
                         // primary's muzzle does. Continue the planned approach
@@ -545,6 +548,11 @@ static void secure(int actor) {
             walk(squad_waiting,.43f);
             for(int n=0;n<1200 && feet(recipient).z<.6f;n++)step(look(chest(actor)));
             if(feet(recipient).z<.6f)fail("recalled worker clears furnished room");
+        }else {
+            // Reception's front door is also a one-person doorway: let the
+            // recalled worker step out before the commander leaves, rather
+            // than routing around through the laundry (bounded, no failure).
+            for(int n=0;n<600 && feet(recipient).z<.6f;n++)step(look(chest(actor)));
         }
         printf("Squad officer %d secured actor %d at tick %d\n",recipient,actor,sim.tick);fflush(stdout);
         return;

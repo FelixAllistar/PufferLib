@@ -1,5 +1,6 @@
 #include "lighting.h"
 #include "fracture_geometry.h"
+#include "motel.h"
 #include "raymath.h"
 #include "rlgl.h"
 #include <stdlib.h>
@@ -483,9 +484,13 @@ int swat_lighting_night_lights(const SwatWorld* world,SwatNightLight* out,int ca
     // Rear and east security wall packs (P_wallpack): high-pressure sodium.
     l[n++]=night_spot((Vector3){-4.7f,2.36f,-6.26f},(Vector3){0,-.75f,-.66f},.05f,Vector3Scale(sodium,14),13,.6f,SWAT_NIGHT_WALLPACK);
     l[n++]=night_spot((Vector3){3.3f,2.36f,-6.26f},(Vector3){0,-.75f,-.66f},.05f,Vector3Scale(sodium,14),13,.6f,SWAT_NIGHT_WALLPACK);
-    l[n++]=night_spot((Vector3){8.26f,2.29f,-3.0f},(Vector3){.66f,-.75f,0},.05f,Vector3Scale(sodium,14),13,.6f,SWAT_NIGHT_WALLPACK);
-    // Gooseneck floods over the roadside sign (P_sign_flood pair, one light).
-    l[n++]=night_spot((Vector3){9.72f,4.40f,8.55f},(Vector3){0,-.55f,-.83f},.2f,Vector3Scale(halide,3.4f),6,.45f,SWAT_NIGHT_FLOOD);
+    // The east wall pack now sits on Room 105's end wall (court layout, MOTEL_LAYOUT.md).
+    l[n++]=night_spot((Vector3){12.26f,2.29f,-3.0f},(Vector3){.66f,-.75f,0},.05f,Vector3Scale(sodium,14),13,.6f,SWAT_NIGHT_WALLPACK);
+    // Gooseneck floods over the roadside sign (P_sign_flood pair, one light),
+    // carried with the sign from its authored (9.7, 8.0) to its street site.
+    const SwatMotelInstance* sign=swat_motel_instance(139),*authored=swat_motel_authored_instance(139);
+    Vector3 flood={9.72f+(float)(sign->origin.x-authored->origin.x),4.40f,8.55f+(float)(sign->origin.z-authored->origin.z)};
+    l[n++]=night_spot(flood,(Vector3){0,-.55f,-.83f},.2f,Vector3Scale(halide,3.4f),6,.45f,SWAT_NIGHT_FLOOD);
     // Cobra-head streetlights over the highway (heads at y = G+8.81, z 37.7).
     const float street[4]={-44,-20,20,44};
     for(int i=0;i<4;i++)l[n++]=night_spot((Vector3){street[i],8.70f,37.70f},(Vector3){0,-1,-.12f},.16f,Vector3Scale(sodium,190),23,1.3f,SWAT_NIGHT_STREET);
@@ -496,6 +501,14 @@ int swat_lighting_night_lights(const SwatWorld* world,SwatNightLight* out,int ca
         {23.84f,23.89f,-.7071f,-.7071f,1},{-23.61f,0,1,0,1.8f},{23.61f,-14,-1,0,1.8f}};
     for(int i=0;i<6;i++)l[n++]=night_spot((Vector3){lot[i].x,7.32f,lot[i].z},(Vector3){lot[i].dx*.35f,-1,lot[i].dz*.35f},.22f,
         Vector3Scale(halide,135*lot[i].k),21,1.1f,SWAT_NIGHT_LOT);
+    // Porch sconces of the court's closed guest rooms (asset 33 rows of the
+    // court layer), at the same offset from the fixture as the rooms' own.
+    for(int owner=SWAT_MOTEL_COURT_FIRST;owner<SWAT_MOTEL_COURT_END && n<SWAT_NIGHT_LIGHTS;owner++) {
+        SwatMotelInstance p;if(!swat_motel_court(world,owner,&p,NULL) || p.asset!=33)continue;
+        float c=cosf(p.yaw),sn=sinf(p.yaw);
+        Vector3 at={(float)p.origin.x+sn*.14f,(float)p.origin.y-.04f,(float)p.origin.z+c*.14f};
+        l[n++]=night_point(at,Vector3Scale(warm,2.4f),7.5f,.55f,SWAT_NIGHT_PORCH);
+    }
     if(n>capacity)n=capacity;
     memcpy(out,l,(size_t)n*sizeof(*l));return n;
 }

@@ -24,7 +24,7 @@ static const SwatMissionDef missions[SWAT_MISSION_COUNT]={
         // Rooms 101-104 face the court) can see or fire on the squad. It opens
         // onto the walkway corner and the rear service drive (MOTEL_LAYOUT.md).
         // Extraction is in the court's cross aisle.
-        {13.8f,-.079f,-3},{0,-.079f,10},0,{{0}}},
+        {14.1f,-.079f,-3},{0,-.079f,12},0,{{0}}},
     {"Morrow Block","Clear the laundromat, pawn shop and shared rear service area. Secure occupants and return to the street.",
         {-3,-.139f,5},{-3,-.139f,7},0,{{0}}},
     {"Generated building scenario","Reported armed occupants and civilians. Secure occupants and return to staging.",{0,0,3},{-1.5f,0,3},0,{{0}}},

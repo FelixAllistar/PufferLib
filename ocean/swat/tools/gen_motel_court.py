@@ -32,8 +32,11 @@ BAY = [
     (33, (-0.41, 2.34, 0.12), 0, 'SWAT_PLASTER', False, (45, 69, 93)),     # wall lamp
 ]
 END_WALL = (2, (0, 0, -3), math.pi / 2, 'SWAT_PLASTER', False)             # at a bay boundary
-END_TEMPLATE_EXT, END_TEMPLATE_INT = 103, 104   # office west end (quoins, meter, lamp) / plain party wall
-PIER_FRONT, PIER_REAR = 111, 112                # (8,0) and (8,-6) corner piers
+# Authored end walls (objects): 104 = office west end at x=-12 (exterior faces
+# local -x: quoins, porch lamp), 109 = Room 104's east end at x=8 (faces local
+# +x: quoins, wall pack); 107 = a timber party wall with no overlay pieces.
+END_TEMPLATE_NEG, END_TEMPLATE_POS, END_TEMPLATE_INT = 104, 109, 107
+PIERS = {-1: (110, 111), +1: (112, 113)}         # (front, rear) corner piers at x=-12 / x=8
 POST_TEMPLATE = 116                             # post at x=-4 (5.0)
 WING_YAW = {'x': 0.0}
 
@@ -73,14 +76,20 @@ for wg in S.WINGS:
     # unless the end abuts an existing wall (rear extension starts at room 104's wall).
     for k in range(n + 1):
         along = a0 + k * S.BAY
-        if wg is S.REAR_EXT and k == 0: continue           # room 104's east wall (object 108) is the party wall
+        if wg is S.REAR_EXT and k == 0: continue           # room 104's east wall (object 109) is the party wall
         origin, yaw = frame(wg, along)
         ext = k in (0, n)
+        # Which local side of this boundary is outside: the bays run toward
+        # local +x along the wing for yaw 0 and -90, toward local -x for +90.
+        runs = -1 if (wg['axis'] == 'z' and wg['facing'] > 0) else +1
+        side = (-runs if k == 0 else runs) if ext else 0
+        template = END_TEMPLATE_INT if not ext else (END_TEMPLATE_NEG if side < 0 else END_TEMPLATE_POS)
         add(END_WALL[0], place(origin, yaw, END_WALL[1]), yaw + END_WALL[2], END_WALL[3], False,
-            END_TEMPLATE_EXT if ext else END_TEMPLATE_INT, f"{wg['name']} {'end' if ext else 'party'} wall")
+            template, f"{wg['name']} {'end' if ext else 'party'} wall")
         if ext:
-            add(3, place(origin, yaw, (0, 0, 0)), yaw, 'SWAT_PLASTER', False, PIER_FRONT, 'corner pier')
-            add(3, place(origin, yaw, (0, 0, -6)), yaw, 'SWAT_PLASTER', False, PIER_REAR, 'corner pier')
+            front, rear = PIERS[side]
+            add(3, place(origin, yaw, (0, 0, 0)), yaw, 'SWAT_PLASTER', False, front, 'corner pier')
+            add(3, place(origin, yaw, (0, 0, -6)), yaw, 'SWAT_PLASTER', False, rear, 'corner pier')
 
 # Walkway posts: the rear run beyond the six moved authored posts, then the side wings.
 for x in S.REAR_POSTS_X[6:]:

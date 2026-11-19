@@ -17,80 +17,80 @@ static const SwatMotelCourtRow court_rows[SWAT_MOTEL_COURT_INSTANCES]={
     {{10,{10.8f,0.88f,0.018f},{1,1,1},0,SWAT_WOOD,false,false},41}, // room 105
     {{18,{10.8f,0.2f,0.16f},{1,1,1},0,SWAT_STEEL,false,false},42}, // room 105
     {{33,{9.59f,2.34f,0.12f},{1,1,1},0,SWAT_PLASTER,false,false},45}, // room 105
-    {{2,{12,0,-3},{1,1,1},1.570796f,SWAT_PLASTER,false,false},103}, // rear wing (105) end wall
-    {{3,{12,0,0},{1,1,1},0,SWAT_PLASTER,false,false},111}, // corner pier
-    {{3,{12,0,-6},{1,1,1},0,SWAT_PLASTER,false,false},112}, // corner pier
-    {{4,{19,0,3.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},57}, // room 107
-    {{5,{19,2.8f,3.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},58}, // room 107
-    {{6,{16,0,3.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},59}, // room 107
-    {{7,{16,2.44f,3.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},60}, // room 107
-    {{0,{16,0,3.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},61}, // room 107
-    {{1,{22,0,3.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},62}, // room 107
-    {{9,{16,0,1.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},64}, // room 107
-    {{10,{15.982f,0.88f,4.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},65}, // room 107
-    {{18,{15.84f,0.2f,4.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},66}, // room 107
-    {{33,{15.88f,2.34f,3.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},69}, // room 107
-    {{4,{19,0,7.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},81}, // room 108
-    {{5,{19,2.8f,7.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},82}, // room 108
-    {{6,{16,0,7.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},83}, // room 108
-    {{7,{16,2.44f,7.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},84}, // room 108
-    {{0,{16,0,7.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},37}, // room 108
-    {{1,{22,0,7.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},86}, // room 108
-    {{9,{16,0,5.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},88}, // room 108
-    {{10,{15.982f,0.88f,8.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},89}, // room 108
-    {{18,{15.84f,0.2f,8.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},90}, // room 108
-    {{33,{15.88f,2.34f,7.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},93}, // room 108
-    {{4,{19,0,11.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},33}, // room 109
-    {{5,{19,2.8f,11.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},34}, // room 109
-    {{6,{16,0,11.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},35}, // room 109
-    {{7,{16,2.44f,11.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},36}, // room 109
-    {{0,{16,0,11.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},37}, // room 109
-    {{1,{22,0,11.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},38}, // room 109
-    {{9,{16,0,9.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},40}, // room 109
-    {{10,{15.982f,0.88f,12.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},41}, // room 109
-    {{18,{15.84f,0.2f,12.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},42}, // room 109
-    {{33,{15.88f,2.34f,11.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},45}, // room 109
-    {{4,{19,0,15.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},57}, // room 110
-    {{5,{19,2.8f,15.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},58}, // room 110
-    {{6,{16,0,15.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},59}, // room 110
-    {{7,{16,2.44f,15.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},60}, // room 110
-    {{0,{16,0,15.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},61}, // room 110
-    {{1,{22,0,15.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},62}, // room 110
-    {{9,{16,0,13.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},64}, // room 110
-    {{10,{15.982f,0.88f,16.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},65}, // room 110
-    {{18,{15.84f,0.2f,16.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},66}, // room 110
-    {{33,{15.88f,2.34f,15.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},69}, // room 110
-    {{4,{19,0,19.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},81}, // room 111
-    {{5,{19,2.8f,19.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},82}, // room 111
-    {{6,{16,0,19.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},83}, // room 111
-    {{7,{16,2.44f,19.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},84}, // room 111
-    {{0,{16,0,19.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},37}, // room 111
-    {{1,{22,0,19.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},86}, // room 111
-    {{9,{16,0,17.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},88}, // room 111
-    {{10,{15.982f,0.88f,20.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},89}, // room 111
-    {{18,{15.84f,0.2f,20.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},90}, // room 111
-    {{33,{15.88f,2.34f,19.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},93}, // room 111
-    {{4,{19,0,23.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},33}, // room 112
-    {{5,{19,2.8f,23.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},34}, // room 112
-    {{6,{16,0,23.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},35}, // room 112
-    {{7,{16,2.44f,23.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},36}, // room 112
-    {{0,{16,0,23.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},37}, // room 112
-    {{1,{22,0,23.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},38}, // room 112
-    {{9,{16,0,21.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},40}, // room 112
-    {{10,{15.982f,0.88f,24.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},41}, // room 112
-    {{18,{15.84f,0.2f,24.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},42}, // room 112
-    {{33,{15.88f,2.34f,23.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},45}, // room 112
-    {{2,{19,0,1.6f},{1,1,1},0,SWAT_PLASTER,false,false},103}, // east wing (107-112) end wall
-    {{3,{16,0,1.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},111}, // corner pier
-    {{3,{22,0,1.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},112}, // corner pier
-    {{2,{19,0,5.6f},{1,1,1},0,SWAT_PLASTER,false,false},104}, // east wing (107-112) party wall
-    {{2,{19,0,9.6f},{1,1,1},0,SWAT_PLASTER,false,false},104}, // east wing (107-112) party wall
-    {{2,{19,0,13.6f},{1,1,1},0,SWAT_PLASTER,false,false},104}, // east wing (107-112) party wall
-    {{2,{19,0,17.6f},{1,1,1},0,SWAT_PLASTER,false,false},104}, // east wing (107-112) party wall
-    {{2,{19,0,21.6f},{1,1,1},0,SWAT_PLASTER,false,false},104}, // east wing (107-112) party wall
-    {{2,{19,0,25.6f},{1,1,1},0,SWAT_PLASTER,false,false},103}, // east wing (107-112) end wall
-    {{3,{16,0,25.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},111}, // corner pier
-    {{3,{22,0,25.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},112}, // corner pier
+    {{2,{12,0,-3},{1,1,1},1.570796f,SWAT_PLASTER,false,false},109}, // rear wing (105) end wall
+    {{3,{12,0,0},{1,1,1},0,SWAT_PLASTER,false,false},112}, // corner pier
+    {{3,{12,0,-6},{1,1,1},0,SWAT_PLASTER,false,false},113}, // corner pier
+    {{4,{20,0,3.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},57}, // room 107
+    {{5,{20,2.8f,3.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},58}, // room 107
+    {{6,{17,0,3.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},59}, // room 107
+    {{7,{17,2.44f,3.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},60}, // room 107
+    {{0,{17,0,3.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},61}, // room 107
+    {{1,{23,0,3.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},62}, // room 107
+    {{9,{17,0,1.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},64}, // room 107
+    {{10,{16.982f,0.88f,4.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},65}, // room 107
+    {{18,{16.84f,0.2f,4.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},66}, // room 107
+    {{33,{16.88f,2.34f,3.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},69}, // room 107
+    {{4,{20,0,7.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},81}, // room 108
+    {{5,{20,2.8f,7.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},82}, // room 108
+    {{6,{17,0,7.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},83}, // room 108
+    {{7,{17,2.44f,7.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},84}, // room 108
+    {{0,{17,0,7.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},37}, // room 108
+    {{1,{23,0,7.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},86}, // room 108
+    {{9,{17,0,5.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},88}, // room 108
+    {{10,{16.982f,0.88f,8.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},89}, // room 108
+    {{18,{16.84f,0.2f,8.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},90}, // room 108
+    {{33,{16.88f,2.34f,7.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},93}, // room 108
+    {{4,{20,0,11.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},33}, // room 109
+    {{5,{20,2.8f,11.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},34}, // room 109
+    {{6,{17,0,11.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},35}, // room 109
+    {{7,{17,2.44f,11.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},36}, // room 109
+    {{0,{17,0,11.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},37}, // room 109
+    {{1,{23,0,11.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},38}, // room 109
+    {{9,{17,0,9.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},40}, // room 109
+    {{10,{16.982f,0.88f,12.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},41}, // room 109
+    {{18,{16.84f,0.2f,12.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},42}, // room 109
+    {{33,{16.88f,2.34f,11.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},45}, // room 109
+    {{4,{20,0,15.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},57}, // room 110
+    {{5,{20,2.8f,15.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},58}, // room 110
+    {{6,{17,0,15.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},59}, // room 110
+    {{7,{17,2.44f,15.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},60}, // room 110
+    {{0,{17,0,15.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},61}, // room 110
+    {{1,{23,0,15.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},62}, // room 110
+    {{9,{17,0,13.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},64}, // room 110
+    {{10,{16.982f,0.88f,16.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},65}, // room 110
+    {{18,{16.84f,0.2f,16.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},66}, // room 110
+    {{33,{16.88f,2.34f,15.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},69}, // room 110
+    {{4,{20,0,19.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},81}, // room 111
+    {{5,{20,2.8f,19.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},82}, // room 111
+    {{6,{17,0,19.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},83}, // room 111
+    {{7,{17,2.44f,19.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},84}, // room 111
+    {{0,{17,0,19.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},37}, // room 111
+    {{1,{23,0,19.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},86}, // room 111
+    {{9,{17,0,17.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},88}, // room 111
+    {{10,{16.982f,0.88f,20.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},89}, // room 111
+    {{18,{16.84f,0.2f,20.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},90}, // room 111
+    {{33,{16.88f,2.34f,19.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},93}, // room 111
+    {{4,{20,0,23.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},33}, // room 112
+    {{5,{20,2.8f,23.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},34}, // room 112
+    {{6,{17,0,23.6f},{1,1,1},-1.570796f,SWAT_CONCRETE,false,false},35}, // room 112
+    {{7,{17,2.44f,23.6f},{1,1,1},-1.570796f,SWAT_WOOD,false,true},36}, // room 112
+    {{0,{17,0,23.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},37}, // room 112
+    {{1,{23,0,23.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},38}, // room 112
+    {{9,{17,0,21.86f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},40}, // room 112
+    {{10,{16.982f,0.88f,24.4f},{1,1,1},-1.570796f,SWAT_WOOD,false,false},41}, // room 112
+    {{18,{16.84f,0.2f,24.4f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},42}, // room 112
+    {{33,{16.88f,2.34f,23.19f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},45}, // room 112
+    {{2,{20,0,1.6f},{1,1,1},0,SWAT_PLASTER,false,false},104}, // east wing (107-112) end wall
+    {{3,{17,0,1.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},110}, // corner pier
+    {{3,{23,0,1.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},111}, // corner pier
+    {{2,{20,0,5.6f},{1,1,1},0,SWAT_PLASTER,false,false},107}, // east wing (107-112) party wall
+    {{2,{20,0,9.6f},{1,1,1},0,SWAT_PLASTER,false,false},107}, // east wing (107-112) party wall
+    {{2,{20,0,13.6f},{1,1,1},0,SWAT_PLASTER,false,false},107}, // east wing (107-112) party wall
+    {{2,{20,0,17.6f},{1,1,1},0,SWAT_PLASTER,false,false},107}, // east wing (107-112) party wall
+    {{2,{20,0,21.6f},{1,1,1},0,SWAT_PLASTER,false,false},107}, // east wing (107-112) party wall
+    {{2,{20,0,25.6f},{1,1,1},0,SWAT_PLASTER,false,false},109}, // east wing (107-112) end wall
+    {{3,{17,0,25.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},112}, // corner pier
+    {{3,{23,0,25.6f},{1,1,1},-1.570796f,SWAT_PLASTER,false,false},113}, // corner pier
     {{4,{-19,0,3.6f},{1,1,1},1.570796f,SWAT_CONCRETE,false,false},33}, // room 113
     {{5,{-19,2.8f,3.6f},{1,1,1},1.570796f,SWAT_WOOD,false,true},34}, // room 113
     {{6,{-16,0,3.6f},{1,1,1},1.570796f,SWAT_CONCRETE,false,false},35}, // room 113
@@ -151,29 +151,29 @@ static const SwatMotelCourtRow court_rows[SWAT_MOTEL_COURT_INSTANCES]={
     {{10,{-15.982f,0.88f,22.8f},{1,1,1},1.570796f,SWAT_WOOD,false,false},89}, // room 118
     {{18,{-15.84f,0.2f,22.8f},{1,1,1},1.570796f,SWAT_STEEL,false,false},90}, // room 118
     {{33,{-15.88f,2.34f,24.01f},{1,1,1},1.570796f,SWAT_PLASTER,false,false},93}, // room 118
-    {{2,{-19,0,1.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},103}, // west wing (113-118) end wall
-    {{3,{-16,0,1.6f},{1,1,1},1.570796f,SWAT_PLASTER,false,false},111}, // corner pier
-    {{3,{-22,0,1.6f},{1,1,1},1.570796f,SWAT_PLASTER,false,false},112}, // corner pier
-    {{2,{-19,0,5.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},104}, // west wing (113-118) party wall
-    {{2,{-19,0,9.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},104}, // west wing (113-118) party wall
-    {{2,{-19,0,13.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},104}, // west wing (113-118) party wall
-    {{2,{-19,0,17.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},104}, // west wing (113-118) party wall
-    {{2,{-19,0,21.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},104}, // west wing (113-118) party wall
-    {{2,{-19,0,25.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},103}, // west wing (113-118) end wall
-    {{3,{-16,0,25.6f},{1,1,1},1.570796f,SWAT_PLASTER,false,false},111}, // corner pier
-    {{3,{-22,0,25.6f},{1,1,1},1.570796f,SWAT_PLASTER,false,false},112}, // corner pier
+    {{2,{-19,0,1.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},109}, // west wing (113-118) end wall
+    {{3,{-16,0,1.6f},{1,1,1},1.570796f,SWAT_PLASTER,false,false},112}, // corner pier
+    {{3,{-22,0,1.6f},{1,1,1},1.570796f,SWAT_PLASTER,false,false},113}, // corner pier
+    {{2,{-19,0,5.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},107}, // west wing (113-118) party wall
+    {{2,{-19,0,9.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},107}, // west wing (113-118) party wall
+    {{2,{-19,0,13.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},107}, // west wing (113-118) party wall
+    {{2,{-19,0,17.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},107}, // west wing (113-118) party wall
+    {{2,{-19,0,21.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},107}, // west wing (113-118) party wall
+    {{2,{-19,0,25.6f},{1,1,1},3.141593f,SWAT_PLASTER,false,false},104}, // west wing (113-118) end wall
+    {{3,{-16,0,25.6f},{1,1,1},1.570796f,SWAT_PLASTER,false,false},110}, // corner pier
+    {{3,{-22,0,25.6f},{1,1,1},1.570796f,SWAT_PLASTER,false,false},111}, // corner pier
     {{8,{6,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false},116}, // rear walkway post
     {{8,{9,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false},116}, // rear walkway post
     {{8,{12,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false},116}, // rear walkway post
-    {{8,{14.23f,0,1.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
-    {{8,{14.23f,0,4.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
-    {{8,{14.23f,0,7.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
-    {{8,{14.23f,0,10.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
-    {{8,{14.23f,0,13.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
-    {{8,{14.23f,0,16.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
-    {{8,{14.23f,0,19.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
-    {{8,{14.23f,0,22.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
-    {{8,{14.23f,0,25.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
+    {{8,{15.23f,0,1.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
+    {{8,{15.23f,0,4.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
+    {{8,{15.23f,0,7.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
+    {{8,{15.23f,0,10.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
+    {{8,{15.23f,0,13.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
+    {{8,{15.23f,0,16.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
+    {{8,{15.23f,0,19.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
+    {{8,{15.23f,0,22.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
+    {{8,{15.23f,0,25.6f},{1,1,1},-1.570796f,SWAT_STEEL,false,false},116}, // east wing (107-112) post
     {{8,{-14.23f,0,1.6f},{1,1,1},1.570796f,SWAT_STEEL,false,false},116}, // west wing (113-118) post
     {{8,{-14.23f,0,4.6f},{1,1,1},1.570796f,SWAT_STEEL,false,false},116}, // west wing (113-118) post
     {{8,{-14.23f,0,7.6f},{1,1,1},1.570796f,SWAT_STEEL,false,false},116}, // west wing (113-118) post

@@ -1727,7 +1727,11 @@ every hash from decision 0: the five traces were re-recorded, and -O0 and
 again changed only the header byte. A build of that branch with
 `SWAT_NET_VERSION` 53 matched all five traces, checksum 1400546f and the
 movement checksums. The traces were re-recorded, and the motel thread
-checksum is now d8582c7b at 1 and 4 threads.
+checksum is now d8582c7b at 1 and 4 threads. The Briar Court court layout
+(protocol 55, MOTEL_LAYOUT.md) changes the motel world itself: a build with
+`SWAT_NET_VERSION` 54 still matches both annex traces, so only the motel
+traces and the header byte moved. All five were re-recorded, and the motel
+thread checksum is now aeccbfe4 at 1 and 4 threads.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
 no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D
