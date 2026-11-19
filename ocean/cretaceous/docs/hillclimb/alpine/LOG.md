@@ -61,3 +61,5 @@ is at the end of this file.
 11. Fault: since pass 1 the beds show as many thin contour stripes across the summit's slopes (`mtS`).
     Change: bed layering at 35% on loose steep ground (scree, stony soil), full on rock. Reverted: no
     visible change; the striped slopes are rock (53-73% of the ground over 400 m), where strata belong.
+12. Fault: the same fine stripes from afar. Change: the thin layers (2.6 m) fade from 150 to 500 m, the
+    thick beds stay. Reverted: a little softer in `mtS`, no change in `mtW`; not clearly better.
