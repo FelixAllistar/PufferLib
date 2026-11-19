@@ -44,6 +44,10 @@ static const ExteriorView hollow_views[]={
     {"hollow9_cellar",     {20.1f,-.05f,14.9f},{17.2f,-1.2f,17.8f},78},
     {"hollow10_cellar_door",{18.0f,1.7f,6.5f},{18.0f,1.0f,12.0f},55},
     {"hollow11_topdown",   {24.0f,72.0f,-2.0f},{24.0f,0.0f,-1.5f},46},
+    // Woods v2 review views (reports/cloud/hollow-woods).
+    {"hollow12_edge",      {47.0f,1.7f,-16.0f},{62.0f,6.0f,-10.0f},60},
+    {"hollow13_porch_woods",{16.6f,1.9f,-9.0f},{12.0f,4.5f,-40.0f},62},
+    {"hollow14_lane_treeline",{-6.0f,1.7f,-20.4f},{-32.0f,4.0f,-29.0f},58},
 };
 
 int main(int argc,char** argv) {

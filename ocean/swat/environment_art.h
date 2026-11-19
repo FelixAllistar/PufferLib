@@ -41,6 +41,7 @@ typedef struct SwatEnvironmentArt {
     bool lit;
     bool wall_depth_offset; // Presentation diagnostic; normally true.
     int shadow_room; // Set by depth callbacks; -1 for sun/contact passes.
+    bool plan_cutaway; // Set by the planning cutaway draw (render.c); The Hollow hides crowns over the clearing.
     Texture2D plaster,wood;
     float plaster_tile_metres;
     bool legacy_plaster;

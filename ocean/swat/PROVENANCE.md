@@ -165,3 +165,20 @@ cases. The reference photographs in `reports/cloud/level-hollow/references/`
 are public domain (Library of Congress FSA/OWI, HABS and Carol M. Highsmith
 collections). `HOLLOW.md` section 1 lists them, and they appear only in
 review sheets.
+
+### The Hollow woods v2 (`assets/environment/hollow_woods/`, yard ground decals)
+
+- Trees, shrubs, forest-floor scatter, the foliage card atlas, impostors and
+  forest-wall strips are made here by `tools/blender/hollow_trees.py`,
+  `hollow_foliage_textures.py` and `hollow_ground.py` (no third-party
+  geometry; nothing from Sketchfab, Mixamo or any kitbash).
+- Bark and ground maps are CC0 Poly Haven scans, graded:
+  `jolcham_oak_bark_01`, `leafy_grass` (Charlotte Baglioni); `bark_brown_01`,
+  `bark_brown_02`, `mossy_rock`, `brown_mud_dry`, `brown_mud_02` (Rob Tuytel);
+  `bark_platanus`, `pine_bark` (Dimitrios Savva); `bark_willow` (Dario Barresi,
+  Dimitrios Savva); `muddy_tracks`, `dry_decay_leaves` (Amal Kumar);
+  `gravel_floor_02` (Jenelle van Heerden, Dimitrios Savva).
+- Reference photographs in `reports/cloud/hollow-woods/references/` (review
+  sheets only): Carol M. Highsmith, Arthur Rothstein and Marion Post Wolcott
+  (Library of Congress, public domain); Nicholas A. Tonelli and Chris M
+  Morris (Wikimedia Commons, CC BY 2.0, credited in that folder's LOG.md).

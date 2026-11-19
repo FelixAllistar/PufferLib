@@ -45,6 +45,50 @@ Status and the per-item hill-climb log: `reports/cloud/level-hollow/LOG.md`.
   - Generators: `tools/blender/hollow_scene.py`, `hollow_props.py` and
     `hollow_textures.py`.
 
+## Woods v2: late-autumn Appalachian woods, yard ground, valley fog
+
+The woods are the scariest thing on the map: a dark wall of bare grey
+hardwoods and black hemlocks closing in around the clearing, a laurel
+thicket at their foot, fog thickening between the trunks. Log and contact
+sheets: `reports/cloud/hollow-woods/` (LOG.md, contact/, before_after_*.jpg).
+
+- **Species** (recursive branching, seeded; `tools/blender/hollow_trees.py`):
+  oak/hickory x3, tulip poplar x2, creek sycamore x2, eastern hemlock x3,
+  eastern white pine x2, rhododendron/laurel x3. Forest floor: logs, stumps,
+  rocks, fallen limbs, brown ferns; goldenrod and dead grass at the yard
+  edge; small field stones inside it.
+- **LOD per instance** (`hollow_woods.h`): lod0 within 14 m (x scale),
+  lod1 to 30 m, then a camera-facing impostor trimmed to the silhouette.
+  Beyond about 40 m from the clearing the woods are two impostor-strip
+  rings (`forest_wall.png`): one alpha-tested layer each, instead of
+  hundreds of overlapping billboards.
+- **Rendering:** one `DrawMeshInstanced` per mesh part per pass, with the
+  ordinary lit mesh program (`useInstancing` in lighting.c), drawn near to far
+  and sorted front to back. Cards are alpha tested (albedo alpha 253/255),
+  with coverage that widens with the mip level. Trees within ~9 m of the
+  clearing cast sun shadows through an instanced alpha-tested depth
+  program. The planning cutaway draws only the trunks of those trees, so
+  no crown covers the clearing.
+- **Yard ground** (`tools/blender/hollow_ground.py`, surface decals): worn
+  paths between the house, barn, smokehouse, cellar, woodpile, shed and
+  lane; tyre ruts with puddles to the bus and the junk cars; leaf drifts
+  against walls and the pen fence; mud, wet, litter, dead-grass and gravel
+  patches; world-space macro variation on the yard material. The forest
+  litter is graded dull brown, which also removed the orange band at the
+  bank toe.
+- **Mood:** the dusk lighting, bulbs and sodium light are unchanged. The
+  valley fog now starts at 16 m (`HOLLOW_FOG_START`, other missions keep 35
+  m), so it thickens between the trees and swallows the far woods.
+- **No collision.** The trees stand outside the playable rectangle (and on
+  the bank top, as before), so the clearing's bounds, navigation, protocol and
+  determinism are unchanged.
+- **Switches:** `SWAT_HOLLOW_WOODS=0` restores the old woods GLB and the
+  plain yard material. `SWAT_HOLLOW_WOODS_LAYERS` is a diagnostic mask:
+  1 trees, 2 shrubs, 4 floor scatter (default 7).
+- **Review views:** `exterior_capture --mission hollow` adds hollow12_edge,
+  hollow13_porch_woods and hollow14_lane_treeline to the original 12.
+- **Rebuild:** see `assets/environment/hollow_woods/README.md`.
+
 ## 1. Building type, confirmed from photographs
 
 The owner described "a big old, almost like a barn house, wood house thing ...

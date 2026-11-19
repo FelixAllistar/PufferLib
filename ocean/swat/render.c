@@ -581,6 +581,7 @@ static void swat_draw_plan(SwatView* view,const SwatSim* sim) {
     }
     ClearBackground((Color){57,76,86,255});
     swat_begin_scene(view,sim,camera,GetScreenWidth(),GetScreenHeight());
+    view->environment.plan_cutaway=!preview;
     for(int i=0;i<swat_world_geometry_count(&sim->world);i++) {
         const SwatObject* o=swat_world_geometry(&sim->world,i);
         if(!preview && o->center.y>2.7f && o->half.x>3 && o->half.z>3) continue;
@@ -596,6 +597,7 @@ static void swat_draw_plan(SwatView* view,const SwatSim* sim) {
     }
     swat_environment_art_transparent(&view->environment,&sim->world,camera.position,!preview);
     swat_end_scene(view);
+    view->environment.plan_cutaway=false;
     DrawRectangle(0,0,GetScreenWidth(),96,swat_ink);
     DrawText(TextFormat("%s / OPERATION BRIEF",mission->name),32,22,28,swat_paper);
     DrawText(preview ? mission->overwatch[preview-1].name : "DRONE OVERVIEW / CUTAWAY",34,61,18,swat_gold);
