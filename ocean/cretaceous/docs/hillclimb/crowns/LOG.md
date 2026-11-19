@@ -61,3 +61,17 @@ Triangles at the start (full / reduced): araucaria v0 22502 / 3712, v4 22140 / 3
 10. Fault: the broken standing conifer does not look like the lowland redwoods round it. Change: a
     redwood's buttressed, fluted foot (flare 0.65, five flutes). Reverted: at 6 and 25 m barely different
     from the plain flare it had.
+11. Checks, no change: from under the magnolia, laurel, katsura, ginkgo, plane, chloranth tree, podocarp
+    (both ages), redwood, araucaria, both tree ferns, both palms and the tall cycad (2 m out, looking up):
+    no blocky cards; the cheirolep's fans (pass 8) were the one fault. The flagged krummholz side-on to the
+    wind (12 m and 3 m): lean and foliage both downwind, the windward side bare with grey stubs. In the
+    world (`k2`, 2.5 m up at (3850, 3720), a slope at 410-440 m): a line of small wind-shaped tree islands
+    climbs above the forest where full araucarias stood.
+12. Fault (lodmatch): the krummholz mats' reduced mesh is 11-16% darker than the full one at 30 m (150 m
+    and the impostors within 4%). Changes tried: smaller, more merged cards (0.8-0.85 m, every 5th); then a
+    lighter crown occlusion on the reduced mesh only. Reverted both: 0.89 / 0.80 and 0.89 / 0.84, no gain.
+13. Fault (lodmatch): pass 8's finer cheirolep cards shade the full crown darker, so its reduced mesh reads
+    10% lighter at 30 and 150 m (1.04 and 1.08 before). Tried 5800 cards (worse: the reduced crown, which
+    bakes at the full mesh's leaf area, got lighter too: 1.12); kept 6800 with a heavier crown occlusion on
+    the reduced mesh (0.6 against 0.5): 1.09 and 1.10. A small gain; the rest is for the tone tables
+    (`LOD_TONE`, render/veg.c, the colour track's).
