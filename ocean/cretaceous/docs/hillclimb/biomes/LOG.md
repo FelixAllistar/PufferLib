@@ -66,3 +66,8 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
    two). Change: desert scrub layer 0.8 x (0.55-1) in and between the clumps (was 0.6 x (0.45-1)). Reverted: 8% more
    shrubs on the island and no visible gain in `desB` or `desG`; the scrub models are 1-2 m bushes, so more of them
    does not make a dwarf-shrub speckle.
+10. Fault (from pass 5): the warped three-octave noise has less spread, so the open country shrank from 14.4% of
+    the land (5.0's `world.c`, measured) to 9.9%, and `airS` lost its open patches. Change: `world.c` the open
+    country starts lower on the noise (`GRASS_EDGE` 0.455): 14.0% open, 6.9% dry grassland and 7.0% fern prairie.
+    Kept: the share is back; `airW`'s coastal plain is open again (prairie and grassland), `airS`'s open patches lie
+    elsewhere now. `ridG` (a dry ridge) now stands in conifer forest and gets the renderer's forest mist.

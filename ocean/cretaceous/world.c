@@ -312,6 +312,7 @@ void cret_prop_stream_free(CretPropStream* ps) {
 // good grazing); where it is moist it is fern prairie, a green sea of bracken and other ferns with a few
 // trees, so the two read as different country.
 #define GRASS_CELL 700.0f
+#define GRASS_EDGE 0.455f   // where the open country begins on the noise: about 14% of the island's land is open, as before the noise was warped
 static float grass_hash(int ix, int iz, uint32_t salt) { uint32_t h = (uint32_t)ix * 73856093u ^ (uint32_t)iz * 19349663u ^ salt; h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return (h >> 8) * (1.0f / 16777216.0f); }
 static float grass_noise(float x, float z, float cell, uint32_t salt) {
     float fx = x / cell, fz = z / cell; int ix = (int)floorf(fx), iz = (int)floorf(fz); float tx = fx - ix, tz = fz - iz;
@@ -527,7 +528,7 @@ static void grassland_build(CretWorld* w) {
         float wu = 90.0f * (grass_noise(px, pz, 250.0f, 0x51f1u) - 0.5f), wq = 90.0f * (grass_noise(px, pz, 250.0f, 0x7a3bu) - 0.5f);
         float nz = 0.62f * grass_noise(u + wu, q + wq, GRASS_CELL, 0x6ea55u) + 0.26f * grass_noise(q - wq, u + wu, GRASS_CELL * 0.35f, 0x1234u)
                  + 0.12f * grass_noise(u - wq, q + wu, GRASS_CELL * 0.12f, 0x9a1u);
-        float g = (nz - 0.5f) / 0.08f; g = g < 0 ? 0 : g > 1 ? 1 : g; g = g * g * (3 - 2 * g);
+        float g = (nz - GRASS_EDGE) / 0.08f; g = g < 0 ? 0 : g > 1 ? 1 : g; g = g * g * (3 - 2 * g);
         float flat = 1 - (slope - 0.3f) / 0.3f; flat = flat < 0 ? 0 : flat > 1 ? 1 : flat;
         open[(size_t)z * h + x] = g * flat;
         float moist = m->habitat ? m->habitat[((size_t)z * h + x) * TERRA_HAB_COUNT + TERRA_HAB_MOIST] / 255.0f : 0.4f;
