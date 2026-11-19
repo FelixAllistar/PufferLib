@@ -94,14 +94,15 @@ SHOT(7) {
     advance(150,NULL); frame(cam,NULL);
     SAVE("shot7_kill_down");
 }
-// 8. Staging: the squad as spawned against Room 104's blind east wall,
-// behind the building line, then the commander's own view out to the lot.
+// 8. Staging: the squad as spawned in the east breezeway beyond Room 105,
+// behind the building line, then the commander's own view out to the court
+// (MOTEL_LAYOUT.md; 5.0 staged against Room 104's east wall, 3.6 m west).
 SHOT(8) {
     reset();
     advance(60,NULL);
-    Camera3D cam=look(13.4f,1.75f,-5.6f,9.6f,1.0f,.4f,52);
+    Camera3D cam=look(17.0f,1.75f,-6.6f,13.2f,1.0f,-.6f,52);
     for(int t=0;t<4;t++) frame(cam,NULL); SAVE("shot8_staging");
-    cam=look(11.2f,2.05f,-3.6f,9.2f,1.0f,6.0f,62);
+    cam=look(14.8f,2.05f,-4.6f,12.8f,1.0f,5.0f,62);
     for(int t=0;t<4;t++) frame(cam,NULL); SAVE("shot8_staging_view");
 }
 // 9. Suspect rifle close-up: the room-102 gunman at the ready, from his

@@ -23,8 +23,8 @@ POST_PITCH_MAX = 3.0
 #   axis 'z': rooms run along z, facade at x=line, rooms behind the facade
 #             (facing=+1: wing faces +x, rooms at x<line; -1: faces -x, rooms x>line)
 REAR_EXT = dict(name='rear wing (105)', axis='x', line=0.0, start=8.0, bays=1, facing=+1, first=105)
-EAST = dict(name='east wing (107-113)', axis='z', line=17.0, start=WALK - 0.23, bays=7, facing=-1, first=107)
-WEST = dict(name='west wing (114-120)', axis='z', line=-16.0, start=WALK - 0.23, bays=7, facing=+1, first=114)
+EAST = dict(name='east wing (106-112)', axis='z', line=17.0, start=WALK - 0.23, bays=7, facing=-1, first=106)
+WEST = dict(name='west wing (113-119)', axis='z', line=-16.0, start=WALK - 0.23, bays=7, facing=+1, first=113)
 WINGS = [REAR_EXT, EAST, WEST]
 
 def wing_rooms(wg):

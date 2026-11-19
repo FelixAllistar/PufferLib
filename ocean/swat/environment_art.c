@@ -1469,6 +1469,15 @@ static bool night_backlight(const SwatEnvironmentArt* art,const SwatWorld* world
 // sealed), so only their collision exists.
 static bool motel_court_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,const SwatMotelInstance* p,bool shadow,bool cutaway) {
     if(!o->active || p->asset==4)return true;
+    // Cull the row with everything it repeats: a conservative world box around
+    // its placement (pieces reach a bay's parapet, coolers and awning), since
+    // overlay pieces only know the whole kit's bounds.
+    if(art->bounds && !(art->lighting && art->lighting->shadow_restricted && shadow)) {
+        float r=p->asset==14?3.5f:4.6f;
+        BoundingBox box={{(float)p->origin.x-r,-.5f,(float)p->origin.z-r},{(float)p->origin.x+r,p->asset==14?9.0f:5.0f,(float)p->origin.z+r}};
+        Matrix scene=MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection());
+        if(bounds_outside(art->bounds,box,scene))return true;
+    }
     exterior_draw(art,world,o,shadow,cutaway);
     if(p->asset==10 && art->motel_windows[0].meshCount) {
         rlDisableBackfaceCulling();

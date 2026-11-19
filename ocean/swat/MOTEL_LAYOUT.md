@@ -63,101 +63,104 @@ perpendicular to the street, joined by a short rear wing, office and sign at
 the street, angled parking along both wings and a long concrete island down
 the middle; court about 24 m between the wing fronts, 28 rentable rooms.
 
-## 3. The new site plan (plan hill-climb result, iteration 6)
+## 3. The site plan as built
+
+Plan hill-climb result (iteration 6, `reports/cloud/motel-layout/LOG.md`),
+then adjusted in the engine for gameplay and at street level (section 7).
 
 ```
-                         rear service yard (gravel)                    z
-        +--------------------------------------------------------+   -24
-        |      laundry                                           |
-        |      +----+  dumpster, transformer (service drive)     |   -13.5
-        |      |    |                                            |
- west   | +---++----+----+----+----+----+----+----+    breeze-   |
- wing   | |113|| OF | 101| 102| 103| 104| 105| 106|    way (stg) |   -6..0
- 113-119| |   |+----+----+----+----+----+----+----+-------+      |
-        | +---+ ice ===== covered walkway, posts @2.9 m ===+------+   0..1.83
-        | |114|  [pl] | | | | |#| | | | | [pl]|        | 107|   |
-        | +---+       rear row 7 x 2.7 m stalls          +----+   |   1.83..7.33
-        | |115| ===                                   === | 108|   |
-        | +---+ ===     cross aisle 7 m      (extract)  === +----+   |   7.33..14.33
-        | |116| ===   side rows                       === | 109|   |
-        | +---+ ===   5 x 2.7 m      [island]    5 x 2.7 === +----+   |
-        | |117| ===        aisle 7 m |    | aisle 7 m   === | 110|   |
-        | +---+                      |    |                 +----+   |
-        | |118|                      +----+                 | 111|   |   22.6
-        | +---+-------------------------------------------- +----+   |   24 (lot edge)
-        | |119|  walkways continue      driveway        |112 |      |   25.83
-        +----------------------------| |---- SIGN -------------+      |
-             sidewalk, bus shelter    | |                                34.9..36
-        ================================ road ==========================   36..44
+                         rear yard (gravel)                                       z
+     +---------------------------------------------------------------------+   -24
+     |   fence run (14.5, -14..-8)   tyres, dumpster, transformer           |
+     |      +----+            service drive (asphalt)                       |   -13.5
+     |      |LDY |                                                          |
+     |      +----+----+----+----+----+----+    breezeway                    |
+     |      | OF |101 |102 |103 |104 |105 |    x 12..17   (staging 14.1,-3) |   -6..0
+     | +---+|    |    |    |    |    |    |               +---+            |
+     | |   |+----+----+----+----+----+----+               |   |            |
+     | |113| ice = walkway, posts @ 3.0 m ==               |106|            |   0..1.83
+     | |   | [pl+picnic] 7 x (2.7 x 5.5) stalls [pl]       |   |            |   1.83..7.33
+     | |114|=                                             =|107|            |
+     | |115|=  5 stalls    cross aisle 7 m    5 stalls    =|108|            |   7.33..14.33
+     | |116|=  2.7 x 5.5   (extraction 0,12)  2.7 x 5.5   =|109|            |
+     | |117|   side aisle 7.5 m  [island]  side aisle 8.5  |110|            |   14.33..22.6
+     | |118|                     [2.4 m]                   |111|            |
+     | |119|--------------------------------------------- -|112|            |   24 (lot edge)
+     +-+---+--- verge ---------| driveway |--- SIGN (pole, at the kerb) ----+   29.6 wing ends
+                                                                               33..36 kerb/sidewalk
+     ============================== road ==================================    36..44
+       x: -22  -16 -14.2       -1.2  1.2               15.2  17   23
 ```
 
-| Element | Dimensions (before -> after) |
+| Element | 5.0 -> after |
 | --- | --- |
-| Guest rooms | 4 -> 19 (4 authored + 15 closed): rear wing 101-106 (x -12..16), east wing 107-112 (x 16..22, z 1.83..25.83, faces west), west wing 113-119 (x -22..-16, z -2.17..25.83, faces east) |
-| Court | open 48 x 48 m plain -> 28.3 m (between walkway edges) x 22-24 m, open to the street |
-| Stalls | 4.0 / 3.0 m wide -> 2.7 x 5.5 m: 7 head-in along the rear wing (centred on the parked sedan), 5 + 5 along the side wings |
-| Drive aisles | none -> 7.0 m cross aisle and two 7.0 m side aisles round a 2.4 x 8.3 m concrete island |
-| Canopy posts | 4.0 m (6) -> rear walkway 10 posts at 2.91 m, east wing 8 more at 3.0 m (its corner post is the rear run's last), west wing 11 at 2.8 m (6 existing posts moved, 23 new, same asset and mesh collision) |
-| Rear yard | 14 m of asphalt -> 7 m service drive behind the rooms, gravel beyond (paint) |
-| Sign | (9.7, 8.0) in the lot -> (6.6, 31.6) at the street beside the driveway |
-| Street | road stays at z 36..44 (hash-checked ground handoff); the wings now run to z 25.8, so the court mouth is 10 m from the kerb instead of a 34 m apron |
-| Doors | kept 1.08 x 2.19 m (see risks) |
+| Guest rooms | 4 -> 19: rear wing 101-105 (office x -12..-8, rooms x -8..12), east wing 106-112 (x 17..23, z 1.6..29.6, faces west), west wing 113-119 (x -22..-16, z 1.6..29.6, faces east). 101-104 are the authored mission rooms; 105-119 are closed rooms |
+| Building footprint | 20 x 12 m strip -> U of 24 + 28 + 28 m wings, 9 % -> 33 % of the lot square |
+| Court | open 48 x 48 m asphalt plain -> 29.3 m between walkway edges x 22 m paved (wings run 5.6 m further, to 5 m from the kerb) |
+| Stalls | 4.0 m (front row) / 3.0 m (other rows) -> 2.7 x 5.5 m: 7 head-in along the rear wing centred on the parked sedan (one accessible), 5 + 5 along the side wings; corner planters |
+| Drive aisles | none -> 7.0 m cross aisle; side aisles 7.5 and 8.5 m either side of a 2.4 x 8.3 m concrete island (paint) |
+| Canopy posts | 4.0 m (6 posts) -> 3.0 m along the rear walkway (9 posts: the 6 authored ones, 4 of them moved, and 3 new), 2.8 m along each side wing (11 posts each); same asset and mesh collision |
+| Rear / side yard | asphalt plain -> 7 m service drive behind the rooms, gravel beyond and behind the side wings (paint) |
+| Wheel stops | 4 m apart (x -10..6) -> in the stall centres x -8.7, -6.0, -3.3, 2.1, 4.8 |
+| Sign | (9.7, 8.0) in the lot, facing the building -> pole sign at the kerb (6.4, 33.0), perpendicular to the road, x1.35 (about 5.5 m), with a back-to-back twin |
+| Street | road unchanged at z 36..44; the court mouth is now 6 m from the kerb (wing ends) instead of a 34 m apron |
+| Staging / extraction | (10.5, -2) against Room 104's east wall / (0, 10) in the open lot -> (14.1, -3) in the east breezeway, behind the building line / (0, 12) in the cross aisle |
+| Doors | kept 1.08 x 2.19 m (section 6) |
+| Window sill / soffit | unchanged 0.88 / 2.44 m |
+| World objects | 1472 -> 1675 (+203 court rows) |
 
-Plan iterations, scores and what changed: `reports/cloud/motel-layout/LOG.md`.
+## 4. Authoritative map changes
 
-## 4. What changes in the authoritative map
+1. **Court layer** (`motel_court_impl.h`, data `motel_court_data.h` generated
+   by `tools/gen_motel_court.py` from `tools/motel_court_spec.py`): 203 rows
+   appended after the picnic table, `SWAT_MOTEL_COURT_FIRST`..`_END`;
+   `SWAT_MOTEL_OBJECTS` is now the court end and `SWAT_MOTEL_PICNIC_END` is the
+   previous canonical prefix (every layer still accepts it). Each closed bay
+   repeats Room 102's instance offsets: floor, roof, walkway, canopy, facade,
+   rear wall, a **static** leaf in the door opening, window insert, AC sleeve and
+   wall lamp; plus end walls, corner piers, walkway posts and the sign twin.
+   Every row is a box record with the canonical recipe whose collision is the
+   asset's own mesh (`contact_meshes_bind`, like the authored instances),
+   `max_health` 0, never a door, room, support or fixture. The closed rooms are
+   therefore solid to movement, bullets, sight, sound and navigation (the
+   navigation grid queries the same shapes), cannot be breached and hold no
+   people. Replicas validate and rebind them (`court_validate`, `court_bind`).
+2. **Moved authored data** (`layout_moves` in `motel.c`, same object
+   indices; `swat_motel_authored_instance` keeps the 5.0 placement for art):
+   walkway posts 115, 116, 117, 119, wheel stops 141-145, sign 140, fence owners 155-158;
+   the transformer (2 m back, clear of Room 105) and the picnic table (west
+   corner planter) in their layer files.
+3. **Mission**: staging and extraction (`mission.c`), see the table.
+4. **Protocol / replay**: `SWAT_NET_VERSION` 54 -> 55 (`protocol.h`). The
+   five role traces were re-recorded; a build with version 54 still matches
+   both annex traces, so only the motel world moved them. Motel thread
+   checksum d8582c7b -> 600dd752 (1 and 4 threads); movement checksums unchanged.
 
-1. **New court layer** appended after the picnic table
-   (`SWAT_MOTEL_COURT_FIRST = 1472`, `SWAT_MOTEL_OBJECTS` grows to the court
-   end; the old meaning becomes `SWAT_MOTEL_PICNIC_END`). Instances generated by
-   `tools/gen_motel_court.py` from `tools/motel_court_spec.py` into
-   `motel_court_data.h`. Each closed bay reuses the motel_v1 room kit with the
-   same instance offsets as Room 102: facade, rear wall, roof, floor, walkway,
-   canopy, a **static** (non-door) locked leaf, window insert, AC sleeve, wall
-   lamp, plus end walls between bays and the posts. Every piece uses the
-   asset's own mesh collision (like the base instances), so the closed rooms
-   are solid to movement, bullets, sight and navigation; no room records, no
-   occupants, no interior content.
-2. **Moved base data** (same object indices, new recipe): canopy posts
-   114-119, wheel stops 141-145 into stall centres, sign 140, fence owners
-   155-158 (to the east property line x 23.2), picnic table (west corner planter).
-3. **Mission**: staging moves to the east breezeway (19, -3), behind the
-   building line between Room 106 and the east wing (no occupied door or window
-   sees it); squad spawn offsets unchanged relative to staging. Extraction
-   stays at (0, 10) in the cross aisle.
-4. **Protocol/replay**: the replicated map changes (object count and
-   recipes), so `SWAT_NET_VERSION` is bumped and the determinism traces are
-   re-recorded (`make determinism-test` hashes; motel thread checksum).
-
-## 5. What moves in each art layer
+## 5. Art layers
 
 | Layer | Change |
 | --- | --- |
-| Exterior kit (gutters, lamps, meters...) | court pieces drawn by cloning the per-owner placements of the template bay (Room 102's owners) onto each closed bay transform; moved posts carry their post-base pieces |
-| Architecture overlay | same cloning for owner pieces (roof, canopy, posts) and for the template facade's per-section pieces (parapet, surrounds, collars, bull-nose awning), so the new wings match the strip; `sections.json` regenerated |
-| Windows | closed bays draw the revised window model with its drawn curtains; no light inside |
-| Ground decals (`ground_decals.png`) | stall paint redrawn from the spec (2.7 m), island, rear-yard and side gravel, oil stains in the new stalls; old 4 m / 3 m rows removed |
-| Surroundings / near props | lot curbs and pole lights follow the court; sign moved |
-| Props v2 exterior | vehicles moved into real stalls; verge props clear of the wings |
-| Decals (placement.txt) | checked against the new walls (no decal floating on the old lot plain) |
-| Materials v3 | no change (bound by asset file; court reuses the same assets) |
-| Props v2 interior | no change (rooms 101-104 untouched) |
+| motel_v1 kit + materials v3 | court rows draw the same kit models (`motel_court_draw`), so materials v3 binds by file name as for the authored rooms; closed floors are never drawn |
+| Exterior kit, architecture overlay | `swat_motel_art_frame`: a court row repeats every exterior-kit and overlay piece of its template owner (Room 102-104 facades, roofs, canopies, rear walls, doors, AC, lamps; office west end 104 or Room 104 east end 109 for the wing ends; post 116), transformed from the template's 5.0 placement; moved owners (posts, sign) carry their own pieces, scaled with the sign. `sections.json` regenerated: instances and sections byte-identical (the kit's inputs did not change, so the kit was not rebuilt), plus a `court` array |
+| Windows | closed bays draw the revised guest window with all its drawn covers; no lights inside |
+| Lot paint (`ground_decals.png`) | `tools/blender/motel_surroundings.py` paints stalls, accessible stall, island, corner planters, gravel rear/side yards, aisle tyre polish and oil from the spec; backdrop/near-props/road GLBs regenerate byte-identical |
+| Surface decals | scatter skips court rows except their walkways (their boxes include trim and openings); the east wall-pack rust moves with the wall pack to Room 105 |
+| Props v2 exterior | pickup, wagon and a second van in real stalls, palms in the corner planters and at the lot corners (off the wing ends and the sign), tumbleweed off the walkway |
+| Night lights | sign floods follow the sign, east wall pack on Room 105's end wall, porch sconces on 13 of the 15 closed rooms (the 32-light cap) | 
+| Props v2 interior | unchanged (rooms 101-104) |
 
-## 6. Risks
+## 6. Doors (kept) and other risks
 
-* **Door leaf size**: the 1.08 x 2.19 m leaf is baked into the facade
-  opening mesh, the door recipe (`motel.c` half extents .54/1.095), the
-  Room 101 hero breach assemblies and hinge plates (`check_room101_hinges`),
-  door-frame, door-support and breach tests, and the door art meshes. Resizing
-  it means a new facade mesh with a smaller opening and new Room 101 hardware,
-  which the brief forbids ("do not change Room 101's interior"); kept, and the
-  closed rooms reuse the same leaf so every door on the site matches.
-* **Squad routes**: staging moves; any test that counts ticks from staging
-  to a door may need the new distance. Mitigation: staging stays within 9 m of
-  Room 104's door, entries via the east breezeway and the walkway.
-* **Object budget**: about 1700 of 2048 objects; breach and rubble use their
-  own capacity.
-* **Frame cost**: ~15 extra room bays of the same kit; measured with
-  `performance_tool` (software GL) before/after.
-* **Road position**: moving the highway would re-cut the hash-checked ground
-  supports, surroundings banks, backdrop, road paint and bus shelter; not done.
+* **Door leaf 1.08 x 2.19 m kept.** The leaf size is baked into the facade
+  opening mesh (`room_facade_4m.glb`), the door recipe in `motel.c` (half
+  extents .54/1.095), Room 101's hero breach assemblies and hinge plates
+  (`check_room101_hinges`, `swat_motel_hinge_frame_owner`), the door art meshes
+  and the door-frame, door-support and breach-geometry tests. A 0.95 x 2.08 m
+  leaf needs a new facade mesh with a smaller opening and new Room 101
+  hardware, which the brief rules out ("do not change Room 101's interior");
+  the closed rooms reuse the same leaf so every door on the site matches.
+* **Longer approach.** Staging is 3.6 m further east and every squad route
+  enters through the breezeway, so tests with tick budgets tied to the 5.0
+  distance were given the extra time (documented in each test).
+* **Presentation-only vehicles** (props v2) have no collision; they are
+  parked in side-row stalls away from the evacuation lines.

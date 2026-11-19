@@ -64,3 +64,52 @@ should meet the street, here a 34 m apron.
   run under the walkways. Reverted. Two non-improving iterations: stop.
 
 Result: plan iter 6 (`tools/motel_court_spec.py`).
+
+## Plan -> engine (gameplay adjustments, not hill-climb iterations)
+
+Building the plan into the authoritative map and running the mission tests
+moved four things away from plan iteration 6; each is recorded because it
+changed the site:
+
+- Room 106 dropped from the rear wing: staging had moved 8.5 m east (to the
+  far side of 106) and every squad route grew by ~1000 ticks. The breezeway now
+  sits right beyond Room 105 (x 12..17) and staging (14.1, -3) is 3.6 m east
+  of the 5.0 staging.
+- The west wing's rear-most bay (iteration 6) dropped: its post line crossed
+  the vending-nook route west of the office (test_motel's capsule routes).
+- The east wing moved 1 m east (x 17..23) so the four squad spawns at staging
+  clear Room 105's pier and the wing's corner post (net-conditions harness).
+- Extraction (0, 10) -> (0, 12): the evacuees and squad crowding the old spot
+  boxed the commander in (motel completion, squad search).
+
+## Street-level hill-climb (reference | capture, `street_iter*.jpg`, `court_iter*.jpg`)
+
+Street view: Luna Lodge HAER NM-13 photo 13 (from across Central Avenue);
+engine camera `exterior_capture --eye -14,1.6,46.5 --target 2,2.4,22 --fov 55`
+(far side of the road). Court view: HAER NM-13 photo 19 (down a wing's
+walkway toward the rear wing); engine camera `--eye -10.6,1.55,27 --target
+-15.2,1.3,3 --fov 52`.
+
+- street iter 0 (court built, wings to z 25.6): differences: (1) the wings
+  stand ~10 m behind a sand verge where Luna's buildings meet the sidewalk;
+  (2) Luna's sign is a tall pole sign perpendicular to the road at the kerb,
+  ours is short, parallel and set back; (3) verge palms screen the wing ends.
+- street iter 1: sign to the kerb (6.4, 33.0), perpendicular to the road,
+  x1.35; its face is single-sided, so a back-to-back twin (court row) reads
+  from both directions. Closer: yes.
+- street iter 2: both side wings one bay longer (7 bays, to z 29.6, 5 m from
+  the kerb): 19 guest rooms. Closer: yes (marginal from this camera; the east
+  wing end now stands at the street).
+- street iter 3: the two verge palms that screened the wing ends moved to the
+  lot corners. Closer: yes (the court opens to the street like Luna's, rear
+  wing visible across it).
+- court iter 4 (the same build, court camera): differences: (1) a parked
+  wagon fills the foreground where Luna's court is open asphalt with the car at
+  the far end; (2) Luna's walkway is punctuated by junipers between units, ours
+  by evenly spaced posts; (3) the corrugated awning reads bright white in sun.
+  No change made in this iteration (baseline for the court camera).
+- court iter 5: wagon to the rear-most west stall. Closer: yes (open
+  foreground, car at the far end by the rear wing).
+- Not changed: junipers (no CC0 shrub in the kit; presentation-only planting
+  on the walkway would be walked through) and the awning brightness (tuned by
+  the architecture pass against its own references).
