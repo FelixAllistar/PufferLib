@@ -103,7 +103,7 @@ def woods(m):
             if inside:
                 # The bank top behind the cellar is wooded; the yard is open.
                 if not (z > BANK_Z + 2.5 and not (13 < x < 23 and z < 21)) or rng.random() < .35: continue
-            elif d < 1.2 or d > 36 or rng.random() < smooth(18, 36, d) * .7: continue
+            elif d < 1.2 or d > 32 or rng.random() < smooth(12, 32, d) * .75: continue
             if seg_dist(x, z, LANE) < 4.5 or abs(x - CREEK_X) < 2.5 and x < x0: continue
             trees.append((x, z))
     bark = m["bark"]; crowns = [m["crown_a"], m["crown_b"], m["crown_c"]]
@@ -120,16 +120,26 @@ def woods(m):
                 p.add(bm_cyl((x, cy, z), cr, hgt * .28, 6, r2=.15, smooth=False, cap=False), m["hemlock"])
         else:
             mat_c = crowns[int(rng.integers(3))]
-            for k in range(2):
-                cy = y + hgt * rng.uniform(.68, .88); cr = rng.uniform(2.2, 3.6)
-                ox, oz = rng.normal(0, .8, 2)
-                p.add(soften(bm_sphere((x + ox, cy, z + oz), cr, (1.0, .7, 1.0), 6, 4), rng, .25), mat_c)
+            for k in range(2):  # overlapping masses: the canopy reads as one dark roof of woods
+                cy = y + hgt * rng.uniform(.5, .85); cr = rng.uniform(2.8, 4.4)
+                ox, oz = rng.normal(0, 1.3, 2)
+                p.add(soften(bm_sphere((x + ox, cy, z + oz), cr * 1.12, (1.0, .62, 1.0), 5, 3), rng, .35), mat_c if k else crowns[int(rng.integers(3))])
             # Bare upper limbs poking out: late-autumn deciduous.
             for k in range(2):
                 a = rng.uniform(0, 2 * math.pi); L = rng.uniform(2, 3.5)
                 b0 = (x, y + hgt * .6, z); b1 = (x + L * math.cos(a), y + hgt * .6 + L * .9, z + L * math.sin(a))
                 p.add(bm_tube([b0, b1], r * .25, 4, cap=False), bark)
-    print("trees", len(trees))
+    # Understory along the woods edge: laurel and brush hide the trunk band.
+    shrubs = 0
+    for gx in np.arange(x0 - 14, x1 + 14, 2.6):
+        for gz in np.arange(z0 - 14, z1 + 14, 2.6):
+            x = gx + rng.uniform(-1, 1); z = gz + rng.uniform(-1, 1)
+            dx = max(x0 - x, 0, x - x1); dz = max(z0 - z, 0, z - z1); d = math.hypot(dx, dz)
+            if d < 1.0 or d > 10 or seg_dist(x, z, LANE) < 3.5 or rng.random() < .45: continue
+            y = height(x, z)
+            p.add(soften(bm_sphere((x, y + .7, z), rng.uniform(1.0, 1.8), (1.2, .6, 1.0), 5, 3), rng, .15), m["hemlock"] if rng.random() < .5 else crowns[2])
+            shrubs += 1
+    print("trees", len(trees), "shrubs", shrubs)
     return p
 
 # ----------------------------------------------------------------- trim
@@ -170,6 +180,16 @@ def wall_battens(p, mm, x0, z0, x1, z1, y, h, out_sign, openings=(), board=.30):
         mb = mm if rng.random() < .6 else M2["batten_dark"]
         if along_x: p.add(bm_box((pos, cy, z0 + out_sign * off), (bw, hy, BATTEN_T / 2)), mb)
         else: p.add(bm_box((x0 + out_sign * off, cy, pos), (BATTEN_T / 2, hy, bw)), mb)
+    # Splash/rot band: the board feet darken unevenly where rain splashes and
+    # the wood rots (each board its own height), only where boards reach the sill.
+    if y < .5:
+        n = max(1, int((b - a) / board))
+        for k in range(n):
+            t0 = a + (b - a) * k / n; t1 = a + (b - a) * (k + 1) / n; c = (t0 + t1) / 2
+            if any(o[2] <= .1 and abs(c - o[0]) < o[1] / 2 + .05 for o in ops): continue
+            hh = rng.uniform(.12, .5) / 2
+            if along_x: p.add(bm_box((c, y + hh, z0 + out_sign * (.0125 + .004)), ((t1 - t0) / 2 - .004, hh, .003)), M2["rot"])
+            else: p.add(bm_box((x0 + out_sign * (.0125 + .004), y + hh, c), (.003, hh, (t1 - t0) / 2 - .004)), M2["rot"])
     # Corner boards at both ends.
     for e in (a, b):
         if along_x: p.add(bm_box((e, y + h / 2, z0 + out_sign * (off + .005)), (.07, h / 2, .015)), mm)
@@ -242,7 +262,7 @@ def house_trim(m):
     for k in range(5):
         p.add(bm_box((14.15 + k * 1.92, .14, -7.95), (.14, .14, .14)), st)
     # Porch: rail-less edge board, ceiling boards visible under the tin.
-    p.add(bm_box((18, 2.5, -7.0), (4.1, .015, 1.05)), m["wood"])
+    p.add(bm_box((18, 2.5, -7.0), (4.1, .015, 1.05)), m["grey"])
     p.add(bm_box((18, 2.42, -8.05), (4.15, .09, .02)), g)
     # Ridge cap and tin trims on the main roof; stovepipe through the lean-to.
     p.add(bm_box((18, RIDGE + .12, -3), (4.45, .05, .14)), m["tin"])
@@ -282,11 +302,11 @@ def outbuildings_trim(m):
                                           (6, 2, 8.5, 2, 2.0, -1, []), (6, 5, 8.5, 5, 2.0, 1, [])):
         wall_battens(p, g, x0, z0, x1, z1, 0, h, out, ops)
     # Barn: wide boards, battens, and the big sliding door hanging open on its track.
-    for (x0, z0, x1, z1, out, ops) in ((32, -8, 41, -8, -1, [(36.5, 3.0, 0, -1)]), (32, -8, 32, 4, -1, [(-5.5, .9, 0, 2.0), (1.5, .6, 1.6, .6)]),
+    for (x0, z0, x1, z1, out, ops) in ((32, -8, 41, -8, -1, [(36.5, 3.0, 0, 3.2)]), (32, -8, 32, 4, -1, [(-5.5, .9, 0, 2.0), (1.5, .6, 1.6, .6)]),
                                        (41, -8, 41, 4, 1, [(-2, .6, 1.6, .6)]), (32, 4, 41, 4, 1, [(36.5, 1.2, 2.9, 1.0)])):
-        wall_battens(p, g, x0, z0, x1, z1, 0, 4.2, out, [(c, w, s, (None if hh < 0 else hh)) for (c, w, s, hh) in ops], .36)
+        wall_battens(p, g, x0, z0, x1, z1, 0, 4.2, out, ops, .36)
     for z, out in ((-8, -1), (4, 1)):
-        gable(p, m["grey"], True, z, 32, 41, 4.2, 3.0, out, g, board=.36)
+        gable(p, m["grey"], True, z, 32, 41, 4.2, 4.0, out, g, board=.36)
     for z, out in ((3, -1), (6, 1)):
         gable(p, m["grey"], True, z, 24, 27, 2.2, 1.2, out, g)
     p.add(bm_box((36.5, 3.25, -8.08), (3.4, .04, .03)), m["rust"])            # door track
@@ -295,10 +315,10 @@ def outbuildings_trim(m):
         p.add(bm_box((38.1 + k * .95, 1.6, -8.155), (.03, 1.6, .01)), g)
     p.add(tilt_bm(bm_box((39.55, 1.6, -8.155), (1.5, .04, .01)), .82, 'z', (39.55, 1.6, -8.155)), g)  # Z brace
     # Barn ridge cap and a hay hood over the loft door.
-    p.add(bm_box((36.5, 7.32, -2), (.15, .05, 6.45)), m["tin"])
+    p.add(bm_box((36.5, 8.32, -2), (.15, .05, 6.75)), m["tin"])
     p.add(tilt_bm(bm_box((36.5, 4.25, 4.35), (.9, .02, .45)), -.4, 'x', (36.5, 4.25, 4.1)), m["tin"])
     # Cellar headwall: rough stone arch face and a timber lintel; grass lip on the bank.
-    p.add(bm_box((18, 2.05, 11.95), (.6, .1, .08)), m["wood"])
+    p.add(bm_box((18, 2.05, 11.95), (.6, .1, .08)), m["grey"])
     for k in range(9):
         a = math.pi * k / 8
         p.add(bm_box((18 + .62 * math.cos(a), 2.0 + .35 * math.sin(a), 11.94), (.12, .09, .06)), m["stone"])
@@ -312,12 +332,12 @@ def palette():
     ph = C.polyhaven
     return {
         "leaves": mat("forest_floor", (1, 1, 1), .95, image=ph("dry_decay_leaves", "diff", "1k", 1024), normal=ph("dry_decay_leaves", "nor_gl", "1k", 512)),
-        "gravel": mat("gravel", (1, 1, 1), .9, image=ph("gravel_floor_02", "diff", "1k", 1024), normal=ph("gravel_floor_02", "nor_gl", "1k", 512)),
+        "gravel": mat("gravel", (1, 1, 1), .9, image=C.tint_image(ph("gravel_floor_02", "diff", "1k", 1024), "gravel_graded", (.5, .5, .48)), normal=ph("gravel_floor_02", "nor_gl", "1k", 512)),
         "water": mat("creek", (.015, .02, .02), .08, .0),
         "bark": mat("bark", (1, 1, 1), .95, image=ph("bark_brown_02", "diff", "1k", 512)),
-        "crown_a": mat("crown_olive", (.11, .10, .05), .9),
-        "crown_b": mat("crown_rust", (.16, .08, .04), .9),
-        "crown_c": mat("crown_brown", (.09, .07, .05), .9),
+        "crown_a": mat("crown_olive", (.075, .075, .025), .9),
+        "crown_b": mat("crown_rust", (.15, .055, .018), .9),
+        "crown_c": mat("crown_brown", (.10, .065, .025), .9),
         "hemlock": mat("hemlock", (.03, .06, .04), .9),
         "batten": mat("batten_grey", (1, 1, 1), .9, image=ph("wood_planks_grey", "diff", "1k", 512)),
         "sashwood": mat("sash", (.20, .19, .17), .8),
@@ -327,6 +347,7 @@ def palette():
         "tin": mat("tin", (1, 1, 1), .7, .4, image=ph("rusty_corrugated_iron", "diff", "1k", 512)),
         "rust": mat("rust", (1, 1, 1), .8, .3, image=ph("rusty_metal_02", "diff", "1k", 512)),
         "soot": mat("soot", (.02, .02, .02), .9),
+        "rot": mat("board_rot", (1, 1, 1), .95, image=C.tint_image(ph("wood_planks_grey", "diff", "1k", 512), "planks_rot", (.42, .38, .33))),
         "batten_dark": mat("batten_dark", (.62, .6, .56), .9, image=ph("wood_planks_grey", "diff", "1k", 512)),
     }
 

@@ -40,6 +40,7 @@ typedef struct SwatHollowArt {
     BoundingBox bounds[HOLLOW_MODEL_SLOTS];
     int model_count;
     signed char prop_model[SWAT_HOLLOW_PROPS]; // model slot per placement row, -1 none
+    bool stand_model; // the lane tree stand replaces its overwatch plinth
 } SwatHollowArt;
 
 static bool hollow_art_enabled(void) {
@@ -91,6 +92,7 @@ static void hollow_art_load(SwatEnvironmentArt* art) {
             else { swat_art_model_close(h->models[slot]); h->models[slot]=(Model){0}; }
         }
         if(slot>=0 && h->models[slot].meshCount) h->prop_model[i]=(signed char)slot;
+        if(h->prop_model[i]>=0 && !strcmp(name,"tree_stand")) h->stand_model=true;
     }
     art->hollow=h;
 }
@@ -109,8 +111,12 @@ static bool hollow_box_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
     if(!h || o->material==SWAT_GLASS || (o->door && (o->latch_broken || o->cuts))) return false;
     // Stepped gable fill (collision): the trim GLB draws the true triangle.
     if(o->material==SWAT_WOOD && o->part==SWAT_PART_SKIN && !o->wall_group && o->center.y>2.2f && !o->fractured && !o->cuts) return true;
+    // Overwatch plinths (mission.c pattern): the tree stand model replaces the lane one.
+    if(o->material==SWAT_STONE && o->part==SWAT_PART_SOLID && fabsf(o->half.x-.85f)<.001f && fabsf(o->half.z-.85f)<.001f &&
+       fabsf((float)o->center.x+4)<.01f && fabsf((float)o->center.z+12)<.01f && h->stand_model) return true;
     int row=hollow_prop_row(o);
     if(row>=0 && h->prop_model[row]>=0) return true; // drawn by its model
+    if(row>=0 && !swat_hollow_props[row].model && o->material==SWAT_CLOTH) return true; // foliage volume of a modelled berm
     int id=-1,grain=-1;
     bool flat=o->half.y<=.16f && o->half.x>.35f && o->half.z>.35f && o->pitch==0;
     switch(o->material) {

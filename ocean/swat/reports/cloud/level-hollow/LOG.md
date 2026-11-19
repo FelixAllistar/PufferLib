@@ -63,3 +63,32 @@ The loop runs in-engine:
 | 06 | 3. Windows are clean teal glass; the reference has boarded and broken sash | Scrap boards nailed across 3 windows (upstairs front, east gable, kitchen) | Yes |
 | 07 | 3. Battens are too even and regular | Varied batten width and tone, 12% missing, rotted short at the sill. A ladder leaned on the house, as in the reference. Found and fixed a silent failure: GLBs with more than 7 materials are refused by the loader; the scripts now assert. | Slightly |
 | 08 | 1. The stepped gable fill shows as a staircase above the eave | Collision gable steps hidden; true triangular board gables with battens drawn in the trim (house, barn, smokehouse). Ladder moved to the west gable: on the porch it went through the porch roof. | Yes |
+
+### Mood (dusk, fog, woods) vs `mood_fog_greenbrier_highsmith.jpg`
+- The reference is Highsmith's "Fog over the Greenbrier River near Caldwell,
+  WV", public domain.
+- View: from the lane end, eye (-6, 2.2, -22), target (22, 4.5, 6), fov 58.
+- The reference is an overcast, foggy morning; ours is held at dusk, so the
+  comparison targets fog, palette and the woods mass, not absolute brightness.
+
+| Iter | Biggest differences | Change | Closer? |
+|---|---|---|---|
+| 00 | 1. A flat tan box at the lane (the laurel berm's foliage collider has no model). 2. Fog washes the near woods to flat lilac-grey; the reference keeps dark olive/rust woods under a neutral grey sky. 3. The gravel turnaround is near-white. | (baseline after the woods/terrain pass) | n/a |
+| 01 | 1. Tan box | A modelled berm hides its cloth foliage collider. Denser, darker laurel thicket with bare stems. | Yes |
+| 02 | 2. Palette | Fog 0.030 -> 0.019. Horizon and sky made neutral grey (less violet). Crowns darker and more saturated (olive, rust, brown). | Yes |
+| 03 | 1. Crowns read as toy lollipops floating on trunks | Three overlapping lower masses per tree, and a laurel/brush understory along the woods edge | Yes, but 72k tris, over budget |
+| 04 | Budget; 3. a bare stone overwatch plinth at the lane | Woods cut to 462 trees and 205 shrubs, 32k tris. A hunter's tree stand model replaces the lane plinth. | Equal look, in budget |
+| 05 | 3. Gravel still near-white (the colour factor had no effect on the texture) | Gravel texture graded x0.5. Laurel darker. | Slightly; stopped (two small gains in a row) |
+
+### Barn vs `barn_monroe_highsmith_2015.jpg`
+View from 04 on: the reference's long-side 3/4 angle, eye (22.5, 1.3, -19.5),
+target (37.5, 3.8, -2.5), fov 52.
+
+| Iter | Biggest differences | Change | Closer? |
+|---|---|---|---|
+| 00 | 1. Squat: the reference roof is about 43 degrees, ours 34, with a deeper overhang. 2. Board tone OK. 3. The reference board feet are rotted and ragged. | (baseline) | n/a |
+| 01 | 1. Pitch | Ridge 7.2 -> 8.2 m (gable and ridge cap follow) | Yes |
+| 02 | 1. The door opening runs the full 4.2 m eave height | Header at 3.2 m with boards above; bulb moved onto the header | Yes |
+| 03 | 3. Rotted feet | Per-board uneven dark splash/rot band at the base (barn, house, sheds) | Slightly |
+| 04 | View mismatch: the reference shows the long side | Camera moved to the reference's angle | (match) |
+| 05 | 1. Eave overhang | Roof slabs extended 0.75 m past the walls and dropped 0.33 m | Slightly; stopped |

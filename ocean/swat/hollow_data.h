@@ -65,6 +65,7 @@ static const SwatHollowProp swat_hollow_props[]={
     {"wood_chair",20.9f,2.9f,-4.2f,1.57f,0,0,0,SWAT_WOOD,false},
     {"bucket",18.0f,-1.4f,18.0f,0,0,0,0,SWAT_STEEL,false},
     {"ladder",12.6f,0,-2.1f,1.5708f,0,0,0,SWAT_WOOD,false}, // left leaning on the west gable
+    {"tree_stand",-4,0,-12,0,0,0,0,SWAT_WOOD,false},        // over the "Lane bend" overwatch plinth
 };
 #define SWAT_HOLLOW_PROPS (int)(sizeof(swat_hollow_props)/sizeof(swat_hollow_props[0]))
 #endif

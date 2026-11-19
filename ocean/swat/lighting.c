@@ -35,9 +35,9 @@ static const char* vertex_source=
 // Shared linear daylight environment: the visible sky and reflected radiance
 // agree. Roughness blends toward its broad irradiance approximation.
 // Hollow dusk horizon radiance; its fog colour is the same value (hollow_apply).
-#define HOLLOW_HORIZON_C .205f,.200f,.215f
+#define HOLLOW_HORIZON_C .215f,.215f,.222f
 #define HOLLOW_BULB .42f
-#define HOLLOW_HORIZON "vec3(0.205,0.200,0.215)"
+#define HOLLOW_HORIZON "vec3(0.215,0.215,0.222)"
 #define SWAT_SKY_GLSL \
     "uniform float night; uniform vec3 moonDirection;" \
     /* Procedural night sky: deep blue zenith, a warm light-pollution band */ \
@@ -58,7 +58,7 @@ static const char* vertex_source=
     /* The Hollow: overcast dusk. Low slate cloud deck, a dull warm band where */ \
     /* the sun went down behind the ridge, and dark ground below the horizon. */ \
     "vec3 duskSky(vec3 d,float r){float h=clamp(d.y,0.0,1.0);float s=max(dot(normalize(vec3(d.x,0.0,d.z)+vec3(0.0,1e-4,0.0)),normalize(vec3(moonDirection.x,0.0,moonDirection.z))),0.0);" \
-    "vec3 sky=mix(" HOLLOW_HORIZON ",vec3(0.060,0.064,0.082),pow(h,0.55));" \
+    "vec3 sky=mix(" HOLLOW_HORIZON ",vec3(0.085,0.089,0.098),pow(h,0.55));" \
     "sky+=vec3(0.16,0.075,0.030)*pow(s,3.0)*exp(-h*7.0);" \
     "float clouds=pow(max(0.0,sin(d.x*5.0+d.z*1.7)*sin(d.z*6.5-d.x*2.3)),2.0)*smoothstep(0.02,0.4,h);" \
     "sky=mix(sky,sky*0.72,clouds*(1.0-r));" \
@@ -493,7 +493,7 @@ static int hollow_night_lights(SwatNightLight* l) {
     const Vector3 bulb={1.0f,.62f,.30f},sodium={1.0f,.50f,.17f};int n=0;
     l[n++]=night_spot((Vector3){27.4f,6.55f,-3.6f},(Vector3){-.25f,-1,.1f},.12f,Vector3Scale(sodium,32),15,.9f,SWAT_NIGHT_LOT);
     l[n++]=night_point((Vector3){16.0f,2.40f,-6.35f},Vector3Scale(bulb,2.6f),7,.45f,SWAT_NIGHT_PORCH);
-    l[n++]=night_point((Vector3){36.5f,4.05f,-8.35f},Vector3Scale(bulb,4.0f),9,.5f,SWAT_NIGHT_PORCH);
+    l[n++]=night_point((Vector3){36.5f,3.48f,-8.3f},Vector3Scale(bulb,3.2f),9,.5f,SWAT_NIGHT_PORCH);
     l[n++]=night_point((Vector3){18.0f,2.12f,11.75f},Vector3Scale(bulb,1.8f),6,.4f,SWAT_NIGHT_PORCH);
     return n;
 }
@@ -608,7 +608,7 @@ static void hollow_apply(SwatLighting* light) {
     light->sun_direction=Vector3Normalize((Vector3){-.86f,.20f,.30f});
     light->sun_energy=(Vector3){.34f,.27f,.25f};
     light->fog_color=(Vector3){HOLLOW_HORIZON_C};
-    light->fog_density=light->day.fog_density>0?.030f:0;
+    light->fog_density=light->day.fog_density>0?.019f:0;
     light->exposure=light->day.exposure*1.15f;
     light->bloom_strength=fminf(1,light->day.bloom_strength*1.25f);light->bloom_threshold=light->day.bloom_threshold*.85f;
     light->emission_scale=8;

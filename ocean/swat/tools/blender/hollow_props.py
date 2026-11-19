@@ -45,7 +45,7 @@ def M():
         "lime": mat("lime_bag", (.80, .78, .72), .9),
         "soil": mat("turned_soil", (.13, .09, .06), 1.0),
         "chain": mat("chain", (.18, .15, .13), .45, .8),
-        "leaf": mat("laurel", (.07, .11, .05), .8),
+        "leaf": mat("laurel", (.028, .042, .022), .8),
         "jar": mat("jar_glass", (.32, .30, .18), .2, .1),
         "leather": mat("shoe_leather", (.12, .09, .07), .7),
         "sneaker": mat("shoe_canvas", (.40, .40, .42), .9),
@@ -293,9 +293,14 @@ def woodpile(m):
 def laurel_berm(m):
     p = Part(); rng = np.random.default_rng(41)
     p.add(soften(bm_box((0, .5, 0), (3.6, .5, 1.6), bevel=.4, seg=3), rng, .08), m["soil"])
-    for k in range(26):  # mountain laurel / rhododendron clumps on top
+    leaf2 = mat("laurel_dark", (.05, .04, .02), .85)
+    for k in range(34):  # mountain laurel / rhododendron thicket on top, dark and dense
+        x = rng.uniform(-3.3, 3.3); z = rng.uniform(-1.3, 1.3)
+        s = soften(bm_sphere((x, 1.35 + rng.uniform(-.25, .45), z), .55 + .35 * rng.random(), (1.3, .75, 1.0), 7, 4), rng, .07)
+        p.add(s, m["leaf"] if k % 3 else leaf2)
+    for k in range(14):  # bare stems
         x = rng.uniform(-3.2, 3.2); z = rng.uniform(-1.2, 1.2)
-        p.add(bm_sphere((x, 1.4 + rng.uniform(-.2, .3), z), .7 + .3 * rng.random(), (1.2, .8, 1.0), 8, 5), m["leaf"])
+        p.add(bm_tube([(x, .9, z), (x + rng.normal(0, .3), 2.3, z + rng.normal(0, .3))], .02, 4, cap=False), m["chain"])
     return p
 
 @prop
@@ -446,6 +451,23 @@ def ladder(m):
     for k in range(13):
         y = .3 + k * .33
         p.add(tilt_bm(bm_box((0, y, 0), (.22, .018, .018)), lean, 'x', (0, 0, 0)), m["grey"])
+    return p
+
+@prop
+def tree_stand(m):
+    # Hunter's ladder stand against a lone oak by the lane: the "Lane bend"
+    # overwatch post stands on its platform (its collider is the stone plinth).
+    p = Part(); top = .97
+    p.add(bm_cyl((0, 5.0, .75), .32, 10.0, 8, r2=.18, smooth=False), m["grey"])
+    for x in (-.38, .38):
+        p.add(bm_box((x, top / 2, 0), (.03, top / 2, .03)), m["rust"])
+    for k in range(4):
+        p.add(bm_box((0, .2 + k * .25, -.03), (.36, .015, .015)), m["rust"])
+    p.add(bm_box((0, top, 0), (.85, .03, .85)), m["wood"])
+    p.add(bm_box((0, top + .5, -.83), (.85, .02, .02)), m["rust"])
+    for k in range(3):  # bare limbs
+        a = 1.2 + k * 1.7
+        p.add(bm_tube([(0, 4 + k * 1.5, .75), (2.2 * math.cos(a), 6 + k * 1.5, .75 + 2.2 * math.sin(a))], .07, 5, cap=False), m["grey"])
     return p
 
 if __name__ == "__main__":

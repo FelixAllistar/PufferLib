@@ -243,8 +243,8 @@ void swat_mission_build_hollow(SwatWorld* w) {
     hollow_wall(w,6,5,8.5f,5,0,2.0f,-1,NULL,0,false,.30f);
     hollow_box(w,5.8f,2.2f,1.8f,8.7f,2.28f,5.2f,SWAT_STEEL,0,SWAT_PART_SOLID);
     // --- Barn: tall grey boards, gable end to the yard, hay loft over the rear.
-    const float bx0=32,bx1=41,bz0=-8,bz1=4,eave=4.2f,ridge=7.2f;
-    HollowOpening barn_s[]={{36.5f,3.0f,0,-1,true}};
+    const float bx0=32,bx1=41,bz0=-8,bz1=4,eave=4.2f,ridge=8.2f;
+    HollowOpening barn_s[]={{36.5f,3.0f,0,3.2f,true}}; // big doorway, boards above a header
     hollow_wall(w,bx0,bz0,bx1,bz0,0,eave,1,barn_s,1,false,.36f);
     HollowOpening barn_w[]={{-5.5f,.9f,0,2.0f,false},{1.5f,.6f,1.6f,.6f,true}};
     hollow_wall(w,bx0,bz0,bx0,bz1,0,eave,1,barn_w,2,false,.36f);
@@ -253,8 +253,8 @@ void swat_mission_build_hollow(SwatWorld* w) {
     HollowOpening barn_n[]={{36.5f,1.2f,2.9f,1.0f,true}};   // open loft hay door
     hollow_wall(w,bx0,bz1,bx1,bz1,0,eave,-1,barn_n,1,false,.36f);
     hollow_gable(w,bx0,bz0,bx1,bz0,eave,ridge-eave); hollow_gable(w,bx0,bz1,bx1,bz1,eave,ridge-eave);
-    hollow_roof(w,(b3Pos){bx0-.4f,eave,(bz0+bz1)*.5f},(b3Pos){(bx0+bx1)*.5f,ridge,(bz0+bz1)*.5f},6.3f,false,SWAT_STEEL);
-    hollow_roof(w,(b3Pos){bx1+.4f,eave,(bz0+bz1)*.5f},(b3Pos){(bx0+bx1)*.5f,ridge,(bz0+bz1)*.5f},6.3f,false,SWAT_STEEL);
+    hollow_roof(w,(b3Pos){bx0-.75f,eave-.33f,(bz0+bz1)*.5f},(b3Pos){(bx0+bx1)*.5f,ridge,(bz0+bz1)*.5f},6.7f,false,SWAT_STEEL);
+    hollow_roof(w,(b3Pos){bx1+.75f,eave-.33f,(bz0+bz1)*.5f},(b3Pos){(bx0+bx1)*.5f,ridge,(bz0+bz1)*.5f},6.7f,false,SWAT_STEEL);
     hollow_box(w,bx0+.05f,HOLLOW_LOFT-.12f,-1,bx1-.05f,HOLLOW_LOFT,bz1-.05f,SWAT_WOOD,0,SWAT_PART_SOLID);   // loft floor
     for(int i=0;i<13;i++)   // steep stair up the east wall to the loft
         hollow_box(w,bx1-1.0f,0,-1-(13-i)*.25f,bx1-.1f,(i+1)*HOLLOW_LOFT/13,-1-(12-i)*.25f,SWAT_WOOD,0,SWAT_PART_SOLID);
