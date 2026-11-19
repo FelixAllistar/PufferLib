@@ -47,6 +47,7 @@ static const SwatHollowProp swat_hollow_props[]={
     // A spoil berm grown over with laurel screens the lane end from the house.
     {"laurel_berm",2.6f,0,-15.2f,.45f,3.6f,.5f,1.6f,SWAT_SOIL,true},
     {NULL,2.6f,1.0f,-15.2f,.45f,3.4f,.95f,1.3f,SWAT_CLOTH,true},
+    {"yard_light_pole",28.2f,0,-3.6f,0,.13f,3.6f,.13f,SWAT_WOOD,true}, // sodium head over (27.4,6.5,-3.6)
     {"pen_post",27,0,-12,0,.05f,.9f,.05f,SWAT_STEEL,true},
     {"pen_post",30,0,-12,0,.05f,.9f,.05f,SWAT_STEEL,true},
     {"pen_post",27,0,-9,0,.05f,.9f,.05f,SWAT_STEEL,true},

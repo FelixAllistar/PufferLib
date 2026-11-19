@@ -1,0 +1,17 @@
+{
+ "file": "recliner.glb",
+ "triangles": 432,
+ "materials": 1,
+ "bytes": 37640,
+ "sha256": "67c8faca89a8086d",
+ "min": [
+  -0.436,
+  0.03,
+  -0.45
+ ],
+ "max": [
+  0.42,
+  1.003,
+  0.45
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "file": "workbench.glb",
+ "triangles": 180,
+ "materials": 5,
+ "bytes": 314388,
+ "sha256": "aa025a344e6425c8",
+ "min": [
+  -0.35,
+  0.0,
+  -1.1
+ ],
+ "max": [
+  0.35,
+  1.5,
+  1.1
+ ]
+}

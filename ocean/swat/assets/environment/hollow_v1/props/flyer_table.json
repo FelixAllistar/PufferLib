@@ -1,0 +1,17 @@
+{
+ "file": "flyer_table.glb",
+ "triangles": 132,
+ "materials": 3,
+ "bytes": 852064,
+ "sha256": "e2d6eed62b5cec2d",
+ "min": [
+  -0.3,
+  0.0,
+  -0.7
+ ],
+ "max": [
+  0.505,
+  0.89,
+  0.7
+ ]
+}

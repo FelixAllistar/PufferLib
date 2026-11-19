@@ -1,0 +1,17 @@
+{
+ "file": "lime_and_shovel.glb",
+ "triangles": 484,
+ "materials": 3,
+ "bytes": 247424,
+ "sha256": "01a86f8c7a5fef0a",
+ "min": [
+  -0.8,
+  -0.03,
+  -0.609
+ ],
+ "max": [
+  0.908,
+  1.331,
+  1.0
+ ]
+}

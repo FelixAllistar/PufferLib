@@ -1,0 +1,17 @@
+{
+ "file": "stall_partition.glb",
+ "triangles": 84,
+ "materials": 1,
+ "bytes": 107284,
+ "sha256": "a57ede7e87c94d3d",
+ "min": [
+  -1.51,
+  0.0,
+  -0.06
+ ],
+ "max": [
+  1.51,
+  1.31,
+  0.06
+ ]
+}

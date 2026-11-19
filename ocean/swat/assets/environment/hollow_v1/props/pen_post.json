@@ -1,0 +1,17 @@
+{
+ "file": "pen_post.glb",
+ "triangles": 28,
+ "materials": 1,
+ "bytes": 107952,
+ "sha256": "1e93dbc5472f8ef4",
+ "min": [
+  -0.03,
+  0.0,
+  -0.03
+ ],
+ "max": [
+  0.03,
+  1.8,
+  0.03
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "file": "burn_barrel.glb",
+ "triangles": 116,
+ "materials": 3,
+ "bytes": 113836,
+ "sha256": "135ca2c0b047f247",
+ "min": [
+  -0.286,
+  0.0,
+  -0.29
+ ],
+ "max": [
+  0.286,
+  0.9,
+  0.29
+ ]
+}
