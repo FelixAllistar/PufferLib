@@ -1014,15 +1014,33 @@ static void gen_treefern(Gen* g, bool stout) {
         float az = f * 2.39996f + grr(g, -0.2f, 0.2f), age = (float)f / nf; bool young = f >= nf - 3; int pairs = 18 + (int)grr(g, 0, 5);
         g->dry = age < 0.2f ? (int)grr(g, 30, 110) : 0;
         float L = (young ? grr(g, 0.9f, 1.4f) : grr(g, 2.3f, 3.2f)) * (stout ? 0.95f : 1.0f) * fminf(1.0f + 0.06f * fmaxf(H - 4.0f, 0.0f), 1.25f);
-        float e0 = (young ? grr(g, 1.25f, 1.45f) : lerpf(0.4f, 1.05f, age) + grr(g, -0.1f, 0.1f)) + (stout ? 0.2f : 0);
+        float e0 = (young ? grr(g, 1.25f, 1.45f) : lerpf(0.4f, 1.05f, age) + grr(g, -0.1f, 0.1f)) + (stout ? 0.32f : 0);
         // Arching: up out of the crown, out to level and the tip below it (the
         // oldest, lowest fronds furthest), a broad open rosette, not a mop.
-        float droop = (young ? 0.5f : lerpf(1.05f, 0.8f, age) + grr(g, -0.12f, 0.12f)) * (stout ? 0.75f : 1.0f);
+        float droop = (young ? 0.5f : lerpf(1.05f, 0.8f, age) + grr(g, -0.12f, 0.12f)) * (stout ? 0.65f : 1.0f);
         Frond F = {.base = top, .az = az, .e0 = e0, .droop = droop, .twist = grr(g, -0.3f, 0.3f), .L = L, .bare = 0.1f,
                    .pairs = g->lod ? 8 : pairs, .lmax = L * 0.4f, .lw = g->lod ? 0.55f : 0.38f, .ang = 1.25f, .keel = 0.35f, .curl = -0.5f,
                    .profile = 1, .layer = L_FPINNA, .cols = 4, .rachis_r = g->lod ? 0 : 0.022f, .segs = g->lod ? 4 : 8, .lsegs = g->lod ? 1 : 2, .ph = gr(g), .flex = 0.6f};
         if (g->lod) F.lmax *= 1.12f;
         frond(g, &F);
+    }
+    // A real crown holds 30 to 50 fronds: the full mesh fills the gaps with
+    // more, on a forked stream so the reduced mesh (fewer fronds, wider
+    // pinnae) stays the same plant.
+    {
+        VRng sx = fork_in(g); int nx = g->lod ? 0 : nf / 2 + 3;
+        for (int f = 0; f < nx; f++) {
+            float age = grr(g, 0.15f, 0.85f), az = (f + 0.5f) * 2.39996f * 1.618f + grr(g, -0.3f, 0.3f); int pairs = 18 + (int)grr(g, 0, 5);
+            g->dry = age < 0.2f ? (int)grr(g, 30, 110) : 0;
+            float L = grr(g, 2.1f, 3.0f) * (stout ? 0.95f : 1.0f) * fminf(1.0f + 0.06f * fmaxf(H - 4.0f, 0.0f), 1.25f);
+            float e0 = lerpf(0.4f, 1.05f, age) + grr(g, -0.1f, 0.1f) + (stout ? 0.32f : 0);
+            float droop = (lerpf(1.05f, 0.8f, age) + grr(g, -0.12f, 0.12f)) * (stout ? 0.65f : 1.0f);
+            Frond F = {.base = top, .az = az, .e0 = e0, .droop = droop, .twist = grr(g, -0.3f, 0.3f), .L = L, .bare = 0.1f,
+                       .pairs = pairs, .lmax = L * 0.4f, .lw = 0.38f, .ang = 1.25f, .keel = 0.35f, .curl = -0.5f,
+                       .profile = 1, .layer = L_FPINNA, .cols = 4, .rachis_r = 0.02f, .segs = 8, .lsegs = 2, .ph = gr(g), .flex = 0.6f};
+            frond(g, &F);
+        }
+        fork_out(g, sx);
     }
     g->dry = 0;
     if (!g->lod) for (int c = 0; c < 3; c++) {   // croziers: young fronds still coiled
