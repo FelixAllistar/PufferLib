@@ -230,7 +230,7 @@ static float tube(Gen* g, const Path* P, int sides, float urep, float vtile, flo
 // Bark tube with square texels at the scan's own size (bark_tile_m: 1 to
 // 1.8 m of bark a tile), a whole number of tiles round the base.
 // Broken-off lower branches: short stubs, rising a little, grey at the
-// break (dead-wood tone), between 1.5 m and the middle of the trunk. Their
+// break (dead-wood tone), between 1.6 m and a third of the way up. Their
 // own random stream: the same stubs on both meshes.
 static void trunk_stubs(Gen* g, const Path* T) {
     VRng r = {hashu(g->rf.seed * 0x9e3779b1u + 0x51u)}; float len = 0;
@@ -238,8 +238,8 @@ static void trunk_stubs(Gen* g, const Path* T) {
     if (len < 4) return;
     int bt = g->bark_tone;
     for (int i = 0; i < g->rf.stubs; i++) {
-        float h = vrr(&r, 1.5f, fmaxf(2.0f, len * 0.5f)), az = vrr(&r, 0, 2 * VPI), el = vrr(&r, -0.1f, 0.45f);
-        float L = vrr(&r, 0.12f, 0.45f), rs = vrr(&r, 0.03f, 0.07f), dead = vr(&r);
+        float h = vrr(&r, 1.6f, fmaxf(2.2f, len * 0.32f)), az = vrr(&r, 0, 2 * VPI), el = vrr(&r, -0.1f, 0.45f);
+        float L = vrr(&r, 0.2f, 0.6f), rs = vrr(&r, 0.045f, 0.1f), dead = vr(&r);
         V3 p, d; float rt, hw; path_at(T, (h + 0.3f) / len, &p, &d, &rt, &hw, NULL);
         rs = fminf(rs, rt * 0.3f); if (rs < 0.02f) continue;
         V3 o = dir_ae(az, el); Path S; S.n = 3; S.len = rt + L;

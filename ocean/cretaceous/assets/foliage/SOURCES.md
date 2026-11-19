@@ -39,14 +39,17 @@ clubmoss and moss (`render/veg.c`, `paint_fan`, `paint_lily_pad`,
 
 ## Bark (`bark_*.png`)
 
-These are the 1K diffuse maps, resized to 512², and beside each its 1K normal map (`bark_<name>_n.png`, OpenGL convention).
+These are the 2K diffuse maps with the scan's own shade multiplied in (its ambient occlusion map, and the low end of its displacement map darkening the furrows), resized to 512², and beside each its 2K normal map resized the same (`bark_<name>_n.png`, OpenGL convention). Each is laid on the trunks at about its real size (`render/veg_layers.h`, `bark_tile_m`).
 
 | File | Source | Used for | License |
 |---|---|---|---|
-| `bark_bark_brown_02.png` | [Poly Haven bark_brown_02](https://polyhaven.com/a/bark_brown_02) | broadleaf trunks | CC0 |
-| `bark_metasequoia_bark.png` | [Poly Haven metasequoia_bark](https://polyhaven.com/a/metasequoia_bark) | conifer trunks | CC0 |
+| `bark_chinese_hackberry_bark.png` | [Poly Haven chinese_hackberry_bark](https://polyhaven.com/a/chinese_hackberry_bark) | smooth grey broadleaf trunks (magnolia, laurel, katsura, understorey) | CC0 |
+| `bark_metasequoia_bark.png` | [Poly Haven metasequoia_bark](https://polyhaven.com/a/metasequoia_bark) | dawn redwood, cheirolepid and dead trunks | CC0 |
+| `bark_pine_bark.png` | [Poly Haven pine_bark](https://polyhaven.com/a/pine_bark) | araucaria plates | CC0 |
+| `bark_japanese_cedar_bark.png` | [Poly Haven japanese_cedar_bark](https://polyhaven.com/a/japanese_cedar_bark) | podocarp strips; tree-fern trunks (darkened) | CC0 |
+| `bark_bark_brown_02.png` | [Poly Haven bark_brown_02](https://polyhaven.com/a/bark_brown_02) | ginkgo furrows | CC0 |
+| `bark_bark_platanus.png` | [Poly Haven bark_platanus](https://polyhaven.com/a/bark_platanus) | plane (mottled in the shader on top) | CC0 |
 | `bark_palm_bark.png` | [Poly Haven palm_bark](https://polyhaven.com/a/palm_bark) | palm and cycad trunks | CC0 |
-| `bark_japanese_cedar_bark.png` | [Poly Haven japanese_cedar_bark](https://polyhaven.com/a/japanese_cedar_bark) | tree-fern trunks (darkened) | CC0 |
 
 ## Downloads
 
