@@ -105,3 +105,20 @@ by Charlie from United Kingdom (CC BY 2.0; copy in refs/wagon_ref.jpg). Generic
 10. wagon game 3: paint (0.70,0.69,0.64) dirty off-white; closer: yes. Stop.
 
 Budget: 3,192 triangles, 5 materials, shared grain; GLB ~0.2 MB.
+
+## Payphone (BC2_PAYPHONE01)
+
+Reference: https://commons.wikimedia.org/wiki/File:Payphone_Main_St_Moab_UT_2025-05-16_11-54-11_1.jpg
+by G. Edward Johnson (CC BY 4.0; copy in refs/payphone_ref.jpg). A desert-town
+pedestal payphone. All lettering on the real one is replaced by blank colour.
+
+1. payphone iter 1: post, base plate, rounded hood shell (boolean), phone unit, keypad, handset, cord, stickers; camera on the wrong side; closer: baseline
+2. payphone iter 2: camera to the ref's front-left, unit widened 0.24 -> 0.30 m, hood deeper (0.44 m); closer: yes
+3. payphone iter 3: hood bevel 0.09 -> 0.13, 18 stickers incl. paper on the inner walls, more saturated paint; closer: no (the large bevel broke the hood shell), bevel reverted
+4. payphone iter 4: bevel 0.09 with the new stickers and paint; closer: yes
+5. payphone iter 5: cream header with a blank white placard inside the top, deeper ledge; closer: yes
+6. payphone iter 6: post 0.17 -> 0.22 m wide, hood lowered to 1.0 m; closer: yes (small)
+7. payphone game 1: placed on the verge; yellow blown out in engine; closer: n/a
+8. payphone game 2: moved to the back edge of the sidewalk (-4.6, 34.85) facing the road, paint (0.76,0.57,0.16); closer: yes. Stop.
+
+Budget: 1,074 triangles, 3 materials, shared grain; GLB ~0.17 MB.
