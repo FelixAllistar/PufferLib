@@ -62,8 +62,21 @@ typedef struct { float hw, ph, ws, phs, fl; } Wnd;   // wind attributes (see VVe
 // A branch or twig end where fruit, cones and flowers can hang (crown_tree,
 // the araucarias and the redwood record them; add_fruit reads them).
 typedef struct { V3 p, d; Wnd w; float wt; } TipPt;
+// Bark relief (bark(), tube()): the trunk's root flare and buttress roots,
+// flutes running up it, and a rough surface, by species (bark_relief_init).
+// Its own seed: the full and reduced meshes draw the same trunk.
+typedef struct {
+    float flare, flare_h;          // radius added at the ground (share of the base radius), its height scale (m)
+    int nb; float bph[8], bw[8];   // buttress roots: count, angles, weights
+    float flute; int nfl;          // flutes: depth (share of the radius) and count round the trunk
+    float fph[3], twist;           // flute phases, turns per metre up the trunk
+    float rough;                   // bumps and burls (share of the radius, at most 4 cm)
+    int stubs;                     // broken-off branch stubs up the trunk
+    uint32_t seed;
+} Relief;
 typedef struct {
     MB* m; VRng r; int lod, kind, variant, species;
+    Relief rf; int relief;         // relief on for the tube being drawn: 2 a trunk from the ground, 1 a limb
     int bark_layer, bark_tone, dry, fine;
     float leaf_full, leaf_drawn;   // leaf_cards' area at full detail and as drawn (m^2): bake_sky evens the reduced crown's density
     TipPt* tip; int ntip, ctip;    // branch and twig ends, in growth order
@@ -111,7 +124,7 @@ static void fork_out(Gen* g, VRng sv) { g->r = sv; vr(&g->r); }
 
 // ---------------------------------------------------------------- primitives
 // A branch axis: points, radii and wind weights along it.
-#define PMAX 24
+#define PMAX 64
 typedef struct { V3 p[PMAX]; float r[PMAX], hw[PMAX], ws[PMAX]; int n; float len; } Path;
 static void path_at(const Path* P, float t, V3* p, V3* d, float* r, float* hw, float* ws) {
     float f = clampf(t, 0, 1) * (P->n - 1); int k = (int)f; if (k >= P->n - 1) k = P->n - 2; f -= k;
@@ -136,32 +149,170 @@ static void path_coarse(const Path* P, Path* Q) {
     if ((P->n - 1) % 3) { int k = P->n - 1; Q->p[m] = P->p[k]; Q->r[m] = P->r[k]; Q->hw[m] = P->hw[k]; Q->ws[m] = P->ws[k]; m++; }
     Q->n = m; Q->len = P->len;
 }
+// Smooth value noise for the bark relief: periodic in x with period px, 0..1.
+static float rf_noise(uint32_t seed, float x, float y, int px) {
+    float fx0 = floorf(x), fy0 = floorf(y); int ix = (int)fx0, iy = (int)fy0; float fx = x - fx0, fy = y - fy0;
+    fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
+    #define RFN(a, b) (hashu(seed ^ hashu((uint32_t)(((ix + (a)) % px + px) % px) * 0x8da6b343u ^ (uint32_t)(iy + (b)) * 0xd8163841u)) * (1.0f / 4294967296.0f))
+    float v = (RFN(0, 0) * (1 - fx) + RFN(1, 0) * fx) * (1 - fy) + (RFN(0, 1) * (1 - fx) + RFN(1, 1) * fx) * fy;
+    #undef RFN
+    return v;
+}
+// The bark relief's radius factor at angle a round the tube, height y above
+// the ground and arc length l along it, for a tube of base radius r0 and
+// local radius r. sides: the ring's vertex count (detail finer than the ring
+// can hold is left out, so the reduced mesh keeps only the broad shapes).
+static float relief_at(const Gen* g, float a, float y, float l, float r0, float r, int sides) {
+    const Relief* R = &g->rf; float f = 1;
+    if (g->relief == 2 && R->flare > 0) {   // root flare: a broad skirt, most of it in the buttress roots
+        float h = fmaxf(y, 0), e = expf(-h / R->flare_h), lobe = 0;
+        for (int i = 0; i < R->nb; i++) {
+            float d = remainderf(a - R->bph[i], 2 * VPI), w = 0.38f + 0.12f * R->bw[i];
+            lobe = fmaxf(lobe, R->bw[i] * expf(-d * d / (w * w)));
+        }
+        if (sides < 10) lobe = 0.5f * lobe + 0.25f;   // too few vertices round to hold a root
+        f += R->flare * e * (0.3f + 0.9f * lobe) * (r0 / fmaxf(r, 1e-3f));
+        // Roots run out at the foot as low ridges a little further than the flare.
+        f += R->flare * 0.35f * lobe * expf(-h / (0.35f * R->flare_h)) * (r0 / fmaxf(r, 1e-3f));
+    }
+    if (g->relief == 1) {   // a limb: its collar where it leaves the parent, then plain bark (bumps only on the big ones)
+        f += 0.45f * expf(-l / (1.8f * r0));
+        if (r < 0.08f) return f;
+    }
+    if (R->flute > 0 && R->nfl * 2 <= sides && g->relief == 2) {   // flutes: shallow grooves between rounded ribs, fading up the trunk
+        float tw = a * R->nfl + R->twist * l * 2 * VPI, k = 0;
+        k += cosf(tw + R->fph[0]) + 0.45f * cosf(tw * 0.5f + R->fph[1]) + 0.3f * cosf(a * (R->nfl + 3) + R->fph[2]);
+        float fade = g->relief == 2 ? 0.45f + 0.55f * expf(-fmaxf(y, 0) / 6.0f) : 0.5f;
+        f += R->flute * fade * (0.6f * k - 0.25f * k * k);
+    }
+    if (R->rough > 0 && sides >= 6) {   // bumps and burls: noise round and along, a few cm
+        int pa = sides >= 16 ? 9 : 5; float x = a / (2 * VPI) * pa;
+        float n = rf_noise(R->seed, x, l / 0.55f, pa) - 0.5f;
+        if (sides >= 16) n += 0.5f * (rf_noise(R->seed * 3u + 1u, x * 2, l / 0.25f, pa * 2) - 0.5f);
+        f += fminf(R->rough, 0.04f / fmaxf(r, 0.04f)) * n * 2;
+    }
+    return f;
+}
 static float tube(Gen* g, const Path* P, int sides, float urep, float vtile, float v0, float ph, float phs, int layer, int leaf, float lobes) {
     Path C; if (g->lod && P->n > 4) { path_coarse(P, &C); P = &C; }
-    int base = g->m->nv; float v = v0;
+    int base = g->m->nv, nr = P->n, ns = sides + 1; float v = v0, l = 0;
+    V3* pos = malloc(sizeof(V3) * nr * ns); float* vv = malloc(sizeof(float) * nr); V3* rad = malloc(sizeof(V3) * nr * ns);
     V3 t0 = vnorm(vsub(P->p[1], P->p[0])), nrm = any_perp(t0);
-    for (int k = 0; k < P->n; k++) {
-        V3 t = vnorm(vsub(P->p[k < P->n - 1 ? k + 1 : k], P->p[k > 0 ? k - 1 : k]));
+    if (g->relief) {   // a fixed start for the frame: the relief's angles mean the same on both meshes
+        V3 ref = fabsf(t0.y) < 0.9f ? v3(0, 1, 0) : v3(1, 0, 0); nrm = vnorm(vsub(ref, vmul(t0, vdot(ref, t0))));
+    }
+    for (int k = 0; k < nr; k++) {
+        V3 t = vnorm(vsub(P->p[k < nr - 1 ? k + 1 : k], P->p[k > 0 ? k - 1 : k]));
         nrm = vnorm(vsub(nrm, vmul(t, vdot(nrm, t)))); V3 b = vcross(t, nrm);
-        if (k > 0) v += vlen(vsub(P->p[k], P->p[k - 1])) / vtile;
+        if (k > 0) { float dl = vlen(vsub(P->p[k], P->p[k - 1])); v += dl / vtile; l += dl; }
+        vv[k] = v;
         float y = P->p[k].y, fl = lobes > 0 && y < 1.6f ? lobes * powf(1 - fmaxf(y, 0) / 1.6f, 2.0f) : 0;
         for (int s = 0; s <= sides; s++) {
             float a = 2 * VPI * s / sides; V3 d = vadd(vmul(nrm, cosf(a)), vmul(b, sinf(a)));
-            float rr = P->r[k] * (1 + fl * (0.55f + 0.45f * cosf(5 * a + 0.8f)));
-            gv(g, vadd(P->p[k], vmul(d, rr)), (float)s / sides * urep, v, d, 1, layer, leaf, (Wnd){P->hw[k], ph, P->ws[k], phs, 0});
+            float rr = g->relief ? P->r[k] * relief_at(g, s == sides ? 0 : a, y, l, P->r[0], P->r[k], sides)
+                                 : P->r[k] * (1 + fl * (0.55f + 0.45f * cosf(5 * a + 0.8f)));
+            pos[k * ns + s] = vadd(P->p[k], vmul(d, rr)); rad[k * ns + s] = d;
         }
     }
-    for (int k = 0; k < P->n - 1; k++) for (int s = 0; s < sides; s++) {
+    for (int k = 0; k < nr; k++) for (int s = 0; s <= sides; s++) {
+        V3 d = rad[k * ns + s], n = d;
+        if (g->relief) {   // the normal of the surface itself: flutes, flare and taper shade
+            int s0 = s == 0 ? sides - 1 : s - 1, s1 = s == sides ? 1 : s + 1, k0 = k > 0 ? k - 1 : k, k1 = k < nr - 1 ? k + 1 : k;
+            V3 da = vsub(pos[k * ns + s1], pos[k * ns + s0]), dv = vsub(pos[k1 * ns + s], pos[k0 * ns + s]);
+            V3 c = vcross(da, dv);
+            if (vdot(c, c) > 1e-12f) { c = vnorm(c); if (vdot(c, d) < 0) c = vmul(c, -1); n = vnorm(vadd(c, vmul(d, 0.15f))); }
+        }
+        gv(g, pos[k * ns + s], (float)s / sides * urep, vv[k], n, 1, layer, leaf, (Wnd){P->hw[k], ph, P->ws[k], phs, 0});
+    }
+    free(pos); free(vv); free(rad);
+    for (int k = 0; k < nr - 1; k++) for (int s = 0; s < sides; s++) {
         int a = base + k * (sides + 1) + s, b = a + 1, c = a + sides + 1, d = c + 1;
         gtri(g, a, c, b); gtri(g, b, c, d);
     }
     return v;
 }
-// Bark tube with the usual texel density (about square texels, the bark
-// tile ~0.8 m across on a trunk).
+// Bark tube with square texels at the scan's own size (bark_tile_m: 1 to
+// 1.8 m of bark a tile), a whole number of tiles round the base.
+// Broken-off lower branches: short stubs, rising a little, grey at the
+// break (dead-wood tone), between 1.6 m and a third of the way up. Their
+// own random stream: the same stubs on both meshes.
+static void trunk_stubs(Gen* g, const Path* T) {
+    VRng r = {hashu(g->rf.seed * 0x9e3779b1u + 0x51u)}; float len = 0;
+    for (int k = 1; k < T->n; k++) len += vlen(vsub(T->p[k], T->p[k - 1]));
+    if (len < 4) return;
+    int bt = g->bark_tone;
+    for (int i = 0; i < g->rf.stubs; i++) {
+        float h = vrr(&r, 1.6f, fmaxf(2.2f, len * 0.32f)), az = vrr(&r, 0, 2 * VPI), el = vrr(&r, 0.2f, 0.75f);
+        float L = vrr(&r, 0.12f, 0.38f), rs = vrr(&r, 0.05f, 0.1f), dead = vr(&r);
+        V3 p, d; float rt, hw; path_at(T, (h + 0.3f) / len, &p, &d, &rt, &hw, NULL);
+        rs = fminf(rs, rt * 0.3f); if (rs < 0.02f) continue;
+        V3 o = dir_ae(az, el); Path S; S.n = 3; S.len = rt + L;
+        for (int k = 0; k < 3; k++) {
+            float t = k / 2.0f; S.p[k] = vadd(p, vmul(o, rt * 0.5f + (rt * 0.5f + L) * t));
+            S.r[k] = rs * (k == 0 ? 1.5f : k == 1 ? 0.95f : 0.45f); S.hw[k] = hw; S.ws[k] = 0;   // a collar at the trunk, a splintered point
+        }
+        g->bark_tone = dead < 0.6f ? 11 : bt;   // most are dead wood, weathered grey
+        tube(g, &S, g->lod ? 4 : 6, 1, 0.3f, 0, 0, 0, g->bark_layer, 0, 0);
+    }
+    g->bark_tone = bt;
+}
+// A trunk with its own uv and pattern (tree ferns, palms): the bark relief, rings every 0.25 m.
+static void relief_trunk(Gen* g, const Path* T, int sides, float urep, float vtile, float lobes) {
+    Path Q; Q.n = 0; Q.len = 0;
+    for (int k = 0; k < T->n; k++) {
+        if (k > 0) { int m = (int)ceilf(vlen(vsub(T->p[k], T->p[k - 1])) / 0.25f);
+            for (int j = 1; j < m && Q.n < PMAX - T->n; j++) { float t = (float)j / m; Q.p[Q.n] = vlerp(T->p[k - 1], T->p[k], t); Q.r[Q.n] = lerpf(T->r[k - 1], T->r[k], t); Q.hw[Q.n] = lerpf(T->hw[k - 1], T->hw[k], t); Q.ws[Q.n++] = 0; } }
+        Q.p[Q.n] = T->p[k]; Q.r[Q.n] = T->r[k]; Q.hw[Q.n] = T->hw[k]; Q.ws[Q.n++] = 0;
+    }
+    g->relief = g->rf.seed ? 2 : 0;
+    tube(g, &Q, sides, urep, vtile, 0, 0, 0, g->bark_layer, 0, lobes);
+    g->relief = 0;
+}
+// A trunk (a path from below the ground) takes the species' relief, its
+// rings no more than 0.8 m apart (0.25 m in the bottom 2 m, where the flare
+// is) and enough vertices round for its flutes; a limb over 8 cm only the
+// bumps and flutes.
 static float bark(Gen* g, const Path* P, float v0, float ph, float phs, float lobes) {
-    float r0 = P->r[0], urep = fmaxf(1, roundf(r0 * 6)), vt = clampf(2 * VPI * r0 / urep, 0.08f, 1.6f);
-    return tube(g, P, sides_for(g, r0), urep, vt, v0, ph, phs, g->bark_layer, 0, lobes);
+    float r0 = P->r[0], urep = fmaxf(1, roundf(2 * VPI * r0 / bark_tile_m(g->bark_layer)));
+    float vt = clampf(2 * VPI * r0 / urep, 0.08f, 1.8f) * bark_tile_aspect(g->bark_layer);
+    bool trunk = P->p[0].y < 0.05f && r0 > 0.05f && g->rf.seed;
+    if (!trunk && !(r0 > 0.025f && g->rf.seed)) return tube(g, P, sides_for(g, r0), urep, vt, v0, ph, phs, g->bark_layer, 0, lobes);
+    // Full mesh: a Catmull-Rom midpoint between every two skeleton points, so a limb or trunk bends in a curve
+    // instead of a polyline's elbows (the skeleton, and so every child's place on it, is unchanged).
+    Path Sm;
+    if (!g->lod && g->kind != VEG_SNAG && P->n >= 3 && 2 * P->n - 1 <= PMAX) {   // (snags: broken, angular, and a cheap mesh)
+        Sm.n = 0; Sm.len = P->len;
+        for (int k = 0; k < P->n; k++) {
+            Sm.p[Sm.n] = P->p[k]; Sm.r[Sm.n] = P->r[k]; Sm.hw[Sm.n] = P->hw[k]; Sm.ws[Sm.n] = P->ws[k]; Sm.n++;
+            if (k == P->n - 1) break;
+            V3 p0 = P->p[k > 0 ? k - 1 : 0], p1 = P->p[k], p2 = P->p[k + 1], p3 = P->p[k + 2 < P->n ? k + 2 : P->n - 1];
+            Sm.p[Sm.n] = vadd(vmul(vadd(p1, p2), 0.5625f), vmul(vadd(p0, p3), -0.0625f));
+            Sm.r[Sm.n] = 0.5f * (P->r[k] + P->r[k + 1]); Sm.hw[Sm.n] = 0.5f * (P->hw[k] + P->hw[k + 1]); Sm.ws[Sm.n] = 0.5f * (P->ws[k] + P->ws[k + 1]); Sm.n++;
+        }
+        P = &Sm;
+    }
+    Path Q; Q.n = 0; Q.len = P->len;
+    // Limbs a little heavier than grown (the skeleton keeps its points): they thinned too fast from trunk to twig.
+    Path W; if (!trunk) { W = *P; for (int k = 0; k < W.n; k++) W.r[k] *= 1.2f; P = &W; }
+    for (int k = 0; k < P->n && Q.n < PMAX; k++) {
+        if (k > 0 && trunk) {   // split long segments (straight lines between the path's points)
+            V3 a = P->p[k - 1], b = P->p[k]; float L = vlen(vsub(b, a)), mid = 0.5f * (a.y + b.y);
+            int m = mid < 2.0f ? (int)ceilf(L / (g->lod ? 0.34f : 0.25f)) : g->lod ? 1 : (int)ceilf(L / 0.8f);   // the reduced mesh: the flare only
+            for (int j = 1; j < m && Q.n < PMAX - 1; j++) {
+                float t = (float)j / m; Q.p[Q.n] = vlerp(a, b, t); Q.r[Q.n] = lerpf(P->r[k - 1], P->r[k], t);
+                Q.hw[Q.n] = lerpf(P->hw[k - 1], P->hw[k], t); Q.ws[Q.n] = lerpf(P->ws[k - 1], P->ws[k], t); Q.n++;
+            }
+        }
+        Q.p[Q.n] = P->p[k]; Q.r[Q.n] = P->r[k]; Q.hw[Q.n] = P->hw[k]; Q.ws[Q.n] = P->ws[k]; Q.n++;
+    }
+    if (Q.n == PMAX && Q.p[Q.n - 1].y != P->p[P->n - 1].y) Q = *P;   // too long to split: as grown
+    int sides = sides_for(g, r0);
+    if (trunk && g->rf.flute > 0) { int want = g->lod ? (sides > 10 ? 12 : sides) : 2 * g->rf.nfl + 4; if (want > sides) sides = want < 26 ? want : 26; }
+    g->relief = trunk ? 2 : 1;
+    float v = tube(g, &Q, sides, urep, vt, v0, ph, phs, g->bark_layer, 0, 0);
+    g->relief = 0;
+    if (trunk && g->rf.stubs > 0) trunk_stubs(g, P);
+    return v;
 }
 // Grows a path from p0 along d0 in n steps of len / n: each step turns toward
 // up by trop (rad per m; negative droops), wanders by up to wander (rad per
@@ -1098,8 +1249,10 @@ static void gen_treefern(Gen* g, bool stout) {
     float H, r0; species_dims(VEG_TREEFERN, g->variant, &H, &r0);
     float lx = grr(g, -0.5f, 0.5f), lz = grr(g, -0.5f, 0.5f);
     Path T; T.n = 8;
-    for (int k = 0; k < 8; k++) { float t = k / 7.0f; T.p[k] = v3(lx * t * t, -0.2f + (H + 0.2f) * t, lz * t * t); T.r[k] = lerpf(r0, 0.15f, sqrtf(t)) + (k == 7 ? 0.06f : 0) + 0.12f * expf(-t * 10); T.hw[k] = 0.15f * t; T.ws[k] = 0; }
-    tube(g, &T, sides_for(g, r0) + 2, fmaxf(1, roundf(r0 * 6)), 1.0f, 0, 0, 0, g->bark_layer, 0, 0.3f);
+    // The trunk: a slim column (Cyathea) or a stout, nearly even one (Dicksonia), its root mantle swelling at the foot
+    // and shaggy all the way up (bark relief, trunk rings every 0.25 m).
+    for (int k = 0; k < 8; k++) { float t = k / 7.0f; T.p[k] = v3(lx * t * t, -0.2f + (H + 0.2f) * t, lz * t * t); T.r[k] = (stout ? lerpf(r0, r0 * 0.78f, t) : lerpf(r0, 0.15f, sqrtf(t))) + (k == 7 ? 0.06f : 0) + 0.12f * expf(-t * 10); T.hw[k] = 0.15f * t; T.ws[k] = 0; }
+    relief_trunk(g, &T, (sides_for(g, r0) + 2) * (g->lod ? 1 : 2), fmaxf(1, roundf(r0 * 6)), 1.0f, 0.3f);
     V3 top = T.p[7];
     int nd = 8 + (int)grr(g, 0, 5); if (g->lod) nd = 5;
     VRng sv = fork_in(g);
@@ -1193,7 +1346,7 @@ static void gen_palm(Gen* g, int s) {
     bool feather = s == 3; float bend = grr(g, 0.3f, feather ? 1.8f : 1.2f), az0 = grr(g, 0, 2 * VPI);
     Path T; T.n = 9;
     for (int k = 0; k < 9; k++) { float t = k / 8.0f; T.p[k] = vadd(v3(0, -0.2f + (H + 0.2f) * t, 0), vmul(dir_az(az0), bend * t * t)); T.r[k] = lerpf(r0, r0 * 0.75f, t) + 0.08f * expf(-t * 12); T.hw[k] = 0.25f * t * t; T.ws[k] = 0; }
-    tube(g, &T, sides_for(g, r0), fmaxf(1, roundf(r0 * 6)), 0.5f, 0, 0, 0, g->bark_layer, 0, 0);
+    relief_trunk(g, &T, sides_for(g, r0) * (g->lod ? 1 : 2), fmaxf(1, roundf(r0 * 6)), 0.5f, 0);   // a root boss at the foot
     V3 top = T.p[8];
     // Dead leaves hanging against the trunk.
     for (int f = 0; f < 3; f++) {
@@ -1677,6 +1830,39 @@ static void gen_snag(Gen* g, int v) {
     }
 }
 
+// The species' bark relief (Relief). Dawn redwood: a deeply fluted,
+// buttressed trunk; podocarp (totara-like): fluted and flared; araucaria: a
+// straight column on a modest flare; the angiosperms: a flare into a few
+// roots and a lumpy surface, the plane the lumpiest.
+static void bark_relief_init(Gen* g, int kind, int sp) {
+    Relief* R = &g->rf; memset(R, 0, sizeof *R);
+    VRng r = {hashu((uint32_t)kind * 2654435761u + (uint32_t)g->variant * 40503u + 977u)};
+    R->seed = hashu(r.s + 1u) | 1u; R->flare_h = 0.9f; R->nb = 5; R->nfl = 7; R->rough = 0.02f;
+    switch (kind) {
+    case VEG_CONIFER:
+        if (sp == FL_REDWOOD) { R->flare = 0.75f; R->flare_h = 1.3f; R->nb = 7; R->flute = 0.1f; R->nfl = 9; R->twist = 0.012f; R->rough = 0.02f; R->stubs = 5; }
+        else if (sp == FL_PODOCARP) { R->flare = 0.5f; R->flare_h = 0.9f; R->nb = 6; R->flute = 0.07f; R->nfl = 7; R->twist = 0.02f; R->rough = 0.025f; R->stubs = 3; }
+        else if (sp == FL_CHEIROLEP) { R->flare = 0.45f; R->flare_h = 0.6f; R->nb = 5; R->flute = 0.05f; R->nfl = 6; R->twist = 0.03f; R->stubs = 2; }
+        else { R->flare = 0.32f; R->flare_h = 0.8f; R->nb = 6; R->flute = 0.02f; R->nfl = 10; R->rough = 0.015f; }   // araucarias
+        break;
+    case VEG_BROADLEAF:
+        if (sp == FL_PLANE) { R->flare = 0.5f; R->flare_h = 0.8f; R->nb = 5; R->flute = 0.03f; R->nfl = 5; R->rough = 0.04f; R->stubs = 2; }
+        else if (sp == FL_GINKGO) { R->flare = 0.4f; R->flare_h = 0.7f; R->nb = 5; R->flute = 0.04f; R->nfl = 8; R->rough = 0.025f; R->stubs = 2; }
+        else if (sp == FL_KATSURA) { R->flare = 0.3f; R->flare_h = 0.5f; R->nb = 4; R->flute = 0.05f; R->nfl = 5; R->twist = 0.06f; R->rough = 0.03f; }
+        else { R->flare = 0.42f; R->flare_h = 0.7f; R->nb = 5; R->flute = 0.03f; R->nfl = 6; R->twist = 0.02f; R->rough = 0.03f; R->stubs = 1; }
+        break;
+    case VEG_PALM: R->flare = 0.28f; R->flare_h = 0.3f; R->nb = 9; R->rough = 0.02f; break;   // the root boss, a slightly uneven column
+    case VEG_TREEFERN: R->flare = 0.3f; R->flare_h = 0.35f; R->nb = 7; R->rough = 0.09f; break;   // a root mass at the foot, a shaggy mantle
+    case VEG_SNAG: R->flare = 0.4f; R->flare_h = 0.8f; R->nb = 5; R->rough = 0.03f; break;   // no flutes: few sides (a cheap mesh)
+    default: R->seed = 0; return;   // palms, cycads, tree ferns, shrubs: their own trunks
+    }
+    if (R->nb > 8) R->nb = 8;
+    float a0 = vrr(&r, 0, 2 * VPI);
+    for (int i = 0; i < R->nb; i++) { R->bph[i] = a0 + i * 2 * VPI / R->nb + vrr(&r, -0.35f, 0.35f); R->bw[i] = vrr(&r, 0.45f, 1.0f); }
+    for (int i = 0; i < 3; i++) R->fph[i] = vrr(&r, 0, 2 * VPI);
+    if (vr(&r) < 0.5f) R->twist = -R->twist;
+}
+
 // Builds one kind x variant (lod: the reduced mesh). The species comes from
 // the variant's slot (render/flora.h); slots of the same species are the
 // same plant from different seeds.
@@ -1687,6 +1873,13 @@ static void build_species(MB* m, int kind, int variant, int lod) {
     G.r = species_rng(kind, variant); vr(&G.r); vr(&G.r);   // the first draws are species_dims'
     G.bark_tone = kind == VEG_TREEFERN ? 1 : kind == VEG_PALM ? 2 : kind == VEG_CONIFER ? 3 : kind == VEG_CYCAD ? 4 : kind == VEG_BROADLEAF ? 5 : kind == VEG_HORSETAIL ? 10 : 0;
     G.bark_layer = kind == VEG_TREEFERN ? L_BARK_FERN : (kind == VEG_PALM || kind == VEG_CYCAD) ? L_BARK_PALM : (kind == VEG_CONIFER || kind == VEG_SNAG) ? L_BARK_CON : L_BARK;
+    // Bark by species: plates on the araucarias, fibrous strips on the podocarp, furrows on the ginkgo, flakes on the plane.
+    if (kind == VEG_CONIFER) G.bark_layer = sp == FL_ARAUCARIA || sp == FL_UMBRELLA ? L_BARK_ARAU : sp == FL_PODOCARP ? L_BARK_PODO : L_BARK_CON;
+    if (kind == VEG_BROADLEAF) G.bark_layer = sp == FL_GINKGO ? L_BARK_GINKGO : sp == FL_PLANE ? L_BARK_PLANE : L_BARK;
+    bark_relief_init(&G, kind, sp);
+    if (sp == FL_PLANE) G.bark_tone = 12;   // its bark mottled in the shader (veg.fs)
+    if (getenv("CRET_BARK_RELIEF") && !atoi(getenv("CRET_BARK_RELIEF"))) G.rf.seed = 0;   // development A/B: smooth trunks
+    if (getenv("CRET_BARK_STUBS") && !atoi(getenv("CRET_BARK_STUBS"))) G.rf.stubs = 0;    // and without stubs
     float k_ext = 0.5f, bend = 0.6f;
     switch (kind) {
     case VEG_CONIFER:

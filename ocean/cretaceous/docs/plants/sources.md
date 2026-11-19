@@ -39,7 +39,8 @@ T translucency (ambientCG calls it Scattering).
 | ambientCG LeafSet022 | https://ambientcg.com/view?id=LeafSet022 | CC0 | 2K (8K) | C A N **T** | was 1K C A: laurel-like twigs | **use**, now with normals and its Scattering scan |
 | ambientCG LeafSet025 | https://ambientcg.com/view?id=LeafSet025 | CC0 | 2K (8K) | C A N **T** | was 1K C A: gunnera leaf, flowering herbs | **use**, with Scattering |
 | ambientCG LeafSet001, 002, 004, 010, 013, 014, 018, 019, 020, 024; Foliage001, 006 | ambientcg.com/view?id=<id> | CC0 | 2K (4K-8K) | C A N | were 1K C A: the same uses as before (`assets/foliage/SOURCES.md`) | **use**, upgraded to 2K with normals |
-| Poly Haven metasequoia_bark, palm_bark, bark_brown_02, japanese_cedar_bark | polyhaven.com/a/<id> | CC0 | 1k (8k), packed to 512 | C N | were C only: trunk bark | **use**, now with normal maps |
+| Poly Haven metasequoia_bark, palm_bark, bark_brown_02, japanese_cedar_bark | polyhaven.com/a/<id> | CC0 | 2k (8k), packed to 512 | C N AO D | were C only: trunk bark | **use**, with normal maps; AO and furrows (D) baked into the colour |
+| Poly Haven pine_bark, bark_platanus, chinese_hackberry_bark | polyhaven.com/a/<id> | CC0 | 2k (8k), packed to 512 | C N AO D | araucaria plates, plane, smooth grey broadleaf bark | **use** (trunks hill-climb, 2026-11-19) |
 
 Why 2K and not 4K for most: the atlas layer is 512 texels and a leaf stamps
 into it at 40-500 texels, so a 2K scan already gives every sprite at least

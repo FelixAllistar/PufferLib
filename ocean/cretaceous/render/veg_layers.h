@@ -34,8 +34,22 @@ enum { L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB, P_COUN
        L_GUNNERA, L_LILY,           // one leaf each: gunnera's lobed leaf, a lily pad (centre at the middle)
        L_PETAL, L_FRUIT,            // 8 columns: petals and bracts; fruit, seed and cone skins (opaque)
        L_FUNGUS, L_CLUB,            // 4 columns: bracket and mushroom surfaces; clubmoss sprays and moss
+       L_BARK_ARAU, L_BARK_PODO, L_BARK_GINKGO, L_BARK_PLANE,   // tiling: bark by species (photo scans, BARK_SCAN in veg.c)
        L_COUNT };
 static inline bool is_cluster_layer(int k) { return k >= L_CL_MAGN && k <= L_CL_ROPE; }
 static inline int layer_columns(int k) { return k == L_LEAFLET || k == L_PSEG || k == L_ROPE || k == L_PETAL || k == L_FRUIT ? 8 : k == L_FPINNA || k == L_FUNGUS || k == L_CLUB ? 4 : 0; }
-static inline bool is_bark_layer(int k) { return k == L_BARK || k == L_BARK_CON || k == L_BARK_PALM || k == L_BARK_FERN; }
+static inline bool is_bark_layer(int k) { return k == L_BARK || k == L_BARK_CON || k == L_BARK_PALM || k == L_BARK_FERN || (k >= L_BARK_ARAU && k <= L_BARK_PLANE); }
+// The bark layers' scans in the order of veg.c's BarkImg table, and the width
+// of trunk each tile covers (m): the scan's own size, so plates, furrows and
+// strips are drawn at their real size (about 4 mm a texel at 512).
+static inline int bark_index(int k) {
+    return k == L_BARK_CON ? 1 : k == L_BARK_PALM ? 2 : k == L_BARK_FERN ? 3 : k == L_BARK_ARAU ? 4 : k == L_BARK_PODO ? 5 : k == L_BARK_GINKGO ? 6 : k == L_BARK_PLANE ? 7 : 0;
+}
+#define BARK_SCANS 8
+static inline float bark_tile_m(int k) {
+    static const float T[BARK_SCANS] = {1.8f, 1.6f, 1.2f, 1.0f, 1.6f, 1.0f, 1.0f, 1.5f};
+    return T[bark_index(k)];
+}
+// Length over width of a tile (the cedar scan is 1 m by 2 m, squeezed square).
+static inline float bark_tile_aspect(int k) { int i = bark_index(k); return i == 3 || i == 5 ? 2.0f : 1.0f; }
 #endif
