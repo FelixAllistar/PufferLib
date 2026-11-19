@@ -111,10 +111,14 @@ void main() {
             float n1 = 0.5 * (vnoise2(m.xy) + vnoise2(m.zy + 17.0)), n2 = 0.5 * (vnoise2(m.xy * 2.3 + 5.0) + vnoise2(m.zy * 2.3 + 31.0));
             float e = 0.012 + fwidth(n1) * 1.5;   // sharp jigsaw edges up close, soft once a patch is a few pixels
             float pa = smoothstep(0.53 - e, 0.53 + e, n1 * 0.72 + n2 * 0.28), pb = smoothstep(0.55 - e, 0.55 + e, n2 * 0.65 + n1 * 0.35);
+            // Warm throughout (the blue sky fill turned the old grey-green and cream teal-white), and the freshly
+            // bared patches smooth: the scan's furrows mostly belong to the old outer bark.
             float l = dot(albedo, vec3(0.3, 0.59, 0.11));
-            albedo = l * vec3(0.85, 0.78, 0.55);                        // old outer bark: olive-brown
-            albedo = mix(albedo, l * vec3(1.42, 1.38, 1.02), pb);       // grey-green
-            albedo = mix(albedo, l * vec3(2.35, 2.05, 1.38), pa * (1.0 - 0.5 * pb));   // fresh cream inner bark
+            float l0 = dot(textureLod(t_atlas, vec3(0.5, 0.5, v_layer), 12.0).rgb, vec3(0.3, 0.59, 0.11));
+            float ls = mix(l, l0, 0.6);
+            albedo = l * vec3(0.92, 0.8, 0.58);                               // old outer bark: grey-brown, fawn
+            albedo = mix(albedo, ls * vec3(1.4, 1.34, 0.82), pb);             // khaki-olive
+            albedo = mix(albedo, ls * vec3(2.4, 2.08, 1.22), pa * (1.0 - 0.5 * pb));   // fresh cream-yellow inner bark
         } else if (tone == 2) {     // palm: horizontal leaf-base rings
             albedo *= 0.85 + 0.2 * smoothstep(0.0, 0.25, abs(fract(q.y * 6.0) - 0.5));
             // Each ring a low ridge (the old leaf base) with a groove above it, lit as relief, wavering a little.
