@@ -61,3 +61,9 @@ brief's world shots; renders at 960x540 on Mesa llvmpipe.
     scrub. The first try (density 0.32 inside a tight clump mask) added 35 trees and nothing visible;
     loosened to 0.5 it adds about 360. Kept, small: `mtD` has a scatter of lone trees above the finger
     tops instead of a clean stop.
+
+Checks after pass 15: the brief's world shots (`ridge`, `canopy`, `aerial`, `coast`, `river`, `ground`,
+`morning`, `redwood`, `ga0`, `gup`) against 5.0 at 960x540: `ridge` reads as one grey stone range with
+less cream, `canopy` and `ground` stand in denser forest, the rest are unchanged. `TERRA_VERSION` 25.
+Bake with horizons on 4 CPU cores: about 26 s, as on 5.0 (51.8 s first run against 26.1 s cached; 5.0
+51.1 against 25.0). Trees on the island: 164,025 on 5.0, 183,574 now.
