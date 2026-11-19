@@ -164,8 +164,14 @@ static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstan
         // DENSITY_MUL_MAX), then the site for the plants that may stand.
         float d0 = veg_layer_density(m, kind, x, z) * DENSITY[kind], u = vp_r(&r), dm = d0 * DENSITY_MUL_MAX[kind];
         if (u > dm * dm * 1.6f) continue;
-        if ((kind == VEG_FERN || kind == VEG_HORSETAIL || kind == VEG_SHRUB) && vp_r(&r) > vp_patch(x, z, kind)) continue;   // patches, open ground between
         FloraSite site = flora_site(m, x, z);
+        // Patches with open ground between; but a fern prairie (a full fern layer under open sky) closes up
+        // into a sea of fronds with only small gaps.
+        if (kind == VEG_FERN || kind == VEG_HORSETAIL || kind == VEG_SHRUB) {
+            float keep = vp_patch(x, z, kind);
+            if (kind == VEG_FERN) keep = fmaxf(keep, 0.75f * fl_sstep(0.8f, 0.95f, d0 / DENSITY[kind]) * (1 - fl_sstep(0.15f, 0.4f, site.shade)));
+            if (vp_r(&r) > keep) continue;   // the same draw as before, only for these kinds
+        }
         float d = d0 * (kind < TERRA_VEG_COUNT ? flora_density_mul(kind, &site) : site.gap);
         if (kind == VEG_CONIFER || kind == VEG_BROADLEAF) d *= vp_lerp(vp_clump(m, x, z), 1.0f, 0.65f * fl_sstep(0.75f, 0.95f, site.moist));   // groups and small openings; the wet forest stays closed
         if (u > d * d * 1.6f) continue;

@@ -71,3 +71,8 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
     country starts lower on the noise (`GRASS_EDGE` 0.455): 14.0% open, 6.9% dry grassland and 7.0% fern prairie.
     Kept: the share is back; `airW`'s coastal plain is open again (prairie and grassland), `airS`'s open patches lie
     elsewhere now. `ridG` (a dry ridge) now stands in conifer forest and gets the renderer's forest mist.
+11. Fault: the fern prairie (`prH`, 1.8 m up in it) is fronds in patches with bare soil between, the understorey
+    patch rule meant for forest floors. Change: `render/veg_place.h` where the fern layer is full and nothing shades
+    it, ferns keep at least 75% of the lattice (the patch draw is unchanged and still only taken by the understorey
+    kinds, so no tree moves). Kept: `prH` is a closed sea of bracken, `prJ` unchanged, forest floors unchanged.
+    Ferns on the island 1,449,641 to 1,669,427 (drawn only near the camera).
