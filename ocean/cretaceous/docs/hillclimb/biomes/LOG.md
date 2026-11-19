@@ -81,3 +81,15 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
     beside the 90 m one), more of it on slopes, and heavier (1.35). Kept: `desH` (2 m up on a desert hillside) is
     stony grey-brown ground instead of orange earth; `desA` and `desB` read a little greyer and less cream. The
     straw tint the shader lays over bare earth in dry country still sets most of the tone from afar.
+
+Checks after pass 12: `make -i test` (every line): `test_sim` 2 and `test_net_codec` 2 fail as on an untouched
+tree in the cloud; the rest pass. `camprobe` and `ecoprobe` (world-dependent budgets) fail here and on `cret/hc`
+alike in the cloud: camprobe 210 violation frames in 160 runs (`cret/hc` 329 in 152), ecoprobe 126 of 146 within
+budget (`cret/hc` 117 of 146); the budget files are left alone. Bake and load in one process 23.9 s (`cret/hc` 24.5 s),
+cached load 1.8 s (1.7 s), 4 cores. No mesh changed, so triangle counts are as on `cret/hc`.
+
+Sheets (`cret/hc` left, this branch right, 1280x720): `01_desB` the near-desert from 260 m, `02_desA` toward it from
+120 m, `03_desH` on a desert hillside, `04_airW` the west coast from 420 m (forest, fern prairie, dry grassland),
+`05_prJ` in the fern prairie (forest there before), `06_wetl` a slow reach through dry country, `07_river` a bank,
+`08_wetF` the wet valley forest, `09_canopy` and `10_standA` stands from above, `11_coast` a river mouth on the beach,
+`12_bake_map` a top-down map of the bake's materials and canopy from a throwaway tool (not a game render).
