@@ -81,6 +81,11 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // Ground cover: neighbouring blades hide much of the sky as well (more
     // than one plant's baked occlusion), so a sunlit sward keeps dark gaps.
     if (u_understory > 0.0) amb *= canopy_sky(texture(t_misc, map_uv(base.xz)).a * u_understory) * mix(1.0, 1.15, u_understory);   // lit like the ground it stands on (terrain.fs uses 1.5x sky)
+    // A trunk in a stand sees the horizon through the other trunks and crowns, not open sky: its sky light
+    // falls with the stand's canopy, as on the ground, the props and the animals beside it. Without it the
+    // bare trunks under a forest's crowns were lit by the full horizon sky and stood out of far slopes as
+    // pale grey poles. Faded in from 15 to 40 m, so the trunks you stand beside keep their near shading.
+    else amb *= mix(vec3(1.0), vec3(0.42, 0.5, 0.36), clamp(texture(t_misc, map_uv(base.xz)).a, 0.0, 1.0) * (1.0 - leaf) * smoothstep(15.0, 40.0, length(u_cam - p)));
     // Sky light reaching a leaf has mostly bounced through other leaves
     // first, which filters it green (and keeps sunlit ferns from going mint
     // under a blue sky). Gentler with a low sun: in the shade at golden hour
