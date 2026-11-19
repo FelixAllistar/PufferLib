@@ -106,3 +106,17 @@ font licence permitting embedding). Original work dedicated CC0 1.0.
 Reference photographs used only for comparison (public domain, CC BY 4.0, CC BY
 2.0; downscaled copies with credits in `reports/cloud/art-motel-architecture/`,
 see its LOG.md); nothing from them is in the assets.
+
+## Materials v3 (scanned CC0 PBR)
+
+`assets/environment/materials_v3/` holds 60 maps derived from 19 CC0 1.0 scans
+from Poly Haven (https://polyhaven.com/license) and ambientCG
+(https://docs.ambientcg.com/license/), downloaded and verified by
+`tools/blender/materials_v3_fetch.py` (MD5 from the Poly Haven API, SHA-256 of
+the ambientCG zips in `tools/blender/materials_v3_sources.lock.json`) and baked
+by `tools/blender/materials_v3_bake.py`. Per-material sources and authors:
+`assets/environment/materials_v3/README.md`. No non-commercial, no-derivatives,
+editorial or Sketchfab material is used. Reference photographs used only for
+matching (CC BY 2.0, CC0 and public domain, credited in that README) appear
+downscaled in the review sheets under `reports/cloud/art-materials-v3/`; none is
+shipped as game art.

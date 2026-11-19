@@ -18,6 +18,13 @@ typedef struct SwatSurfaceMaps {
     Texture2D color,normal,roughness;
     Vector2 tile;
 } SwatSurfaceMaps;
+// Briar Court materials v3 surfaces (materials_v3.h).
+typedef enum SwatMaterialV3Id {
+    MV3_STUCCO,MV3_REPAIR,MV3_TRIM,MV3_FASCIA,MV3_GUTTER,MV3_CONCRETE,MV3_WALKWAY,MV3_PLINTH,MV3_ROOF,
+    MV3_LOT,MV3_ROAD,MV3_GRAVEL,MV3_DIRT,
+    MV3_CARPET,MV3_DRYWALL,MV3_CEILING,MV3_BATH_FLOOR,MV3_BATH_WALL,MV3_RECEPTION_FLOOR,MV3_LAUNDRY_FLOOR,
+    MV3_COUNT
+} SwatMaterialV3Id;
 struct SwatLighting;
 struct SwatMotelWallArt;
 struct SwatEnvironmentBounds;
@@ -107,6 +114,7 @@ typedef struct SwatEnvironmentArt {
     float motel_surroundings_normal_scale[2][SWAT_ROOM101_MATERIALS];
     Model storefront[SWAT_STOREFRONT_ASSETS];
     Model props[SWAT_ENV_PROP_KINDS];
+    struct SwatMaterialsV3* materials_v3; // Scanned CC0 material set (materials_v3.h); SWAT_MATERIALS_V3=0 omits it.
 } SwatEnvironmentArt;
 
 typedef struct SwatSurfaceDecals SwatSurfaceDecals;
