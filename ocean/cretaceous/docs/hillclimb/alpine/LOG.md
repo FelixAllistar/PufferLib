@@ -67,3 +67,6 @@ is at the end of this file.
     is olive-green: the bedrock's ledge moss lies on all up-facing rock at any height. Change:
     `terrain.fs` ledge moss fades out (to 15%) from 420 to 540 m, with a noise on the height. Kept: the
     summits are grey-brown stone; `af2` a little greyer; `mtW` unchanged.
+14. Fault: past 30 m sunlit high slopes read as a pale sandy felt (`s2a`'s upper slope, `p3`). Change:
+    scree mottled at 1-6 m by boulders and their shadows from 15-40 m out. Reverted: no visible change
+    in `s2a` (that slope is mostly rock, lit nearly head-on) or `mtS`, and little in `p3`.
