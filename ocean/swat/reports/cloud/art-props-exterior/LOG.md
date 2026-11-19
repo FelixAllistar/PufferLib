@@ -85,7 +85,7 @@ with a skirt of dead fronds: the tall element the skyline was missing.
 9. palm game 1: four palms (beside the sign, both street verges, west verge); skirt a pale tan tube and leaves too cyan in engine; closer: n/a
 10. palm game 2: skirt (0.40,0.35,0.29), leaves (0.42,0.49,0.36), dead fans darker; closer: yes. Stop.
 
-Budget: 7,722 triangles (two-sided leaves), 3 materials, palm_tree_bark + grain 512 px; GLB ~0.45 MB.
+Budget: 7,722 triangles (two-sided leaves), 3 materials, palm_tree_bark + grain 512 px; GLB ~1.0 MB.
 
 ## Station wagon (BC2_WAGON01)
 
@@ -104,7 +104,7 @@ by Charlie from United Kingdom (CC BY 2.0; copy in refs/wagon_ref.jpg). Generic
 9. wagon game 2: backed in (nose to the street), glass (0.30, rough 0.25): reads; paint blown to pure white; closer: yes
 10. wagon game 3: paint (0.70,0.69,0.64) dirty off-white; closer: yes. Stop.
 
-Budget: 3,192 triangles, 5 materials, shared grain; GLB ~0.2 MB.
+Budget: 3,192 triangles, 5 materials, shared grain; GLB ~0.19 MB.
 
 ## Payphone (BC2_PAYPHONE01)
 
@@ -155,7 +155,7 @@ by Shixart1985 (CC BY 2.0; copy in refs/tyres_ref.jpg).
 8. tyres game 2: behind the dumpster: reads well (black rubber, straw grass) but within 2 m of the annex door route; closer: yes
 9. tyres game 3: moved to (-2.2, -11.4), east of the dumpster and clear of the annex door; final capture. Stop.
 
-Budget: 8,072 triangles, 2 materials, shared grain; GLB ~0.45 MB.
+Budget: 8,072 triangles, 2 materials, shared grain; GLB ~0.56 MB.
 
 ## Discarded mattress (BC2_MATTRESS01)
 
@@ -185,10 +185,10 @@ by ImperfectTommy / Edmond Meinfelder (CC BY 2.0; copy in refs/tumbleweed_ref.jp
 4. tumbleweed iter 4: twig wobble 0.08 -> 0.16 (crooked twigs); closer: yes (small)
 5. tumbleweed iter 5: mains also cover the top (was an open bowl); closer: yes
 6. tumbleweed iter 6: 72 mains x 3 forks (denser shell, same budget); closer: yes (small). Stop.
-7. tumbleweed game 1: six placed against curbs and lot edges, random yaw/scale 0.75-1.05; reads, a little too pale; closer: n/a
+7. tumbleweed game 1: six (later four, for the triangle budget) placed against curbs and lot edges, random yaw/scale 0.75-1.05; reads, a little too pale; closer: n/a
 8. tumbleweed game 2: straw (0.76,0.68,0.52); closer: yes. Stop.
 
-Budget: 7,776 triangles, 1 material, 256 px grain; GLB ~0.4 MB. Drawn 6x (~47k tris total, frustum culled).
+Budget: 7,776 triangles, 1 material, 256 px grain; GLB ~0.74 MB. Drawn 4x (~31k tris total, frustum culled; two more were dropped for the triangle budget).
 
 ## Joshua tree (BC2_JOSHUA01)
 
@@ -205,7 +205,7 @@ by Joshua Tree National Park (public domain; copy in refs/joshua_ref.jpg).
 8. joshua game 1: three on the west, east and north verges; dead-leaf skirts glow white, leaves teal; closer: n/a
 9. joshua game 2: dead leaves (0.46,0.40,0.31), leaves yellower (0.56,0.60,0.28); closer: yes. Stop.
 
-Budget: 4,962 triangles, 3 materials, palm_tree_bark + grain; GLB ~0.6 MB.
+Budget: 4,962 triangles, 3 materials, palm_tree_bark + grain; GLB ~0.71 MB.
 
 ## Speed-limit sign (BC2_SPEEDSIGN01)
 
@@ -222,4 +222,16 @@ regulatory text; lettering is Blender's built-in font converted to mesh.
 7. speedsign game 1: east verge facing westbound traffic: reads at road distance, but beside a streetlight pole; closer: n/a
 8. speedsign game 2: moved to x = 25 m, clear of the streetlight; final capture. Stop.
 
-Budget: 2,652 triangles (lettering ~2k), 3 materials, 256 px grain; GLB ~0.12 MB.
+Budget: 2,652 triangles (lettering ~2k), 3 materials, 256 px grain; GLB ~0.20 MB.
+
+## Placement and checks
+
+`overview_6views.jpg` (lot from the street, lot east, lot west, street east,
+rear service yard, aerial) shows the dressed lot; `before_after_lot_east.jpg`
+compares `SWAT_PROPS_EXT_V2=0` with the default. Placement rules followed:
+nothing in the front approach (doors at z = 0, x -11.4..4.8), the officers'
+staging area (x 9-10.5, z -3.4..-0.6) or the extraction point (0, 10); the
+vehicles use outer bays; the rear-yard litter stays clear of the annex door;
+street furniture sits on the sidewalk back edge, clear of the existing bus
+shelter and streetlights. One palm first placed beside the roadside sign stood
+in bare asphalt and was moved to the east verge.

@@ -3,7 +3,7 @@
 #ifndef SWAT_MOTEL_PROPS_EXT_V2_DATA_H
 #define SWAT_MOTEL_PROPS_EXT_V2_DATA_H
 #define SWAT_PE2_PROPS 11
-#define SWAT_PE2_PLACEMENTS 21
+#define SWAT_PE2_PLACEMENTS 19
 typedef struct SwatPe2Placement { int prop; float x,y,z,yaw,scale; bool shadow; } SwatPe2Placement;
 static const char* const swat_pe2_props[SWAT_PE2_PROPS]={
     "BC2_PICKUP01",
@@ -21,7 +21,7 @@ static const char* const swat_pe2_props[SWAT_PE2_PROPS]={
 static const SwatPe2Placement swat_pe2_placements[SWAT_PE2_PLACEMENTS]={
     {0,17.500f,-0.080f,15.600f,1.57080f,1.000f,true}, // BC2_PICKUP01 front bay row
     {1,-20.600f,-0.080f,-6.000f,0.00000f,1.000f,true}, // BC2_VAN01 west bays, backed in
-    {2,13.600f,-0.080f,9.600f,0.34907f,1.000f,true}, // BC2_PALM01 beside roadside sign
+    {2,26.800f,-0.080f,19.500f,0.34907f,1.000f,true}, // BC2_PALM01 east verge by the lot corner
     {2,5.600f,-0.080f,30.000f,2.44346f,0.880f,true}, // BC2_PALM01 street verge east of driveway
     {2,-11.000f,-0.080f,29.500f,4.36332f,1.120f,true}, // BC2_PALM01 street verge west
     {2,-27.500f,-0.080f,-14.000f,1.30900f,0.950f,true}, // BC2_PALM01 west verge
@@ -30,15 +30,13 @@ static const SwatPe2Placement swat_pe2_placements[SWAT_PE2_PLACEMENTS]={
     {5,6.600f,-0.080f,34.950f,-1.57080f,1.000f,true}, // BC2_NEWSBOX01 sidewalk east of the driveway
     {6,-2.200f,-0.080f,-11.400f,3.14159f,1.000f,true}, // BC2_TYRES01 rear yard, east of the dumpster and clear of the annex door
     {7,-2.850f,-0.080f,-8.400f,3.14159f,1.000f,true}, // BC2_MATTRESS01 leaning on the east end of the dumpster
-    {8,-23.200f,-0.080f,12.000f,0.69813f,0.900f,true}, // BC2_TUMBLE01 west lot edge
-    {8,23.400f,-0.080f,-15.000f,2.26893f,1.000f,true}, // BC2_TUMBLE01 east lot edge
-    {8,14.800f,-0.080f,23.500f,3.66519f,0.800f,true}, // BC2_TUMBLE01 south curb
-    {8,-19.000f,-0.080f,23.600f,5.23599f,1.050f,true}, // BC2_TUMBLE01 south curb west
-    {8,-5.600f,-0.080f,33.200f,1.30900f,0.750f,true}, // BC2_TUMBLE01 verge by the payphone
-    {8,12.000f,-0.080f,-23.400f,2.79253f,0.950f,true}, // BC2_TUMBLE01 north lot edge
     {9,-29.500f,-0.080f,4.000f,0.52360f,1.000f,true}, // BC2_JOSHUA01 west verge
     {9,28.500f,-0.080f,10.500f,2.09440f,0.850f,true}, // BC2_JOSHUA01 east verge
     {9,6.000f,-0.080f,-29.000f,3.49066f,1.100f,true}, // BC2_JOSHUA01 north verge
     {10,25.000f,-0.080f,34.300f,0.00000f,1.000f,true}, // BC2_SPEEDSIGN01 east verge facing westbound traffic, clear of the streetlight
+    {8,-23.200f,-0.080f,12.000f,0.69813f,0.900f,true}, // BC2_TUMBLE01 west lot edge
+    {8,14.800f,-0.080f,23.500f,3.66519f,0.800f,true}, // BC2_TUMBLE01 south curb
+    {8,-5.600f,-0.080f,33.200f,1.30900f,0.750f,true}, // BC2_TUMBLE01 verge by the payphone
+    {8,12.000f,-0.080f,-23.400f,2.79253f,0.950f,true}, // BC2_TUMBLE01 north lot edge
 };
 #endif
