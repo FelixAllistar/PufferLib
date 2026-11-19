@@ -145,3 +145,23 @@ reference photograph (public domain LOC/HABS and Margolies images, CC0, or
 CC BY with credit; one CC BY-SA photo linked only); the table with authors,
 URLs and licences is in the folder's `README.md`. No brand names or logos are
 reproduced.
+
+## The Hollow (`assets/environment/hollow_v1/`)
+
+The materials are unmodified CC0 Poly Haven maps (https://polyhaven.com/license):
+
+- `wood_planks_grey`, `old_planks_02`, `brown_mud_leaves_01` and
+  `bark_brown_02` by Rob Tuytel.
+- `old_wood_floor` by Guillaume Monsergent.
+- `rusty_corrugated_iron` and `old_stone_wall` by Charlotte Baglioni.
+- `dirt_floor` by eye-candy.xyz.
+- `gravel_floor_02` by Jenelle van Heerden and Dimitrios Savva.
+- `dry_decay_leaves` by Amal Kumar.
+
+The geometry comes from this repository's own Blender scripts
+(`tools/blender/hollow_*.py`). Stains, drag marks and flyers are procedural
+and made here: no photographs of people or crime scenes, no real names or
+cases. The reference photographs in `reports/cloud/level-hollow/references/`
+are public domain (Library of Congress FSA/OWI, HABS and Carol M. Highsmith
+collections). `HOLLOW.md` section 1 lists them, and they appear only in
+review sheets.

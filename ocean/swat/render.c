@@ -340,7 +340,9 @@ static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
         bottom[g]=fminf(bottom[g],(float)o->center.y-o->half.y);
     }
     swat_lighting_surface(view->environment.lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
-    const Color paint={232,229,220,255};
+    // The Hollow's boxed house: unpainted, weathered board casings on 25 mm walls.
+    const Color paint=w->hollow?(Color){86,82,76,255}:(Color){232,229,220,255};
+    const float casing_face=w->hollow?.0125f:.0575f;
     for(int i=0;i<w->count;i++) {
         const SwatObject* o=&w->objects[i];int g=o->wall_group;
         if(!o->active || g<0 || g>SWAT_MAX_OBJECTS)continue;
@@ -371,7 +373,7 @@ static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
             // pose so it stays put while the leaf swings. Gaps from mission.c.
             b3Pos c=swat_door_center(o,o->closed_yaw);
             float hinge=-o->half.z-.012f,latch=o->half.z+.005f,top=o->half.y+.003f,floor_y=-o->half.y-.025f;
-            const float width=.065f,depth=.016f,face=.0575f+depth*.5f;
+            const float width=.065f,depth=.016f,face=casing_face+depth*.5f;
             rlPushMatrix();rlTranslatef((float)c.x,(float)c.y,(float)c.z);rlRotatef(o->closed_yaw*RAD2DEG,0,1,0);
             for(int s=-1;s<=1;s+=2) {
                 float x=s*face,height=top+width-floor_y;
@@ -401,7 +403,7 @@ static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
         } else if(g>0 && o->material==SWAT_GLASS && o->part==SWAT_PART_SOLID && fabsf(o->half.x-.003f)<.001f) {
             // Framed-wall window (mission.c pane spans the opening): casing on
             // both faces and a sill on the room side.
-            const float width=.055f,depth=.016f,face=.0575f+depth*.5f;
+            const float width=.055f,depth=.016f,face=casing_face+depth*.5f;
             rlPushMatrix();rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
             swat_environment_object_rotate(o);
             for(int s=-1;s<=1;s+=2) {

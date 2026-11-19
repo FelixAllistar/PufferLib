@@ -10,6 +10,7 @@
 // SKIN piece; sills, plates, corner posts, jambs and heads are SUPPORT.
 
 // at: world coordinate along the wall. sill 0 makes a door; hole: no leaf and no glass.
+#include "hollow_data.h"
 typedef struct HollowOpening { float at,width,sill,height; bool hole; } HollowOpening;
 enum { HOLLOW_BOARD_HEALTH=45 };
 
@@ -132,6 +133,7 @@ static void hollow_obstacle(SwatWorld* w,float x,float y,float z,float hx,float 
 }
 
 void swat_mission_build_hollow(SwatWorld* w) {
+    w->hollow=true;
     const float F=HOLLOW_FLOOR,U=HOLLOW_UPPER,UT=HOLLOW_UPPER_TOP;
     // --- Ground. Soil stops at the raised house; its own floors own contact.
     hollow_box(w,-8,-1,-24,57,0,-8,SWAT_SOIL,0,SWAT_PART_SOLID);          // lane, yard south
@@ -253,34 +255,11 @@ void swat_mission_build_hollow(SwatWorld* w) {
     for(int i=0;i<13;i++)   // steep stair up the east wall to the loft
         hollow_box(w,bx1-1.0f,0,-1-(13-i)*.25f,bx1-.1f,(i+1)*HOLLOW_LOFT/13,-1-(12-i)*.25f,SWAT_WOOD,0,SWAT_PART_SOLID);
     hollow_box(w,bx0+.1f,HOLLOW_LOFT,-1.04f,bx1-1.1f,HOLLOW_LOFT+.95f,-.98f,SWAT_WOOD,0,SWAT_PART_SUPPORT); // loft edge rail
-    for(int i=0;i<3;i++)    // stall partitions along the west wall
-        hollow_obstacle(w,bx0+1.6f,0,-3.0f+i*2.4f,1.5f,.65f,.03f,0,SWAT_WOOD,80);
-    hollow_obstacle(w,bx1-.45f,0,-6.6f,.35f,.45f,1.1f,0,SWAT_WOOD,120);    // workbench
-    hollow_obstacle(w,bx0+.6f,0,2.6f,.4f,.45f,.75f,0,SWAT_STEEL,0);        // padlocked chest freezer
-    for(int i=0;i<4;i++) hollow_obstacle(w,38.5f-i*.9f,HOLLOW_LOFT,2.9f,.42f,.22f,.8f,0,SWAT_CLOTH,0); // loft bales
-    // --- House furniture: cover and set dressing with real footprints.
-    hollow_obstacle(w,15.0f,F,-2.0f,.45f,.42f,.95f,0,SWAT_CLOTH,0);   // couch, front room
-    hollow_obstacle(w,17.2f,F,-2.6f,.45f,.5f,.45f,0,SWAT_CLOTH,0);    // recliner
-    hollow_obstacle(w,16.0f,F,2.0f,.5f,.38f,.8f,0,SWAT_WOOD,120);     // kitchen table
-    hollow_obstacle(w,18.4f,F,3.0f,.3f,.45f,.35f,0,SWAT_STEEL,0);     // wood stove
-    hollow_obstacle(w,14.4f,F,1.4f,.3f,.45f,1.0f,0,SWAT_WOOD,120);    // counter and sink
-    hollow_obstacle(w,15.3f,U,-4.6f,.95f,.12f,.7f,0,SWAT_CLOTH,0);    // mattress on the floor
-    hollow_obstacle(w,21.4f,U,-4.0f,.3f,.38f,.7f,0,SWAT_WOOD,120);    // table under the flyers
-    hollow_obstacle(w,19.4f,F,-4.8f,.4f,.9f,.25f,0,SWAT_WOOD,120);    // wardrobe, stair room
-    hollow_obstacle(w,19.2f,HOLLOW_CELLAR,17.4f,.95f,.2f,.4f,0,SWAT_WOOD,60);  // cot
-    hollow_obstacle(w,16.8f,HOLLOW_CELLAR,16.5f,.2f,.75f,1.6f,0,SWAT_WOOD,80); // jar shelf
-    hollow_obstacle(w,25.6f,0,5.6f,.6f,.4f,.25f,0,SWAT_WOOD,80);      // smokehouse salt box
-    // --- Yard: cover the squad can use, set in the approach.
-    hollow_obstacle(w,.25f,0,1,1.25f,1.5f,5.0f,0,SWAT_STEEL,0);       // school bus on blocks
-    hollow_obstacle(w,8,0,-8,.9f,.7f,2.25f,.5f,SWAT_STEEL,0);         // junk car
-    hollow_obstacle(w,11,0,-11.5f,.9f,.7f,2.25f,-.3f,SWAT_STEEL,0);   // junk car
-    hollow_obstacle(w,44,0,10,1.15f,1.3f,3.0f,.15f,SWAT_ALUMINUM,0);  // camper trailer
-    hollow_obstacle(w,11.2f,0,-2,.3f,.45f,.3f,0,SWAT_STEEL,0);        // burn barrel
-    hollow_obstacle(w,23.55f,0,.4f,.45f,.6f,1.2f,0,SWAT_WOOD,0);      // woodpile by the chimney
-    // A spoil berm grown over with laurel screens the lane end from the house.
-    hollow_obstacle(w,2.6f,0,-15.2f,3.6f,.5f,1.6f,.45f,SWAT_SOIL,0);
-    hollow_obstacle(w,2.6f,1.0f,-15.2f,3.4f,.95f,1.3f,.45f,SWAT_CLOTH,0);
-    for(int i=0;i<4;i++) hollow_obstacle(w,27+(i%2)*3,0,-12+(i/2)*3,.05f,.9f,.05f,0,SWAT_STEEL,0); // dog pen posts
+    // --- Props with real footprints: cover and set dressing (hollow_data.h).
+    for(int i=0;i<SWAT_HOLLOW_PROPS;i++) {
+        const SwatHollowProp* p=&swat_hollow_props[i];
+        if(p->solid) hollow_obstacle(w,p->x,p->y,p->z,p->hx,p->hy,p->hz,p->yaw,p->material,0);
+    }
     // Overwatch stands, as at Cedar House (the hill post stands on the bank).
     for(int i=0;i<missions[SWAT_HOLLOW].overwatch_count;i++) {
         b3Pos p=missions[SWAT_HOLLOW].overwatch[i].position; float top=(float)p.y-1.6256f;
