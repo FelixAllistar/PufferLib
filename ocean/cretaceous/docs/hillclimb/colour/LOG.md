@@ -1,0 +1,26 @@
+# colour: hill-climb log
+
+Track: the greens of the forest (round 3): the plant shaders' colour terms (`shaders/veg_light.glsl`, the
+colour parts of `veg.fs` and the impostor shaders) and the tone and tint tables in `render/veg.c`. One line
+per pass: the fault, the change, kept or reverted, and why.
+
+Views (960x540 while climbing, llvmpipe, high preset): world shots `canopy`, `aerial`, `ground`, and the far
+track's cameras `val3`, `mid`, `hill`, `skyh`, plus `ga0` (fern prairie at a hatchling's eye). Numbers are
+from a small script over the vegetation-like pixels of each shot (median hue and saturation; "lime" is the
+share of them at hue 65-105, saturation over 0.5 and value over 0.35; "teal" the share at hue over 160).
+Reference photos (Wikimedia Commons, looked at only, not kept): Araucaria araucana forest, Metasequoia in
+summer, Laurus nobilis, Cycas revoluta; their foliage measures hue 70-100.
+
+Baseline (`cret/hc`): canopy hue 180 / sat 0.35 / teal 81%; hill 170 / 0.36 / 56%; skyh 189 / 0.23 / 91%;
+aerial 188 / 0.23 / 98%; ground 109 / 0.49 / lime 25%; ga0 106 / 0.49 / lime 24%; mid 98 / 0.44 / lime 28%.
+With the haze taken off the plants only, canopy measures hue 142 / sat 0.55: the crowns are a rich dark
+green under it, and the teal is mostly the haze.
+
+1. Fault: conifer slopes teal (canopy hue 180). Change tried: tree crowns filter the sky fill harder (less
+   blue) than the ground cover. Reverted: canopy 180 -> 178, hill unchanged; nothing to see. The sky fill is
+   not where the teal comes from.
+2. Fault: the same. The haze (aerial perspective) lays the full horizon-sky blue over dark crowns, and a
+   dark green plus a saturated blue is teal. Change: on foliage and bark the in-scattered part of the haze
+   is taken half way to its own grey (brightness kept), in `veg_shade`. Kept: in `canopy` the conifers
+   100-400 m off lose their blue glaze and read dark green; the far stands of `skyh` go grey-green; canopy
+   teal share 81% -> 74%, skyh 91% -> 85%.
