@@ -56,3 +56,9 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
    after a last nudge) and every impostor within 5% at 150 m except the Sabal palm (1.11 on 73 pixels).
    Also measured: `capture --path lod_forest` with `tools/lodpop.py` (88 frames with a pop, 21 events); the
    events are the camera passing through a crown at frames 300-350, not level-of-detail switches.
+9. Fault: the magnolia's, laurel's and ginkgo's reduced crowns were 12-32% larger than the full crowns at 30 m
+   (pixels: magnolia 1.32, second magnolia 1.24, laurel 1.18, ginkgo 1.12): their merged cards overhung the crown,
+   so it swelled where the reduced mesh took over. Change: their merged cards 18%, 12% and 10% shorter (a first
+   try at 12% on every broadleaf left the plane and the chloranth thinner than their full crowns, 0.86 and
+   0.83), leaf tones nudged to hold (`LOD_TONE`). Kept: 1.14, 1.10, 1.10, 1.02; side by side at 30 m the reduced
+   crowns now have the full crowns' outline; tone within 5%; triangles unchanged.

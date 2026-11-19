@@ -650,7 +650,11 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
             }
         }
     }
-    leaf_cards(g, &L, C->nleaf, E->c, C->leaf_layer, C->leaf_size, 1.0f, C->curl, C->upbias, 2, C->lod_layer, C->lod_size, C->lod_div > 0 ? C->lod_div : 3);
+    // (The magnolia's, laurel's and ginkgo's reduced crowns take 10-18% shorter merged cards: at full length
+    // they overhung the crown and drew it 12-32% larger than the full mesh at 30 m, so it swelled where the
+    // reduced mesh took over.)
+    leaf_cards(g, &L, C->nleaf, E->c, C->leaf_layer, C->leaf_size, 1.0f, C->curl, C->upbias, 2, C->lod_layer,
+               C->lod_size * (g->species == FL_MAGNOLIA ? 0.82f : g->species == FL_LAUREL ? 0.88f : g->species == FL_GINKGO ? 0.9f : 1.0f), C->lod_div > 0 ? C->lod_div : 3);
     free(L.a);
 }
 

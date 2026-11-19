@@ -1182,7 +1182,7 @@ static const float TREE_LOD[VEG_KINDS] = {1.0f, 1.0f, 0.6f, 1.0f, 0.8f, 1.0f, 0.
 // {Cyathea x2, Dicksonia x2, ...}, palm {Sabal x3, feather palm, ...} (render/flora.h FLORA_SLOT).
 static const float LOD_TONE[VEG_KINDS][VEG_VARIANTS] = {
     [VEG_CONIFER] = {0.91f, 0.93f, 0.91f, 0.8f, 0.85f, 1.0f, 0.84f, 1.11f},
-    [VEG_BROADLEAF] = {0.69f, 0.72f, 0.93f, 1.45f, 0.64f, 0.79f, 0.8f, 0.87f},
+    [VEG_BROADLEAF] = {0.72f, 0.75f, 0.93f, 1.52f, 0.67f, 0.82f, 0.8f, 0.87f},
     [VEG_TREEFERN] = {0.78f, 0.78f, 0.84f, 0.84f, 0.78f, 0.78f, 0.84f, 0.84f},
     [VEG_PALM] = {1, 1, 1, 1, 1, 1, 1, 1},
 };
