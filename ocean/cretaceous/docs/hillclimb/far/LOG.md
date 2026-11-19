@@ -44,3 +44,8 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
    veg.vs and veg_imp.vs alike, so a tree keeps its tone through the swap. A first try at +-16% and 1.8 times
    was too faint to see through the haze. Kept: the far stands read as single crowns of different tones; the
    near trees (under 30 m) are untouched.
+7. Fault: far stands are a saturated teal (`canopy` hue 199, saturation 0.46; `val3`, `hill` and `skyh` 192-199,
+   0.29-0.34) where the reference far forest is a dull dark green. Change tried: leaves 60-400 m out 30% less
+   saturated and warmer (x1.06/1/0.8). Reverted: the teal did not move (canopy 200/0.45, val3 195/0.28): it is
+   the aerial perspective over dark crowns, which the far terms of the plant shader cannot reach; only the
+   crowns 150-300 m under `hill` went duller.
