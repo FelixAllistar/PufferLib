@@ -233,7 +233,7 @@ traced, both in the setup:
   against the 1.8, 3.6 and 6.0 the game slides the model at. The stance
   detection is crude (lowest foot within 4 cm of the ground).
 
-Three keys, all off by default (single-clip and runs 8 to 10 behave as before):
+Three keys, all off by default (two more follow run 12 below) (single-clip and runs 8 to 10 behave as before):
 
 - `reward_speed` (with `speed_floor`): a term for the commanded velocity
   alone. The error is the length of the difference between the mass centre's
@@ -274,8 +274,45 @@ term 0.002 (flat: the clip no longer pulled). Under switching with 2.5 m/s
 shoves 2 of 32 episodes fell. So the numbers say nothing about a forward run,
 but the body can cover ground at 8 m/s and stay up.
 
-**Run 12 (256x2, live):** run 11's settings with the speed term on the
-travel axis and `kernel 1`. Not evaluated yet.
+**Run 12 (256x2): follows the speed, loses the animal.** Run 11's settings
+with the speed term on the travel axis and `kernel 1`. Final checkpoint,
+32 raptors for 20 s:
+
+| Gait | Asked | Forward speed | Falls | Joints off the clip | Step rate |
+|---|---|---|---|---|---|
+| Idle | 0 | -0.06 m/s | 9 / 33 | 34 deg | 2.7x |
+| Walk | 1.8 | 1.92 m/s | 0 / 32 | 31 deg | 2.8x |
+| Trot | 3.6 | 3.33 m/s | 0 / 32 | 32 deg | 2.8x |
+| Run | 6.0 | 5.58 m/s | 0 / 32 | 33 deg | 2.8x |
+
+Switching gaits 0 / 32; with 1.5, 2.0, 2.5 m/s shoves 0 / 32, 5 / 34, 9 / 37.
+Sideways drift in a trace of one animal: under 0.5 m/s, about 1.1 m/s on run.
+What was traced about the pose:
+- **Not spring lag.** Against the reference 17 to 83 ms earlier the error
+  only grows (run: 32.7 deg at no lag, 40.8 at 83 ms).
+- **Every joint, not only the legs.** Neck, chest, arms and tail are 30 to
+  44 degrees off on every gait, idle included; in the video the body is
+  hunched into a ball. Run 10 (plain tracking) is 5 to 17 per joint.
+- **The step rate sits at the top of its range** (2.83x) on every gait.
+- **Joint power** (sum of |torque x relative angular velocity|): 335 to 600
+  W/kg moving, against 50 to 66 for run 10. The numbers are far above an
+  animal's (stiff springs chatter), so read them as relative.
+
+Two more keys came from that, off by default:
+- `pose_each = 1`: the pose term is the mean over bodies of each joint's own
+  term, the end-effector term the mean over end effectors (k_pose and k_ee
+  then scale one joint's error: about 10 and 25). Summed inside one term, the
+  legs leaving the clip take the whole term to 0 and nothing holds the neck.
+- `reward_effort` with `effort_scale`: 1 / (1 + e / effort_scale), e the
+  joint power per unit of weight and commanded speed (a cost of transport;
+  the log's `effort`). Run 10 sits at 1.1 to 2.8 moving, run 12 at 9 to 22.
+
+**Run 13** (run 12's settings plus the target pose below) was stopped after
+six minutes: run 12's result says those settings lose the pose whatever the
+policy sees. **Run 14 (256x2, live):** target pose seen, `reward_speed 0.4`,
+`pose_each 1` with `reward_pose 0.3, k_pose 10`, `reward_ee 0.1, k_ee 25`,
+`reward_effort 0.1, effort_scale 3`, `kernel 1`, `cadence 1.5`,
+`reward_vel 0`, `reward_com 0`. Not evaluated yet.
 
 ## The policy sees the target pose (2026-11-18)
 

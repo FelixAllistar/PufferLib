@@ -277,6 +277,32 @@ static void test_target_obs(void) {
     CHECK(tw < 1e-4f, "turned 0.5 rad left, the target pose reads turned 0.5 rad right (worst gap %.6f)", tw);
     free_world(w);
 }
+// pose_each (per-joint pose terms) and the effort term.
+static void test_each_effort(void) {
+    LocoConfig c = loco_default_config(); snprintf(c.dino, sizeof c.dino, "%s", FIXTURE); c.num_agents = 1; c.kernel = 1; c.pose_each = 1; c.k_pose = 10;
+    LocoWorld* w = (LocoWorld*)calloc(1, sizeof(LocoWorld)); char err[256];
+    bool ok = loco_world_init(w, &c, 3, err, sizeof err);
+    CHECK(ok, "pose_each world builds");
+    if (!ok) { free(w); return; }
+    int nb = w->rig.nbody;
+    loco_reset_agent(w, 0, 0.3f); loco_doll_get(&w->phys, 0, w->pos, w->rot, w->vel, w->angvel); loco_ref_at(w, &w->ag[0]);
+    loco_reward(w, &w->ag[0]);
+    CHECK(fabsf(w->ag[0].r_pose - 1) < 1e-4f && fabsf(w->ag[0].r_ee - 1) < 1e-3f, "pose_each: a perfect track scores 1 (pose %.5f, end effectors %.5f)", w->ag[0].r_pose, w->ag[0].r_ee);
+    // One leaf body turned 1 rad about its own axis: only its joint's share drops, to 1 / (1 + k_pose).
+    int leaf = -1; for (int b = nb - 1; b > 0 && leaf < 0; b--) { bool parent = false; for (int k = 1; k < nb; k++) parent |= w->rig.body[k].parent == b; if (!parent) leaf = b; }
+    w->rot[leaf] = lq_mul(w->rot[leaf], lq_axis_angle(lv(1, 0, 0), 1.0f));
+    loco_reward(w, &w->ag[0]); float want = (nb - 1 + 1.0f / (1.0f + c.k_pose)) / nb;
+    CHECK(leaf > 0 && fabsf(w->ag[0].r_pose - want) < 1e-3f, "pose_each: one joint 1 rad off costs only its share (%.4f, want %.4f)", w->ag[0].r_pose, want);
+    w->cfg.pose_each = 0; loco_reward(w, &w->ag[0]);
+    CHECK(fabsf(w->ag[0].r_pose - 1.0f / (1.0f + c.k_pose)) < 1e-3f, "summed, the same joint takes the whole pose term to %.4f", w->ag[0].r_pose);
+    // Effort: off, no power is measured; on, the PD baseline's power is positive and the term lies in (0, 1).
+    static float rew[1], term[1];
+    loco_reset_agent(w, 0, 0.3f); loco_step(w, NULL, rew, term); float off = w->ag[0].power, r_off = rew[0];
+    w->cfg.w_effort = 0.2f; w->cfg.effort_scale = 3; loco_reset_agent(w, 0, 0.3f); loco_step(w, NULL, rew, term);
+    float pw = w->ag[0].power, re = w->ag[0].r_effort;
+    CHECK(off == 0 && pw > 0 && isfinite(pw) && re > 0 && re < 1 && fabsf(rew[0] - (r_off + 0.2f * re)) < 5e-3f, "effort: power %.1f W over a step, term %.4f, added to the reward (%.4f against %.4f)", pw, re, rew[0], r_off);
+    free_world(w);
+}
 // The step rate (cadence) and the commanded-speed reward term.
 static uint64_t cadence_run(float cadence, float spare, double* t, float* last_obs) {
     LocoConfig c = loco_default_config(); snprintf(c.dino, sizeof c.dino, "%s", FIXTURE); c.num_agents = 1; c.cadence = cadence;
@@ -685,6 +711,7 @@ int main(void) {
     test_heading_obs();
     test_cadence_speed();
     test_target_obs();
+    test_each_effort();
     test_multiclip();
     return t_finish("test_loco", t0);
 }

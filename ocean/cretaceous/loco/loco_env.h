@@ -81,6 +81,17 @@
 //     still slopes far from it, so the clip pulls from any distance: a
 //     guide the policy can leave and still feel. With exp, run 11's pose
 //     term sat at 0.002, 32 degrees off, and no longer pointed anywhere.
+//   Each joint on its own (pose_each 1): the pose term is the mean over
+//     bodies of each joint's own term (k_pose times its squared angle), and
+//     the end-effector term the mean over end effectors. Summed inside one
+//     term, a few joints that must leave the clip (legs that have to stride
+//     further) take the whole term to 0 and nothing holds the rest: run 12
+//     had every joint 30 to 40 degrees off, neck and arms at idle included.
+//   Effort (reward_effort > 0): 1 / (1 + e / effort_scale), where e is the
+//     joints' mechanical power (loco_doll_power, averaged over the policy
+//     step) per unit of weight and commanded speed, P / (m g max(speed,
+//     speed_floor)): a cost of transport. Nothing else here costs effort,
+//     and run 12 stepped at the fastest rate allowed on every gait.
 //   Step rate (cadence > 0): the action after the rig's last joint sets how
 //     fast the clip plays, 2^e with e = 2 action_unit per output unit,
 //     clamped to +-cadence and eased (a quarter of the way per policy step).
@@ -122,6 +133,8 @@ typedef struct LocoConfig {
     float w_speed, speed_floor;   // the commanded-speed term's weight (0: off) and the least speed its slope is scaled by (m/s)
     float cadence;         // the policy sets the clip's playback rate within 2^-cadence .. 2^cadence (0: the clip's own pace)
     int kernel;            // reward terms: 0 exp(-x), 1 the long-tailed 1 / (1 + x)
+    int pose_each;         // 1: the pose and end-effector terms are means of per-joint terms
+    float w_effort, effort_scale;   // the effort term's weight (0: off) and the cost of transport at which it is 0.5
 } LocoConfig;
 
 static LocoConfig loco_default_config(void) {
@@ -136,7 +149,7 @@ static LocoConfig loco_default_config(void) {
     c.push_interval = 0; c.push_min = 0.5f; c.push_max = 1.5f; c.push_seconds = 0.1f; c.push_adapt = 0;
     c.w_heading = 0; c.k_heading = 1.0f;
     c.clip_switch = 0; c.clip_blend = 0.3f;
-    c.w_speed = 0; c.speed_floor = 1.0f; c.cadence = 0; c.kernel = 0;
+    c.w_speed = 0; c.speed_floor = 1.0f; c.cadence = 0; c.kernel = 0; c.pose_each = 0; c.w_effort = 0; c.effort_scale = 1.0f;
     return c;
 }
 
@@ -148,14 +161,15 @@ typedef struct LocoAgent {
     float blend_left;      // seconds of the blend from prev_clip still to go (0: none)
     float x_off, prev_x_off;   // added to the clips' forward travel so the reference moves on without a jump at a switch
     float elapsed, ret, err_pose, err_ee; int steps; bool fallen;
-    float r_pose, r_vel, r_ee, r_com, r_heading, r_speed;   // last step's reward terms
+    float r_pose, r_vel, r_ee, r_com, r_heading, r_speed, r_effort;   // last step's reward terms
+    float power;           // joint power summed over this policy step's physics steps (W), then its mean
     float rate_log;        // log2 of the clip's playback rate (cadence); 0 after a reset
     float start_x;         // pelvis x at the reset
     int push_left, push_body; b3Vec3 push_force;   // the shove under way: physics steps left, body, force (N)
 } LocoAgent;
 
 // clip_speed: the target speed summed over steps, like reward (divide by steps); rate: the playback rate, the same way.
-typedef struct LocoStats { double episodes, falls, length, ret, distance, reward, pose_deg, ee_cm, steps, push_level, clip_speed, rate; } LocoStats;
+typedef struct LocoStats { double episodes, falls, length, ret, distance, reward, pose_deg, ee_cm, steps, push_level, clip_speed, rate, effort; } LocoStats;
 
 typedef struct LocoWorld {
     LocoConfig cfg; LocoRig rig; LocoPhys phys;
@@ -439,25 +453,27 @@ static inline float loco_kernel(const LocoConfig* c, float x) { return c->kernel
 static float loco_reward(LocoWorld* w, LocoAgent* a) {
     const LocoRig* r = &w->rig; const LocoConfig* c = &w->cfg; bool skip_tail = c->gains.passive;
     float ep = lq_angle(w->rot[0], w->rrot[0]); ep *= ep;
+    float each = loco_kernel(c, c->k_pose * ep); int neach = 1;   // pose_each: per-joint terms
     b3Vec3 dw0 = b3Sub(w->angvel[0], w->rangvel[0]); float ev = lv_len2(dw0);
     for (int b = 1; b < r->nbody; b++) {
         const LocoBody* B = &r->body[b];
         if (skip_tail && loco_is_tail(B)) continue;
         float ang = lq_angle(lq_inv_mul(w->rot[B->parent], w->rot[b]), lq_inv_mul(w->rrot[B->parent], w->rrot[b]));
-        ep += ang * ang;
+        ep += ang * ang; each += loco_kernel(c, c->k_pose * ang * ang); neach++;
         b3Vec3 ws = b3Sub(w->angvel[b], w->angvel[B->parent]), wr = b3Sub(w->rangvel[b], w->rangvel[B->parent]);
         ev += lv_len2(b3Sub(ws, wr));
     }
-    b3Quat hs = loco_heading(w->rot[0]), hr = loco_heading(w->rrot[0]); float ee = 0;
+    b3Quat hs = loco_heading(w->rot[0]), hr = loco_heading(w->rrot[0]); float ee = 0, ee_each = 0; int nee_each = 0;
     for (int k = 0; k < r->nee; k++) {
         int b = r->ee_body[k];
         if (skip_tail && loco_is_tail(&r->body[b])) continue;
         b3Vec3 es = loco_ee(&r->body[b], w->pos[b], w->rot[b], w->pos[0], hs), er = loco_ee(&r->body[b], w->rpos[b], w->rrot[b], w->rpos[0], hr);
-        ee += lv_len2(b3Sub(es, er));
+        float d2 = lv_len2(b3Sub(es, er)); ee += d2; ee_each += loco_kernel(c, c->k_ee * d2); nee_each++;
     }
     float ec = lv_len2(b3Sub(loco_com_vel(w, w->rot, w->vel, w->angvel, false), loco_com_vel(w, w->rrot, w->rvel, w->rangvel, true)));
     float eh = lq_angle(hs, hr); eh *= eh;
     a->r_pose = loco_kernel(c, c->k_pose * ep); a->r_vel = loco_kernel(c, c->k_vel * ev); a->r_ee = loco_kernel(c, c->k_ee * ee); a->r_com = loco_kernel(c, c->k_com * ec); a->r_heading = loco_kernel(c, c->k_heading * eh);
+    if (c->pose_each) { a->r_pose = each / neach; if (nee_each > 0) a->r_ee = ee_each / nee_each; }
     a->err_pose += sqrtf(ep / r->nbody); a->err_ee += sqrtf(ee / (r->nee > 0 ? r->nee : 1));
     float rew = c->w_pose * a->r_pose + c->w_vel * a->r_vel + c->w_ee * a->r_ee + c->w_com * a->r_com + c->w_heading * a->r_heading;
     if (c->w_speed > 0) {
@@ -465,6 +481,11 @@ static float loco_reward(LocoWorld* w, LocoAgent* a) {
         float cmd = w->ref[a->clip].speed, dx = cv.x - cmd, es = sqrtf(dx * dx + cv.z * cv.z) / fmaxf(cmd, c->speed_floor);
         a->r_speed = c->kernel ? 1.0f / (1.0f + 4.0f * es * es) : fmaxf(0.0f, 1.0f - es);
         rew += c->w_speed * a->r_speed;
+    }
+    if (c->w_effort > 0) {
+        float cot = a->power / (r->total_mass * 9.81f * fmaxf(w->ref[a->clip].speed, c->speed_floor));
+        a->r_effort = 1.0f / (1.0f + cot / c->effort_scale);
+        rew += c->w_effort * a->r_effort;
     }
     return rew;
 }
@@ -518,6 +539,7 @@ static void loco_step(LocoWorld* w, const float* const* act, float* reward, floa
     for (int i = 0; i < n; i++) {
         LocoAgent* a = &w->ag[i]; a->fallen = false; loco_push_maybe(w, i); loco_switch_maybe(w, i);
         if (c->cadence > 0 && act) a->rate_log += 0.25f * (fminf(fmaxf(2.0f * c->action_unit * act[i][w->rig.ndof], -c->cadence), c->cadence) - a->rate_log);
+        a->power = 0;
     }
     for (int s = 0; s < k; s++) {
         for (int i = 0; i < n; i++) {
@@ -532,6 +554,7 @@ static void loco_step(LocoWorld* w, const float* const* act, float* reward, floa
         }
         b3World_Step(w->phys.world, h, c->substeps);
         for (int i = 0; i < n; i++) if (!w->ag[i].fallen && loco_doll_fallen(&w->phys, i)) w->ag[i].fallen = true;
+        if (c->w_effort > 0) for (int i = 0; i < n; i++) w->ag[i].power += loco_doll_power(&w->phys, i) / k;
     }
     for (int i = 0; i < n; i++) {
         LocoAgent* a = &w->ag[i];
@@ -544,7 +567,7 @@ static void loco_step(LocoWorld* w, const float* const* act, float* reward, floa
         bool done = a->fallen || a->elapsed >= c->episode_seconds - 1e-4f;
         if (reward) reward[i] = r;
         if (terminal) terminal[i] = done ? 1.0f : 0.0f;
-        w->stats.reward += r; w->stats.steps += 1; w->stats.clip_speed += w->ref[a->clip].speed; w->stats.rate += exp2f(a->rate_log);
+        w->stats.reward += r; w->stats.steps += 1; w->stats.clip_speed += w->ref[a->clip].speed; w->stats.rate += exp2f(a->rate_log); w->stats.effort += a->power / (w->rig.total_mass * 9.81f * fmaxf(w->ref[a->clip].speed, c->speed_floor));
         if (done) {
             LocoStats* st = &w->stats;
             st->episodes += 1; st->falls += a->fallen; st->length += a->elapsed; st->ret += a->ret;
@@ -582,5 +605,6 @@ static uint64_t loco_hash(const LocoWorld* w) {
     X(gains.friction, friction, float) X(gains.passive, passive_tail, bool) X(fall_height, fall_height, float) X(weld_range, weld_range, float) X(tail_flex, tail_flex, int) \
     X(push_interval, push_interval, float) X(push_min, push_min, float) X(push_max, push_max, float) X(push_seconds, push_seconds, float) X(push_adapt, push_adapt, float) \
     X(clip_switch, clip_switch, float) X(clip_blend, clip_blend, float) \
-    X(w_speed, reward_speed, float) X(speed_floor, speed_floor, float) X(cadence, cadence, float) X(kernel, kernel, int)
+    X(w_speed, reward_speed, float) X(speed_floor, speed_floor, float) X(cadence, cadence, float) X(kernel, kernel, int) \
+    X(pose_each, pose_each, int) X(w_effort, reward_effort, float) X(effort_scale, effort_scale, float)
 #endif

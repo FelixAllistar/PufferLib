@@ -47,6 +47,10 @@ typedef struct LocoPhys {
     int n; LocoDoll* doll;
 } LocoPhys;
 
+// The joints' mechanical power for doll i right now (W): the sum over joints of |torque . relative angular
+// velocity|, both ways counted as effort (a muscle pays to brake as well). The torque is the joint's constraint
+// torque of the last physics step, which is the spring's (the PD muscle) plus the limits'.
+static float loco_doll_power(const LocoPhys* p, int i);
 static inline bool loco_is_leg(const LocoBody* b) { return strstr(b->name, "thigh") || strstr(b->name, "shin") || strstr(b->name, "meta") || strstr(b->name, "foot"); }
 static inline bool loco_is_tail(const LocoBody* b) { return (b->flags & LB_TAIL) != 0; }
 // Tail segments from the base (1) to b, and the tail's length in segments.
@@ -150,6 +154,15 @@ static void loco_doll_set(LocoPhys* p, int i, const b3Vec3* pos, const b3Quat* r
 }
 // Doll i's body origins and rotations (model space: the doll's origin removed),
 // centre-of-mass velocities and angular velocities. Any output may be NULL.
+static float loco_doll_power(const LocoPhys* p, int i) {
+    const LocoDoll* d = &p->doll[i]; float sum = 0;
+    for (int b = 1; b < p->rig->nbody; b++) {
+        b3Vec3 tq = b3Joint_GetConstraintTorque(d->joint[b]);
+        b3Vec3 wr = b3Sub(b3Body_GetAngularVelocity(d->body[b]), b3Body_GetAngularVelocity(d->body[p->rig->body[b].parent]));
+        sum += fabsf(tq.x * wr.x + tq.y * wr.y + tq.z * wr.z);
+    }
+    return sum;
+}
 static void loco_doll_get(const LocoPhys* p, int i, b3Vec3* pos, b3Quat* rot, b3Vec3* vel, b3Vec3* angvel) {
     const LocoDoll* d = &p->doll[i];
     for (int b = 0; b < p->rig->nbody; b++) {
