@@ -24,3 +24,10 @@ brief's world shots; renders at 960x540 on Mesa llvmpipe.
    pure one. Change: `terra.c` raises both canopy layers by 1/sqrt(c^2 + (1-c)^2), so a stand's stems
    do not depend on its mix. Kept: the valley forests in `mtE` and `mtA` close up. Cost: 164,025 trees
    on the island to 214,970 (+31% instances; meshes unchanged).
+7. Fault: green turf and forest run right up to the foot of every cliff band; no scree fans. Change:
+   `terra.c` a talus field: from each sample, walk up the fall line; rock steeper than 45 degrees within
+   12-35 m (a noise along the foot, so the fans come and go) and at least 8 m higher lays scree there,
+   fading with distance, mostly above 150-380 m; trees thin by half on it, ferns by 70%. A first try
+   (any rock over 40 degrees, 20-55 m, 4 m drop) put scree on 24% of the land and stripped the forest:
+   tightened before keeping. Scree tint 0.6 (from 0.7). Kept: grey aprons under the bands in `mtD` and
+   `mtE`, the forest kept (213,715 trees).
