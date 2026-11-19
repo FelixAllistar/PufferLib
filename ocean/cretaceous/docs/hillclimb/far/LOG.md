@@ -49,3 +49,10 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
    saturated and warmer (x1.06/1/0.8). Reverted: the teal did not move (canopy 200/0.45, val3 195/0.28): it is
    the aerial perspective over dark crowns, which the far terms of the plant shader cannot reach; only the
    crowns 150-300 m under `hill` went duller.
+8. Fault: the variants pass 2 had not measured (old araucaria and podocarp, the second magnolia and laurel, the
+   chloranth, Dicksonia) took their species' tone and missed by 5-12% (chloranth's reduced crown 0.89, old
+   araucaria 1.08, second magnolia 1.07). Change: their own entries in `LOD_TONE` and `IMP_TONE`, fitted on a
+   20-tree lodmatch run. Kept: every reduced crown within 5% of its full mesh at 30 m (old araucaria about 0.97
+   after a last nudge) and every impostor within 5% at 150 m except the Sabal palm (1.11 on 73 pixels).
+   Also measured: `capture --path lod_forest` with `tools/lodpop.py` (88 frames with a pop, 21 events); the
+   events are the camera passing through a crown at frames 300-350, not level-of-detail switches.

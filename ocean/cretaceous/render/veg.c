@@ -1181,16 +1181,16 @@ static const float TREE_LOD[VEG_KINDS] = {1.0f, 1.0f, 0.6f, 1.0f, 0.8f, 1.0f, 0.
 // redwood}, broadleaf {magnolia, laurel, katsura, ginkgo, magnolia, laurel, plane, chloranth}, tree fern
 // {Cyathea x2, Dicksonia x2, ...}, palm {Sabal x3, feather palm, ...} (render/flora.h FLORA_SLOT).
 static const float LOD_TONE[VEG_KINDS][VEG_VARIANTS] = {
-    [VEG_CONIFER] = {0.91f, 0.93f, 0.91f, 0.8f, 0.91f, 0.93f, 0.84f, 1.07f},
-    [VEG_BROADLEAF] = {0.69f, 0.72f, 0.93f, 1.45f, 0.69f, 0.72f, 0.8f, 0.72f},
-    [VEG_TREEFERN] = {0.78f, 0.78f, 0.78f, 0.78f, 0.78f, 0.78f, 0.78f, 0.78f},
+    [VEG_CONIFER] = {0.91f, 0.93f, 0.91f, 0.8f, 0.85f, 1.0f, 0.84f, 1.11f},
+    [VEG_BROADLEAF] = {0.69f, 0.72f, 0.93f, 1.45f, 0.64f, 0.79f, 0.8f, 0.87f},
+    [VEG_TREEFERN] = {0.78f, 0.78f, 0.84f, 0.84f, 0.78f, 0.78f, 0.84f, 0.84f},
     [VEG_PALM] = {1, 1, 1, 1, 1, 1, 1, 1},
 };
 static const float IMP_TONE[VEG_KINDS][VEG_VARIANTS] = {
-    [VEG_CONIFER] = {0.86f, 1, 0.66f, 1.03f, 0.86f, 1, 1.25f, 0.63f},
-    [VEG_BROADLEAF] = {1.1f, 0.96f, 0.73f, 0.77f, 1.1f, 0.96f, 0.81f, 0.96f},
+    [VEG_CONIFER] = {0.86f, 1, 0.66f, 1.03f, 0.78f, 0.93f, 1.25f, 0.63f},
+    [VEG_BROADLEAF] = {1.1f, 0.96f, 0.73f, 0.77f, 1.1f, 0.96f, 0.81f, 0.83f},
     [VEG_TREEFERN] = {1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f},
-    [VEG_PALM] = {0.68f, 0.68f, 0.68f, 0.68f, 0.68f, 0.68f, 0.68f, 0.68f},
+    [VEG_PALM] = {0.62f, 0.62f, 0.62f, 0.62f, 0.62f, 0.62f, 0.62f, 0.62f},
 };
 static float lod_tone(int k, int q) { float t = LOD_TONE[k][q]; return t > 0 ? t : 1.0f; }
 static float tree_switch_scale(const CretVeg* v, const VegInstance* in) {
