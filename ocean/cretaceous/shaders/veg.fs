@@ -60,8 +60,11 @@ void main() {
     if (v_leaf > 0.5) {
         // attr.w on leaves is frond dryness: old fronds yellow, then brown.
         float dry = v_bark / 255.0, l = dot(albedo, vec3(0.3, 0.59, 0.11));
-        vec3 straw = l * vec3(1.75, 1.4, 0.6), dead = l * vec3(1.3, 0.98, 0.62);
+        // A dead frond is a light rust-brown (albedo about 0.15), whatever green it was: scaling a dark leaf's
+        // value left the dead skirts of tree ferns, palms and cycads near black (round 2).
+        vec3 straw = l * vec3(1.75, 1.4, 0.6), dead = mix(l * vec3(1.3, 0.98, 0.62), vec3(0.17, 0.105, 0.055), 0.6);
         albedo = mix(albedo, mix(straw, dead, smoothstep(0.5, 1.0, dry)), smoothstep(0.0, 0.5, dry));
+        veg_dry = smoothstep(0.45, 0.9, dry);
     }
     vec2 bump = vec2(0.0);   // bark relief from a pattern below: tilt along +u, +v of the tube (as the scans' tilts)
     if (v_leaf <= 0.5) {
