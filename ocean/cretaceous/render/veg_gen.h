@@ -256,6 +256,18 @@ static void trunk_stubs(Gen* g, const Path* T) {
     }
     g->bark_tone = bt;
 }
+// A trunk with its own uv and pattern (tree ferns, palms): the bark relief, rings every 0.25 m.
+static void relief_trunk(Gen* g, const Path* T, int sides, float urep, float vtile, float lobes) {
+    Path Q; Q.n = 0; Q.len = 0;
+    for (int k = 0; k < T->n; k++) {
+        if (k > 0) { int m = (int)ceilf(vlen(vsub(T->p[k], T->p[k - 1])) / 0.25f);
+            for (int j = 1; j < m && Q.n < PMAX - T->n; j++) { float t = (float)j / m; Q.p[Q.n] = vlerp(T->p[k - 1], T->p[k], t); Q.r[Q.n] = lerpf(T->r[k - 1], T->r[k], t); Q.hw[Q.n] = lerpf(T->hw[k - 1], T->hw[k], t); Q.ws[Q.n++] = 0; } }
+        Q.p[Q.n] = T->p[k]; Q.r[Q.n] = T->r[k]; Q.hw[Q.n] = T->hw[k]; Q.ws[Q.n++] = 0;
+    }
+    g->relief = g->rf.seed ? 2 : 0;
+    tube(g, &Q, sides, urep, vtile, 0, 0, 0, g->bark_layer, 0, lobes);
+    g->relief = 0;
+}
 // A trunk (a path from below the ground) takes the species' relief, its
 // rings no more than 0.8 m apart (0.25 m in the bottom 2 m, where the flare
 // is) and enough vertices round for its flutes; a limb over 8 cm only the
@@ -1092,17 +1104,7 @@ static void gen_treefern(Gen* g, bool stout) {
     // The trunk: a slim column (Cyathea) or a stout, nearly even one (Dicksonia), its root mantle swelling at the foot
     // and shaggy all the way up (bark relief, trunk rings every 0.25 m).
     for (int k = 0; k < 8; k++) { float t = k / 7.0f; T.p[k] = v3(lx * t * t, -0.2f + (H + 0.2f) * t, lz * t * t); T.r[k] = (stout ? lerpf(r0, r0 * 0.78f, t) : lerpf(r0, 0.15f, sqrtf(t))) + (k == 7 ? 0.06f : 0) + 0.12f * expf(-t * 10); T.hw[k] = 0.15f * t; T.ws[k] = 0; }
-    {
-        Path Q; Q.n = 0; Q.len = 0;
-        for (int k = 0; k < 8; k++) {
-            if (k > 0) { int m = (int)ceilf(vlen(vsub(T.p[k], T.p[k - 1])) / 0.25f);
-                for (int j = 1; j < m && Q.n < PMAX - 9; j++) { float t = (float)j / m; Q.p[Q.n] = vlerp(T.p[k - 1], T.p[k], t); Q.r[Q.n] = lerpf(T.r[k - 1], T.r[k], t); Q.hw[Q.n] = lerpf(T.hw[k - 1], T.hw[k], t); Q.ws[Q.n++] = 0; } }
-            Q.p[Q.n] = T.p[k]; Q.r[Q.n] = T.r[k]; Q.hw[Q.n] = T.hw[k]; Q.ws[Q.n++] = 0;
-        }
-        g->relief = g->rf.seed ? 2 : 0;
-        tube(g, &Q, (sides_for(g, r0) + 2) * (g->lod ? 1 : 2), fmaxf(1, roundf(r0 * 6)), 1.0f, 0, 0, 0, g->bark_layer, 0, 0.3f);
-        g->relief = 0;
-    }
+    relief_trunk(g, &T, (sides_for(g, r0) + 2) * (g->lod ? 1 : 2), fmaxf(1, roundf(r0 * 6)), 1.0f, 0.3f);
     V3 top = T.p[7];
     int nd = 5 + (int)grr(g, 0, 4); if (g->lod) nd = 4;
     VRng sv = fork_in(g);
@@ -1176,7 +1178,7 @@ static void gen_palm(Gen* g, int s) {
     bool feather = s == 3; float bend = grr(g, 0.3f, feather ? 1.8f : 1.2f), az0 = grr(g, 0, 2 * VPI);
     Path T; T.n = 9;
     for (int k = 0; k < 9; k++) { float t = k / 8.0f; T.p[k] = vadd(v3(0, -0.2f + (H + 0.2f) * t, 0), vmul(dir_az(az0), bend * t * t)); T.r[k] = lerpf(r0, r0 * 0.75f, t) + 0.08f * expf(-t * 12); T.hw[k] = 0.25f * t * t; T.ws[k] = 0; }
-    tube(g, &T, sides_for(g, r0), fmaxf(1, roundf(r0 * 6)), 0.5f, 0, 0, 0, g->bark_layer, 0, 0);
+    relief_trunk(g, &T, sides_for(g, r0) * (g->lod ? 1 : 2), fmaxf(1, roundf(r0 * 6)), 0.5f, 0);   // a root boss at the foot
     V3 top = T.p[8];
     // Dead leaves hanging against the trunk.
     for (int f = 0; f < 3; f++) {
@@ -1680,6 +1682,7 @@ static void bark_relief_init(Gen* g, int kind, int sp) {
         else if (sp == FL_KATSURA) { R->flare = 0.3f; R->flare_h = 0.5f; R->nb = 4; R->flute = 0.05f; R->nfl = 5; R->twist = 0.06f; R->rough = 0.03f; }
         else { R->flare = 0.42f; R->flare_h = 0.7f; R->nb = 5; R->flute = 0.03f; R->nfl = 6; R->twist = 0.02f; R->rough = 0.03f; R->stubs = 1; }
         break;
+    case VEG_PALM: R->flare = 0.28f; R->flare_h = 0.3f; R->nb = 9; R->rough = 0.02f; break;   // the root boss, a slightly uneven column
     case VEG_TREEFERN: R->flare = 0.3f; R->flare_h = 0.35f; R->nb = 7; R->rough = 0.09f; break;   // a root mass at the foot, a shaggy mantle
     case VEG_SNAG: R->flare = 0.4f; R->flare_h = 0.8f; R->nb = 5; R->rough = 0.03f; break;   // no flutes: few sides (a cheap mesh)
     default: R->seed = 0; return;   // palms, cycads, tree ferns, shrubs: their own trunks

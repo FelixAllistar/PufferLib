@@ -12,7 +12,7 @@ flat in float v_bark;
 // angiosperm, then (render/veg_gen.h) twig, frond rachis, cone, crozier,
 // untinted (fruit, flowers, fungi: their own atlas colours), dead wood, plane (mottled, below).
 // Conifers and angiosperms are 1: their bark layers are by species and already carry its colour.
-const vec3 BARK[13] = vec3[13](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8, 0.68), vec3(1.0), vec3(1.05, 0.95, 0.82), vec3(1.0),
+const vec3 BARK[13] = vec3[13](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(1.2, 1.1, 0.94), vec3(1.0), vec3(1.05, 0.95, 0.82), vec3(1.0),
                                vec3(0.8, 0.72, 0.6), vec3(0.78, 0.86, 0.52), vec3(0.85, 0.62, 0.42), vec3(0.72, 0.64, 0.46), vec3(1.0), vec3(1.0), vec3(1.0));
 uniform sampler2DArray t_atlas;
 uniform int u_bake;
@@ -117,6 +117,9 @@ void main() {
             albedo = mix(albedo, l * vec3(2.35, 2.05, 1.38), pa * (1.0 - 0.5 * pb));   // fresh cream inner bark
         } else if (tone == 2) {     // palm: horizontal leaf-base rings
             albedo *= 0.85 + 0.2 * smoothstep(0.0, 0.25, abs(fract(q.y * 6.0) - 0.5));
+            // Each ring a low ridge (the old leaf base) with a groove above it, lit as relief, wavering a little.
+            float y6 = q.y * 6.0 + 0.08 * sin(q.x * 6.2832 * 3.0 + q.y), fy = fract(y6), fr = clamp(1.0 - 2.5 * fwidth(y6), 0.0, 1.0);
+            bump = vec2(0.0, (fy < 0.2 ? 1.0 : -0.25) * 0.45 * fr);
         }
     }
     vec3 N = normalize(v_normal);
