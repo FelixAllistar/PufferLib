@@ -423,7 +423,10 @@ void main() {
         vec3 straw = mix(DRY_STRAW, DRY_OLIVE, clamp(damp * 1.2 + 0.25 * tus, 0.0, 1.0)) * mix(0.82, 1.08, tus);
         albedo = mix(albedo, max(dl, 0.045) * straw * 1.12, dryf * 0.85);
         albedo = mix(albedo, max(dl, 0.04) * DRY_EARTH, dg * (1.0 - bare) * earth * far_ * 0.6);
-        albedo = mix(albedo, dl * vec3(1.08, 1.0, 0.86), dg * shv.w * 0.7);   // pans and washes: pale grey-buff silt and sand, not beach gold
+        // Pans and washes: pale grey-buff silt and sand, not beach gold, out to the desert's very edge (the beach
+        // is never dry); from afar a little darker, as dust and the scrub at their edges grey them (a pan drew
+        // near white from 480 m).
+        albedo = mix(albedo, dl * vec3(1.08, 1.0, 0.86) * mix(1.0, 0.8, smoothstep(60.0, 400.0, dist)), smoothstep(0.02, 0.2, dg) * shv.w * 0.85);
     }
     // Near-desert (bare earth in dry country): from afar the dwarf scrub dots the ground dark olive-grey
     // at a few metres, gathered in loose stands (the drawn plants end at the cover range).

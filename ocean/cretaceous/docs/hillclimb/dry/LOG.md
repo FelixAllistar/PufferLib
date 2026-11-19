@@ -37,3 +37,14 @@ plain (Atriplex vesicaria, SW Queensland), Atriplex glauca up close, a cracked r
    points the shrub layer is 0.41-0.59 (was 0.2-0.4), the dwarf shrub 55% of it, evergreen scrub 32%. Kept:
    `dPan` (25 m up) shows hundreds of small bushes in loose stands where there were a few dozen. Still: they
    read light olive-green, not grey; on the ground (`desG`) the view is still the old tufts.
+4. Fault: the dwarf shrubs read light olive-green from 25 m. Change: their leaves drier (frond dryness 105-190
+   in two lots, was 75-160). Reverted: `dPan` and `dS` barely change; the plant shader's own tint of leaves in
+   dry country (the colour track's) sets most of their colour.
+5. Fault: the dry grassland at a hatchling's eye (`grG`) reads as bare tan earth, not a sward. Change:
+   `terrain.fs` a tussock pattern on dry grass within 90 m (straw clumps, shaded thatch, a grain of blades).
+   Reverted: `grG` does not change (its ground there is bare soil, which the pattern leaves alone), and in `grs`
+   the blade grain draws as a regular stipple across a clearing.
+6. Fault: (from pass 2) sand at the desert's edge keeps the beach's gold, and the pans draw near white from the
+   air. Change: `terrain.fs` the pale grey-buff of pans and washes reaches wherever the ground is at all dry (the
+   beach never is) and greys by a fifth from 60 to 400 m. Kept: in `pA` the gold rim along the forest edge is
+   gone; `dAir`'s pans a little less stark (small).
