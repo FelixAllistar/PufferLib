@@ -828,6 +828,9 @@ static void scenario_camera(CretScnRun* r, const CretSim* s, int mode, ScnCam* s
     if (!cret_scenario_centre(r, s, &cx, &cz, &rad)) { cx = r->ox; cz = r->oz; rad = 10; }
     const CretAgent* p = &s->agents[0];
     float want[3], look[3]; float dist = fmaxf(16.0f, rad * 1.7f + 6);
+    // CRET_SCN_CAM_DIST=5 (captures): the side, orbit and high cameras from that many metres, low, for a close look at one animal.
+    static float close_d = -1; if (close_d < 0) close_d = getenv("CRET_SCN_CAM_DIST") ? (float)atof(getenv("CRET_SCN_CAM_DIST")) : 0;
+    if (close_d > 0) dist = close_d;
     if (mode == SCN_CAM_FOLLOW && p->alive) {
         float L = CRET_SPECIES_TABLE[p->species].length * cret_growth_scale(p->growth), bd = fmaxf(L * 2.2f, 6);
         sc->yaw += wrap_pi(p->yaw - sc->yaw) * (1 - expf(-dt * 2.0f));
@@ -835,12 +838,12 @@ static void scenario_camera(CretScnRun* r, const CretSim* s, int mode, ScnCam* s
         look[0] = p->x + cosf(sc->yaw) * L; look[1] = p->y + p->height * 0.8f; look[2] = p->z + sinf(sc->yaw) * L;
     } else {
         if (mode == SCN_CAM_ORBIT) sc->ang += dt * 0.12f;
-        float a = mode == SCN_CAM_ORBIT ? sc->ang : -PI / 2, up = mode == SCN_CAM_HIGH ? dist * 0.95f : fmaxf(3.0f, dist * 0.22f);
+        float a = mode == SCN_CAM_ORBIT ? sc->ang : -PI / 2, up = mode == SCN_CAM_HIGH ? dist * 0.95f : fmaxf(close_d > 0 ? 1.0f : 3.0f, dist * 0.22f);
         float back = mode == SCN_CAM_HIGH ? dist * 0.8f : dist;
         want[0] = cx + cosf(a) * back; want[2] = cz + sinf(a) * back; want[1] = cret_height(s->world, cx, cz) + up;
         look[0] = cx; look[2] = cz; look[1] = cret_height(s->world, cx, cz) + 1.2f;
     }
-    want[1] = fmaxf(want[1], cret_height(s->world, want[0], want[2]) + 1.5f);
+    want[1] = fmaxf(want[1], cret_height(s->world, want[0], want[2]) + (close_d > 0 ? 0.8f : 1.5f));
     float k = sc->init ? 1 - expf(-dt * 3.0f) : 1; sc->init = true;
     for (int q = 0; q < 3; q++) sc->pos[q] += (want[q] - sc->pos[q]) * k;
     memcpy(cam->pos, sc->pos, sizeof sc->pos);

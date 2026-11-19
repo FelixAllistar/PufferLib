@@ -386,6 +386,8 @@ bool cret_dino_init(CretDinos* d) {
     memset(d, 0, sizeof *d);
     const char* anim = getenv("CRET_ANIM");   // procedural layers on start (dino_proc.h): e.g. CRET_ANIM=-tail,-look or none
     if (anim) cret_dino_proc_flags = dproc_parse_flags(anim, DPROC_ALL);
+    const char* phys = getenv("CRET_PHYS");   // physics clips for captures (DPHYS_* bits: 1 hit reactions, 2 the physics walk)
+    if (phys) cret_dino_phys = (unsigned)atoi(phys) & DPHYS_ALL;
     glGenBuffers(1, &d->inst_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, d->inst_vbo); glBufferData(GL_ARRAY_BUFFER, 16 * DINO_SLOTS * 2, NULL, GL_STREAM_DRAW);
     int n = 0;

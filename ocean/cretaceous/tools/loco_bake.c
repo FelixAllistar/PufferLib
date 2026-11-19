@@ -4,7 +4,8 @@
 // joint rotations, appended to a copy of the .dino. The game then plays them
 // like any other clip, at no runtime cost (no physics, no policy).
 // Run from the repository root.
-//   loco_bake --policy CKPT.bin --out OUT.dino [--dino IN.dino] [--clip walk]
+//   loco_bake --policy CKPT.bin --out OUT.dino [--dino IN.dino] [--clip walk | --clip walk+idle+trot+run]
+//             (an all-gaits policy: list every clip it trained on, the one to bake first)
 //             [--push 2.0] [--cycles 2] [--tail-flex N] [--passive-tail [--passive-damping 0.4]] [--selftest]
 // --tail-flex, --passive-tail and --passive-damping must match the policy's training (config/cretaceous_loco.ini).
 // Clips written (their names replace same-named clips already in IN):
@@ -164,7 +165,7 @@ static Track run_track(LocoWorld* w, LocoPolicy* pol, double seconds, double pus
     double ref_step = w->ref[0].dt;   // without a policy, the reference at its own frame times
     Track tr; tr.n = 0; tr.s = (Sample*)calloc(BAKE_MAX_SAMPLES, sizeof(Sample));
     w->cfg.episode_seconds = 1e9f;
-    loco_reset_agent(w, 0, 0.0f);
+    loco_reset_agent_clip(w, 0, 0, 0.0f);
     if (pol) loco_policy_reset(pol, 0);
     static float obs[LOCO_OBS], act[LOCO_MAX_DOF]; const float* ap[1] = {act};
     *fell = false; bool pushed = false; int steps = (int)(seconds * (pol ? w->cfg.policy_hz : 1.0 / ref_step)) + 2;
@@ -270,7 +271,8 @@ int main(int argc, char** argv) {
     if (!selftest && (!policy || !out)) { fprintf(stderr, "loco_bake: needs --policy and --out (or --selftest)\n"); return 2; }
     LocoWorld* w = (LocoWorld*)calloc(1, sizeof(LocoWorld)); char err[256];
     if (!loco_world_init(w, &c, 1, err, sizeof err)) { fprintf(stderr, "loco_bake: %s\n", err); return 1; }
-    if (w->nref > 1) { fprintf(stderr, "loco_bake: bakes one clip at a time (--clip %s lists %d)\n", c.clip, w->nref); return 2; }
+    // A policy trained on several clips needs its whole list to build the same rig: the first one listed is baked.
+    if (w->nref > 1) printf("loco_bake: --clip %s lists %d clips; baking the first\n", c.clip, w->nref);
     // The file with its bind space in metres as the rig has it (loco_unscale_bind changes only the
     // inverse binds and vertices, so the clips' locals, which get rewritten, are the file's own).
     DinoFile* d = (DinoFile*)calloc(1, sizeof(DinoFile));

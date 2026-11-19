@@ -1415,7 +1415,7 @@ static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au
     hud->ui_scale = st->ui_scale;
     g_fxs.shake = st->shake; g_fxs.hitstop = st->hitstop;
     if (!getenv("CRET_ANIM")) cret_dino_proc_flags = st->anim;   // CRET_ANIM (captures) wins, as CRET_PRESET does
-    cret_dino_phys = st->phys;
+    if (!getenv("CRET_PHYS")) cret_dino_phys = st->phys;   // CRET_PHYS (captures) wins, as CRET_ANIM does
     cret_veg_look_pref = (int)st->plants;   // CRET_VEG_ROUND / _CREASE / _EDGE still win, switch by switch (veg_look.h)
     if (view->veg_ok) cret_veg_set_look(&view->veg, (int)st->plants);
     if (!getenv("CRET_VEG_DETAIL")) cret_veg_detail = st->plant_detail;   // CRET_VEG_DETAIL (captures) wins, as CRET_ANIM does
