@@ -12,7 +12,7 @@ flat in float v_bark;
 // angiosperm, then (render/veg_gen.h) twig, frond rachis, cone, crozier,
 // untinted (fruit, flowers, fungi: their own atlas colours), dead wood, plane (mottled, below).
 // Conifers and angiosperms are 1: their bark layers are by species and already carry its colour.
-const vec3 BARK[13] = vec3[13](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(1.2, 1.1, 0.94), vec3(1.0), vec3(1.05, 0.95, 0.82), vec3(1.0),
+const vec3 BARK[13] = vec3[13](vec3(0.85, 0.78, 0.68), vec3(1.3, 1.2, 1.1), vec3(1.55, 1.45, 1.3), vec3(1.0), vec3(1.6, 1.38, 1.1), vec3(1.0),
                                vec3(0.8, 0.72, 0.6), vec3(0.78, 0.86, 0.52), vec3(0.85, 0.62, 0.42), vec3(0.72, 0.64, 0.46), vec3(1.0), vec3(1.0), vec3(1.0));
 uniform sampler2DArray t_atlas;
 uniform int u_bake;

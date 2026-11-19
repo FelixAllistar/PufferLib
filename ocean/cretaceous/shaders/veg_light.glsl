@@ -87,7 +87,10 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // the full filter turned crowns a saturated emerald.
     amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * 0.75);
     // Ground bounce lights undersides and trunks (forest floor albedo ~0.15).
-    vec3 bounce = sun * max(L.y, 0.0) * 0.15 * (0.5 - 0.5 * N.y) * mix(0.6, 1.0, shadow) / PI * contact * (1.0 + u_lk_bounce);
+    // Bark takes twice as much (as terrain.fs's own bounce): a trunk's sides face the lit ground round it, and
+    // under its own low crown (cycads, tree ferns) that light is most of what shows its form; with the
+    // leaves' share it drew near black.
+    vec3 bounce = sun * max(L.y, 0.0) * 0.15 * (0.5 - 0.5 * N.y) * mix(0.6, 1.0, shadow) / PI * contact * (1.0 + u_lk_bounce) * mix(2.0, 1.0, leaf);
     // Shaded ground cover: light from the sunlit floor and trunks all round fills it too. Without it ferns in a
     // forest's shade drew a third as bright as the soil beside them, black cut-outs. Not in the sun, where the
     // open sward keeps its dark gaps.

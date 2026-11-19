@@ -428,7 +428,10 @@ static void strip(Gen* g, int n, const V3* c, const V3* s, const V3* up, const f
 // (sky directions only) becomes n.w; foliage normals bend toward the
 // unoccluded directions (all 13), so a crown shades as one volume.
 #define AOG 16
-static void bake_sky(MB* m, float k_ext, float bend, float leaf_scale) {
+// side: 0..1, how much bark sees by its own sides instead of the whole sky. A trunk standing under a
+// low crown (cycads, tree ferns, palms) is lit from the open horizon and the sunlit ground round it,
+// not from above: judged by the whole sky it baked near black.
+static void bake_sky(MB* m, float k_ext, float bend, float leaf_scale, float side) {
     if (!m->nv) return;
     float lo[3] = {1e9f, 1e9f, 1e9f}, hi[3] = {-1e9f, -1e9f, -1e9f};
     for (int i = 0; i < m->nv; i++) for (int c = 0; c < 3; c++) { lo[c] = fminf(lo[c], m->v[i].p[c]); hi[c] = fmaxf(hi[c], m->v[i].p[c]); }
@@ -448,17 +451,18 @@ static void bake_sky(MB* m, float k_ext, float bend, float leaf_scale) {
     }
     float vol = cs[0] * cs[1] * cs[2];
     for (int i = 0; i < AOG * AOG * AOG; i++) den[i] = den[i] / vol * k_ext;   // extinction per metre
-    V3 D[13]; float Wsky[13]; int nd = 0;
-    D[nd] = v3(0, 1, 0); Wsky[nd++] = 0.22f;
-    for (int i = 0; i < 4; i++) { D[nd] = dir_ae(i * VPI / 2 + 0.4f, 0.75f); Wsky[nd++] = 0.12f; }
-    for (int i = 0; i < 4; i++) { D[nd] = dir_ae(i * VPI / 2 + 1.2f, 0.18f); Wsky[nd++] = 0.075f; }
-    for (int i = 0; i < 4; i++) { D[nd] = dir_ae(i * VPI / 2 + 0.4f, -0.5f); Wsky[nd++] = 0; }
+    V3 D[13]; float Wsky[13], Wside[13]; int nd = 0;
+    D[nd] = v3(0, 1, 0); Wside[nd] = 0.04f; Wsky[nd++] = 0.22f;
+    for (int i = 0; i < 4; i++) { D[nd] = dir_ae(i * VPI / 2 + 0.4f, 0.75f); Wside[nd] = 0.09f; Wsky[nd++] = 0.12f; }
+    for (int i = 0; i < 4; i++) { D[nd] = dir_ae(i * VPI / 2 + 1.2f, 0.18f); Wside[nd] = 0.15f; Wsky[nd++] = 0.075f; }
+    for (int i = 0; i < 4; i++) { D[nd] = dir_ae(i * VPI / 2 + 0.4f, -0.5f); Wside[nd] = 0; Wsky[nd++] = 0; }
     float* vis = malloc(sizeof(float) * AOG * AOG * AOG); V3* bn = malloc(sizeof(V3) * AOG * AOG * AOG);
+    float* vside = malloc(sizeof(float) * AOG * AOG * AOG);
     float step = fminf(fminf(cs[0], cs[1]), cs[2]);
     for (int cell = 0; cell < AOG * AOG * AOG; cell++) {
         int ix = cell % AOG, iy = (cell / AOG) % AOG, iz = cell / (AOG * AOG);
         V3 p0 = v3(lo[0] + (ix + 0.5f) * cs[0], lo[1] + (iy + 0.5f) * cs[1], lo[2] + (iz + 0.5f) * cs[2]);
-        float sv = 0; V3 b = v3(0, 0, 0);
+        float sv = 0, sd = 0; V3 b = v3(0, 0, 0);
         for (int k = 0; k < 13; k++) {
             float tau = den[cell] * step * 0.5f; V3 p = p0;
             for (int s = 0; s < 3 * AOG; s++) {
@@ -467,20 +471,25 @@ static void bake_sky(MB* m, float k_ext, float bend, float leaf_scale) {
                 if (jx < 0 || jy < 0 || jz < 0 || jx >= AOG || jy >= AOG || jz >= AOG) break;
                 tau += den[(jz * AOG + jy) * AOG + jx] * step;
             }
-            float t = expf(-tau); sv += Wsky[k] * t; b = vadd(b, vmul(D[k], t));
+            float t = expf(-tau); sv += Wsky[k] * t; sd += Wside[k] * t; b = vadd(b, vmul(D[k], t));
         }
-        vis[cell] = sv; bn[cell] = b;
+        vis[cell] = sv; bn[cell] = b; vside[cell] = sd;
     }
     for (int i = 0; i < m->nv; i++) {
         VVert* q = &m->v[i];
-        float fx = clampf((q->p[0] - lo[0]) / cs[0] - 0.5f, 0, AOG - 1.001f), fy = clampf((q->p[1] - lo[1]) / cs[1] - 0.5f, 0, AOG - 1.001f), fz = clampf((q->p[2] - lo[2]) / cs[2] - 0.5f, 0, AOG - 1.001f);
+        float px = q->p[0], py = q->p[1], pz = q->p[2];
+        if (side > 0 && !q->a[2]) {   // bark: looked up a cell and a half out from its surface, past the trunk's own area in the grid
+            float o = 1.5f * fmaxf(fmaxf(cs[0], cs[1]), cs[2]) * side;
+            px += q->n[0] / 127.0f * o; py += q->n[1] / 127.0f * o; pz += q->n[2] / 127.0f * o;
+        }
+        float fx = clampf((px - lo[0]) / cs[0] - 0.5f, 0, AOG - 1.001f), fy = clampf((py - lo[1]) / cs[1] - 0.5f, 0, AOG - 1.001f), fz = clampf((pz - lo[2]) / cs[2] - 0.5f, 0, AOG - 1.001f);
         int x0 = (int)fx, y0 = (int)fy, z0 = (int)fz; fx -= x0; fy -= y0; fz -= z0;
         float sv = 0; V3 b = v3(0, 0, 0);
         for (int c = 0; c < 8; c++) {
             int dx = c & 1, dy = (c >> 1) & 1, dz = c >> 2;
             float wgt = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy) * (dz ? fz : 1 - fz);
             int j = ((z0 + dz) * AOG + y0 + dy) * AOG + x0 + dx;
-            sv += vis[j] * wgt; b = vadd(b, vmul(bn[j], wgt));
+            sv += (q->a[2] ? vis[j] : lerpf(vis[j], fmaxf(vis[j], vside[j]), side)) * wgt; b = vadd(b, vmul(bn[j], wgt));
         }
         q->n[3] = (int8_t)(clampf(0.22f + 0.95f * sv, 0, 1) * 127);
         if (q->a[2] && bend > 0) {   // foliage: bend toward the open side of the crown
@@ -490,7 +499,7 @@ static void bake_sky(MB* m, float k_ext, float bend, float leaf_scale) {
             q->n[0] = (int8_t)(n.x * 127); q->n[1] = (int8_t)(n.y * 127); q->n[2] = (int8_t)(n.z * 127);
         }
     }
-    free(den); free(vis); free(bn);
+    free(den); free(vis); free(bn); free(vside);
 }
 
 // ---------------------------------------------------------------- leaf clusters on twigs
@@ -1880,7 +1889,7 @@ static void build_species(MB* m, int kind, int variant, int lod) {
     if (sp == FL_PLANE) G.bark_tone = 12;   // its bark mottled in the shader (veg.fs)
     if (getenv("CRET_BARK_RELIEF") && !atoi(getenv("CRET_BARK_RELIEF"))) G.rf.seed = 0;   // development A/B: smooth trunks
     if (getenv("CRET_BARK_STUBS") && !atoi(getenv("CRET_BARK_STUBS"))) G.rf.stubs = 0;    // and without stubs
-    float k_ext = 0.5f, bend = 0.6f;
+    float k_ext = 0.5f, bend = 0.6f, side = 0;
     switch (kind) {
     case VEG_CONIFER:
         if (sp == FL_PODOCARP) gen_podocarp(&G); else if (sp == FL_CHEIROLEP) gen_cheirolep(&G); else if (sp == FL_REDWOOD) gen_metasequoia(&G); else gen_araucaria(&G, sp == FL_UMBRELLA);
@@ -1890,9 +1899,9 @@ static void build_species(MB* m, int kind, int variant, int lod) {
         if (sp == FL_GINKGO) gen_ginkgo(&G); else if (sp == FL_PLANE) gen_plane(&G);
         else gen_broadleaf(&G, sp == FL_MAGNOLIA ? 0 : sp == FL_KATSURA ? 2 : sp == FL_UNDERSTOREY ? 3 : 1);
         break;
-    case VEG_CYCAD: gen_cycad(&G, variant & 3); k_ext = 0.35f; bend = 0.5f; break;
-    case VEG_TREEFERN: gen_treefern(&G, sp == FL_DICKSONIA); k_ext = 0.35f; bend = 0.5f; break;
-    case VEG_PALM: gen_palm(&G, sp == FL_FEATHER_PALM ? 3 : 0); k_ext = 0.35f; bend = 0.5f; break;
+    case VEG_CYCAD: gen_cycad(&G, variant & 3); k_ext = 0.35f; bend = 0.5f; side = 1; break;
+    case VEG_TREEFERN: gen_treefern(&G, sp == FL_DICKSONIA); k_ext = 0.35f; bend = 0.5f; side = 1; break;
+    case VEG_PALM: gen_palm(&G, sp == FL_FEATHER_PALM ? 3 : 0); k_ext = 0.35f; bend = 0.5f; side = 1; break;
     case VEG_HORSETAIL: gen_horsetail(&G, sp == FL_HORSETAIL_FIELD); k_ext = 0.25f; bend = 0.3f; break;
     case VEG_FERN: gen_fern(&G, sp); k_ext = 0.4f; bend = 0.4f; break;
     case VEG_LILY: gen_lily(&G, variant); k_ext = 0.3f; bend = 0.2f; break;
@@ -1916,5 +1925,5 @@ static void build_species(MB* m, int kind, int variant, int lod) {
     // long, three to four times the leaf area: its crown would bake much
     // darker than the full one (12% darker crowns in daylight, 40% on the
     // podocarp). Its leaves count at the full mesh's total area instead.
-    bake_sky(m, k_ext, bend, G.leaf_drawn > 0 ? G.leaf_full / G.leaf_drawn : 1.0f);
+    bake_sky(m, k_ext, bend, G.leaf_drawn > 0 ? G.leaf_full / G.leaf_drawn : 1.0f, side);
 }

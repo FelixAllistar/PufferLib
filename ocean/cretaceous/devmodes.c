@@ -681,6 +681,10 @@ static int capture_match(Gallery* g, CretSim* sim, CretView* view, const char* d
         for (int lm = kind < 0 ? 0 : 1; lm < (kind < 0 ? 1 : 4); lm++) {
             // Every frame aims at the same point (5.5 m up), so the bare frame frames each tree alike.
             float eye = DIST[d] < 10 ? 1.2f : 2, aim = DIST[d] < 10 ? 0.8f : 5.5f;
+            // CRET_GALLERY_MATCH_AIM=f aims at f x the tree's height instead (looking up into a crown from under it);
+            // CRET_GALLERY_MATCH_EYE sets the eye height (m).
+            if (getenv("CRET_GALLERY_MATCH_AIM") && kind >= 0) aim = (float)atof(getenv("CRET_GALLERY_MATCH_AIM")) * H;
+            if (getenv("CRET_GALLERY_MATCH_EYE")) eye = (float)atof(getenv("CRET_GALLERY_MATCH_EYE"));
             CretCamera cam = {{C + sinf(maz) * DIST[d], GAL_GROUND + eye, z0 - cosf(maz) * DIST[d]}, PI / 2 + maz, atan2f(aim - eye, DIST[d]), 60};
             g->lod_mode = lm;
             if (kind < 0) { view->adapt_valid = false; view->cam_pos[1] += 1e4f; }
