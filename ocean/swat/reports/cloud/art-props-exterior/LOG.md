@@ -139,3 +139,20 @@ street boxes; titles and logos replaced by blank tone blocks.
 8. newsboxes game 2: moved east of the driveway (6.6, 34.95), paints desaturated, paper 0.88 -> 0.72; closer: yes. Stop.
 
 Budget: 960 triangles, 3 materials, rusty_painted_metal grain 512 px; GLB ~0.1 MB.
+
+## Tyre pile (BC2_TYRES01)
+
+Reference: https://commons.wikimedia.org/wiki/File:Old_tires_stacked_near_a_fence_with_grass_growing_on_top.jpg
+by Shixart1985 (CC BY 2.0; copy in refs/tyres_ref.jpg).
+
+1. tyres iter 1: four stacks of lathed tyres, three loose ones, dry grass tufts; tyres read as round donuts, stacks too far apart, 8.6k tris; closer: baseline
+2. tyres iter 2: boxy tyre section (flat sidewalls, square shoulders), five stacks packed tight, camera closer and wider, 14 segments (7.7k tris); closer: yes
+3. tyres iter 3: rubber darker (0.17 -> 0.10) and tread stripes in vertex colour; closer: no visible change in Cycles (kept: it shows in engine)
+4. tyres iter 4: grass denser and finer (34 blades per tuft, 6 mm wide), more drooping; closer: yes
+5. tyres iter 5: darker grain map; closer: no, reverted
+6. tyres iter 6: stack lean 4 -> 8 deg (stacks lean into each other as in the ref); closer: yes (small). Stop.
+7. tyres game 1: first spot (-7.6, -9.6) cut into the laundry annex; closer: n/a
+8. tyres game 2: behind the dumpster: reads well (black rubber, straw grass) but within 2 m of the annex door route; closer: yes
+9. tyres game 3: moved to (-2.2, -11.4), east of the dumpster and clear of the annex door; final capture. Stop.
+
+Budget: 8,072 triangles, 2 materials, shared grain; GLB ~0.45 MB.
