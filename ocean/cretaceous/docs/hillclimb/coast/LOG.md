@@ -34,3 +34,7 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
 5. Fault: where a stream crosses a big beach its bed is the bake's bank mud, which the terrain shader darkens as wet
    ground: from the air every stream drew a black gash across the sand (`topW`, `mouthA`, `strW30`). Change: `world.c`
    lays sand (85 %) on the stream cells on the beach as well. Kept: the streams read as damp lines in the sand.
+6. Fault: at the largest river mouth (`mouth`, `mouth_high`) the river now runs through bare sand all the way up its
+   lower valley, with no slack-water fringe. Change: a fringe of bank mud and horsetails 3-14 m wide along streams
+   behind the front of the beach. Reverted: from the air (`topW`) it drew a pair of dark lines along every stream, new
+   stripes, and the big mouth hardly changed.
