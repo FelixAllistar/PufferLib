@@ -15,3 +15,7 @@ brief's world shots; renders at 960x540 on Mesa llvmpipe.
    a true baseline at `alp2`, 20 m over the summit's south face): the scree slope is grey stone, not cream.
 4. Fault: the alpine turf tint from pass 1 leaned straw-yellow. Change: grey-brown instead. Kept, small:
    the turf patches are browner; the yellow streaks up close turned out to be bare soil (pass 5).
+5. Fault: yellow-ochre streaks of bare soil down the high slopes (the orange lowland soil photo). Change:
+   `terrain.fs` soil greys toward a stony grey-brown from 360-500 m; `terra.c` the summit ramp gives
+   less soil (0.2) and some scree instead. Kept: `alp2` streaks are grey-tan stony ground, `mtD`'s high
+   blotches calmer.

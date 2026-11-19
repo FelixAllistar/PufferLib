@@ -237,6 +237,7 @@ void main() {
     // what the photos show, brown litter and soil with a little moss; it only goes green with distance,
     // where the patches of plants are no longer drawn one by one.
     float recolor_near = mix(0.1, 0.8, smoothstep(8.0, 70.0, dist));
+    float stony = 0.85 * smoothstep(360.0, 500.0, p.y + 60.0 * (texture(t_noise, p.xz / 190.0 + 0.37).r - 0.5));
     vec3 albedo = vec3(0.0), n = vec3(0.0); float rough = 0.0, wt = 0.0, mao = 0.0;
     for (int j = 0; j < 4; j++) {
         if (hsum[j] < 0.0) continue;
@@ -244,6 +245,9 @@ void main() {
         float b = max(hsum[j] - best + 0.3, 0.0);
         float rl = RECOLOR_MEAN * pow(dot(mats[j].albedo, vec3(0.3, 0.59, 0.11)) / RECOLOR_MEAN, RECOLOR_CONTRAST);
         vec3 al = mix(mats[j].albedo, rl * RECOLOR_HUE, RECOLOR[k] * recolor_near);
+        // Bare soil above the tree line is stony and grey-brown (weathered rock, little humus), not the
+        // orange lowland earth of the photo, which read as yellow-ochre streaks down the high slopes.
+        if (k == 2) al = mix(al, vec3(dot(al, vec3(0.3, 0.59, 0.11))) * vec3(1.06, 1.0, 0.9), stony);
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
     albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
