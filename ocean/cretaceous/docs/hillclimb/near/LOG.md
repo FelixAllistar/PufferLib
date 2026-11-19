@@ -30,3 +30,12 @@ Tests after pass 13: test_veg ok (all meshes +6.1% vertices, +9.5% triangles wit
 21. What pass 20 showed was missing: a collar of old leaf bases where the Cycas trunk meets its crown. Change: 22-29 stubby petiole bases (4-sided tubes, 10-20 cm) standing out and up round the top, full mesh only, on a stream forked on both meshes so the crowns stay in step (a first build forked only on the full mesh and shifted its crown off the reduced one's; fixed and checked at 30 m). Kept: a small, visible gain at 3 m: the trunk ends in a ragged rim of leaf bases, not a flat cut.
 22. The fan palm's trunk ran smooth into its crown (Sabal keeps its old leaf bases, "boots", on the top metre or two). Change: 20-27 split stubs of 35-55 cm standing up and out in a criss-cross over the top 1-2 m, the lowest weathered grey; full mesh only, on a stream forked on both meshes (full and reduced crowns checked in step at 30 m). A first try (18-32 cm stubs over 0.7-1.4 m) barely showed at 10 m. Kept: at 10 m the fan palms carry a ragged band of boots under the crown.
 Budget fix (after the triangle count, below): pass 2's extra chloranth stems took its reduced mesh to 1.41x its round-1 count, over the 1.25x limit; its reduced mesh now keeps fewer, slightly larger merged cards (1.22x). Checked at 30 m against the full mesh in the final sheets.
+
+## Sheets (left the round-1 build `cret/hc`, right this branch; llvmpipe, high preset, 960x540 match shots, 1280x720 world shots)
+
+- `01` cycads at 3 and 10 m (trunks, dead fronds, the squat cycad's rosette and dome, the Cycas collar); `02` Williamsonia from under and at 10 m.
+- `03` tree ferns and fan palms at 10 m (trunk tone, skirt, boots); `04` trunks at 3 m (tree fern, palm, plane).
+- `05` magnolia, laurel and plane from under the crown at 4 m.
+- `06` the chloranth from under, from a hatchling's eye, and full against reduced at 30 m.
+- `07` berry shrub (hatchling's eye), gunnera, flowering herb; `08` the cypress from a hatchling's eye and trunk bows at 15 m.
+- `09` reduced meshes at 30 m (they must still match the full ones); `10` world shots `redwood`, `vf_forest`, `ga0`.
