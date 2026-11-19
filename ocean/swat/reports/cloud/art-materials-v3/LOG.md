@@ -73,3 +73,27 @@ Reference: "Concrete sidewalk", roman.nurik, https://www.flickr.com/photos/13288
 - iter 6: slab length 2 m -> 1.33 m (3 per 4 m module, like the ref's ~1.3 m slabs). closer: yes
 - engine 1: gallery + close. Joints are transverse on the deck as intended. Diffs: 2 sunlit deck and curb face blow out to white. Fix value.
 - engine 2: walkway target (116,114,109), curb/wheel-stop concrete (124,121,114). closer: yes - grey jointed slabs like the ref. Final.
+
+## 6. Painted trim (cream surrounds/soffit), fascia (teal) and gutter strip (ochre)
+Reference: "motel office", el-toro, https://www.flickr.com/photos/7377398@N02/20306831404 (CC BY 2.0): weathered painted block, off-white door frame, painted trim in sun.
+The Briar Court palette (cream / teal / ochre) is kept; the reference drives value, wear and paint texture.
+
+- iter 1: trim plastered_wall_05 (214,206,186); fascia/gutter painted_concrete @2 m. Diffs: 1 n/a (stand-in canopy); 2 trim too white/bright; gutter too saturated orange; 3 peeling flakes large and blotchy. closer: n/a
+- iter 2: trim (192,186,170); fascia+gutter tile 1 m, flatten 0.5; gutter (150,116,62). closer: yes
+- iter 3: fascia/gutter contrast 0.6 (calmer peeling). closer: yes
+- iter 4: gutter saturation 0 before the gain (the scan's green paint made green/orange camouflage), fascia 0.3. closer: yes - even sun-faded ochre and teal paint with wear
+- iter 5: fascia target (64,112,106) faded. closer: no -> reverted
+- iter 6: trim contrast 0.7. closer: no visible change. Stop.
+- engine: front/door/roof views (below, shared with item 7): paint reads as weathered enamel at both distances; no change needed.
+
+## 7. Roofing (tar and gravel) and roof edge
+Reference: "Boise Project, Arrowrock Division" (gravel embedded in hot tar pitch on a flat roof, 1950), U.S. Bureau of Reclamation, https://www.flickr.com/photos/47026734@N08/54731548328 (public domain).
+
+- iter 1: tarred_gravel @2.2 m, target (96,92,86). Diffs: 1 ok; 2 far darker than the ref's pale gravel; 3 aggregate too fine. closer: n/a
+- iter 2: target (146,142,134), normal 1.5, contrast 1.3. closer: yes
+- iter 3: tile 3 m, contrast 1.6: pebbles at the ref's size. closer: yes
+- iter 4: saturation 0.5, roughness 0.5r+0.5 (matte). closer: marginal
+- iter 5: contrast 2.0. closer: yes (slightly, pebbles separate)
+- iter 6: target (154,150,142). closer: marginal
+- engine 1: roof from the lot and from roof height. Diffs: 2 roof blows out white, pebbles lost (engine sun is brighter than the stand-in). Fix value.
+- engine 2: target (108,105,99). closer: yes - pale grey gravel roof with visible pebbles; fascia/gutter edge reads. Final.
