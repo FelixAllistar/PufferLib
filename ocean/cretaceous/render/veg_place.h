@@ -146,12 +146,12 @@ static inline void veg_species_dims(int kind, int variant, float* H, float* r0) 
     case FL_UMBRELLA: h = vp_rr(&r, 18, 24); rr = 0.12f + 0.02f * h; break;
     case FL_REDWOOD: h = vp_rr(&r, 22, 30); rr = 0.25f + 0.02f * h; break;
     case FL_CHEIROLEP: h = vp_rr(&r, 6, 10); rr = 0.08f + 0.02f * h; break;
-    case FL_UNDERSTOREY: h = vp_rr(&r, 4.5f, 6.5f); rr = 0.05f + 0.02f * h; break;
-    case FL_KATSURA: h = vp_rr(&r, 9, 14); rr = (0.05f + 0.016f * h) * 1.5f; break;   // several stems: their spread
-    case FL_MAGNOLIA: h = vp_rr(&r, 8, 13); rr = 0.06f + 0.024f * h; break;
-    case FL_LAUREL: h = vp_rr(&r, 7, 11); rr = 0.06f + 0.024f * h; break;
-    case FL_PLANE: h = vp_rr(&r, 12, 17); rr = 0.08f + 0.026f * h; break;
-    case FL_GINKGO: h = vp_rr(&r, 10, 15); rr = 0.07f + 0.022f * h; break;
+    case FL_UNDERSTOREY: h = vp_rr(&r, 3.5f, 5.5f); rr = 0.05f + 0.02f * h; break;
+    case FL_KATSURA: h = vp_rr(&r, 13, 18); rr = (0.06f + 0.014f * h) * 1.5f; break;   // several stems: their spread
+    case FL_MAGNOLIA: h = vp_rr(&r, 11, 16); rr = 0.08f + 0.019f * h; break;
+    case FL_LAUREL: h = vp_rr(&r, 9, 13); rr = 0.07f + 0.02f * h; break;
+    case FL_PLANE: h = vp_rr(&r, 21, 27); rr = 0.1f + 0.018f * h; break;
+    case FL_GINKGO: h = vp_rr(&r, 16, 22); rr = 0.08f + 0.016f * h; break;
     case FL_CYCAS: if ((variant & 3) == 2) { h = vp_rr(&r, 1.5f, 3.0f); rr = 0.22f; } else { h = vp_rr(&r, 0.3f, 1.6f); rr = 0.3f; } break;
     case FL_ZAMIA: h = vp_rr(&r, 0.15f, 0.6f); rr = 0.34f; break;
     case FL_WILLIAMSONIA: h = vp_rr(&r, 1.0f, 1.7f); rr = 0.19f; break;

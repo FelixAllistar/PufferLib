@@ -396,6 +396,7 @@ typedef struct {
     int leaf_layer, lod_layer, nleaf;   // cluster cards (2x2 sub-sprites), merged LOD cards (whole layer)
     float leaf_size, lod_size, curl, upbias, lobes, droop;   // droop: outer branches sag (m per m^2)
     float pad;                  // 0..1: foliage gathers on the outer part of each limb (podocarp pads)
+    int lod_div;                // the reduced mesh keeps every lod_div-th card (0: 3)
 } Crown;
 static void crown_tree(Gen* g, const Crown* C, const Env* E) {
     LeafPts L = {0}; float H = C->H;
@@ -480,7 +481,7 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
             }
         }
     }
-    leaf_cards(g, &L, C->nleaf, E->c, C->leaf_layer, C->leaf_size, 1.0f, C->curl, C->upbias, 2, C->lod_layer, C->lod_size, 3);
+    leaf_cards(g, &L, C->nleaf, E->c, C->leaf_layer, C->leaf_size, 1.0f, C->curl, C->upbias, 2, C->lod_layer, C->lod_size, C->lod_div > 0 ? C->lod_div : 3);
     free(L.a);
 }
 
@@ -676,6 +677,16 @@ static VRng species_rng(int kind, int variant) { VRng r = {hashu((uint32_t)kind 
 static void species_dims(int kind, int variant, float* H, float* r0) { veg_species_dims(kind, variant, H, r0); }   // veg_place.h (shared with the trunk colliders)
 
 // ---------------------------------------------------------------- species
+// A broadleaf crown tuned at height ref, grown to height H: twigs spaced and
+// leaf clusters sized with the tree (by the square root: a leaf does not grow
+// with its tree, a cluster of them does a little), and more of them, so a
+// tall crown is as full as a small one without its twigs multiplying.
+static void crown_scale(Crown* C, float ref) {
+    float k = C->H / ref; if (k <= 1) return;
+    C->sp3 *= sqrtf(k); C->twig_len *= sqrtf(k); C->leaf_size *= sqrtf(k); C->lod_size *= k;
+    int n0 = C->nleaf; C->nleaf = (int)(n0 * k * k / sqrtf(k));
+    C->lod_div = (int)(3.0f * C->nleaf / n0 + 0.5f);   // the reduced mesh keeps as many cards as before, k times longer
+}
 static void gen_broadleaf(Gen* g, int s) {
     float H, r0; species_dims(VEG_BROADLEAF, g->variant, &H, &r0);
     Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.3f, 0.42f), .stems = 1, .leader = 0, .limbs_lo = 3, .limbs_hi = 5, .sp1 = 0.9f,
@@ -688,6 +699,7 @@ static void gen_broadleaf(Gen* g, int s) {
                        C.leaf_size = 0.38f; C.nleaf = 1000; spread = 0.72f; cy = 0.62f; ry = 0.4f; }
     else if (s == 3) { C.fork = 0.38f; C.nleaf = 420; C.sp2 = 0.5f; C.leaf_size = 0.38f; C.lod_size = 1.0f; spread = 0.85f; C.droop = 0.4f; }
     else { C.nleaf = 1100; C.leaf_size = 0.45f; spread = 0.95f; }
+    crown_scale(&C, s == 0 ? 10.5f : s == 2 ? 11.5f : s == 3 ? 5.5f : 9.0f);
     Env E; float rx = H * 0.44f * spread * grr(g, 0.9f, 1.1f), rz = H * 0.44f * spread * grr(g, 0.9f, 1.1f);
     env_init(g, &E, v3(grr(g, -0.06f, 0.06f) * H, H * cy, grr(g, -0.06f, 0.06f) * H), v3(rx, H * ry, rz), 6, 0.16f);
     crown_tree(g, &C, &E);
@@ -1457,6 +1469,7 @@ static void gen_ginkgo(Gen* g) {
     Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.22f, 0.3f), .stems = 1, .leader = 1, .sp1 = 0.9f, .el1 = 0.75f,
                .sp2 = 0.7f, .sp3 = 0.4f, .ang2 = 0.7f, .ang3 = 0.9f, .trop1 = 0.1f, .trop2 = 0.08f, .trop3 = 0.2f, .twig_len = 0.5f,
                .leaf_layer = L_CL_GINKGO, .lod_layer = L_LEAF2, .nleaf = 520, .leaf_size = 0.42f, .lod_size = 1.3f, .curl = 0.25f, .upbias = 0.3f, .lobes = 0.15f, .droop = 0.0f};
+    crown_scale(&C, 12.5f);
     Env E; env_init(g, &E, v3(0, H * 0.6f, 0), v3(H * 0.27f, H * 0.42f, H * 0.25f), 7, 0.3f);
     crown_tree(g, &C, &E);
 }
@@ -1467,6 +1480,7 @@ static void gen_plane(Gen* g) {
     Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.3f, 0.38f), .stems = 1, .leader = 0, .limbs_lo = 3, .limbs_hi = 5, .sp1 = 0.9f, .el1 = 0.55f,
                .sp2 = 0.75f, .sp3 = 0.4f, .ang2 = 0.95f, .ang3 = 0.9f, .trop1 = 0.04f, .trop2 = 0.04f, .trop3 = 0.12f, .twig_len = 0.8f,
                .leaf_layer = L_CL_PLANE, .lod_layer = L_LEAF3, .nleaf = 700, .leaf_size = 0.6f, .lod_size = 1.8f, .curl = 0.3f, .upbias = 0.2f, .lobes = 0.3f, .droop = 0.2f};
+    crown_scale(&C, 14.5f);
     Env E; env_init(g, &E, v3(0, H * 0.62f, 0), v3(H * 0.46f, H * 0.36f, H * 0.46f), 7, 0.18f);
     crown_tree(g, &C, &E);
 }
