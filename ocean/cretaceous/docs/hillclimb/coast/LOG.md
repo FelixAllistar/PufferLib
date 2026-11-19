@@ -50,3 +50,6 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
 10. Fault: from 30 m (`strW30`) the back dunes read as a field of identical small cycads, like toy mushrooms in rows.
     Change: dune cycads 0.5 to 0.3 of the layer in fewer clumps, belt cycads 0.3 to 0.15. Kept: `strW30` thins to a
     few cycads among the scrub; up close (`strD12`) the scrub leads and the strand is a little sparser.
+11. Fault: from 230 m (`airW`) the strand's palm groves read as a thin scatter. Change: wider groves (palm layer
+    0.12-1 over a wider band of the grove noise). Reverted: 122 more palms on the island, no visible difference in
+    `airW`, `airN` or `strD12`.
