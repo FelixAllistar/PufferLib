@@ -281,7 +281,7 @@ typedef struct { float* p; float* n; float mean[3]; bool ok; } BarkImg;   // AT 
 typedef struct {
     SpriteSet fern, blade, spray, strap, magn, laurel, heart, round, sprig, small, palmate, lobed, serrate;
     SpriteSet grass, pinna;   // grass blades (green and dry); tree-fern pinnae (a bipinnate leaf and fern fronds)
-    BarkImg bark[4];   // angiosperm, conifer, palm, tree fern
+    BarkImg bark[BARK_SCANS];   // by bark_index (veg_layers.h): angiosperm, redwood, palm, tree fern, araucaria, podocarp, ginkgo, plane
 } Photos;
 
 static float srgb_lin(uint8_t v) { float c = v / 255.0f; return c <= 0.04045f ? c / 12.92f : powf((c + 0.055f) / 1.055f, 2.4f); }
@@ -396,13 +396,14 @@ static void photos_load(Photos* P) {
     load_sprites(&P->palmate, "LeafSet010", 6, 1.3f, 1);
     load_sprites(&P->lobed, "LeafSet025", 9, 1.3f, 1);
     load_sprites(&P->serrate, "LeafSet014", 6, 1.0f, 1);
-    static const char* bn[4] = {"bark_brown_02", "metasequoia_bark", "palm_bark", "japanese_cedar_bark"};
-    for (int i = 0; i < 4; i++) load_bark(&P->bark[i], bn[i]);
+    static const char* bn[BARK_SCANS] = {"chinese_hackberry_bark", "metasequoia_bark", "palm_bark", "japanese_cedar_bark",
+                                         "pine_bark", "japanese_cedar_bark", "bark_brown_02", "bark_platanus"};
+    for (int i = 0; i < BARK_SCANS; i++) load_bark(&P->bark[i], bn[i]);
 }
 static void photos_free(Photos* P) {
     SpriteSet* sets[] = {&P->fern, &P->blade, &P->spray, &P->strap, &P->magn, &P->laurel, &P->heart, &P->round, &P->sprig, &P->small, &P->palmate, &P->lobed, &P->serrate, &P->grass, &P->pinna};
     for (int k = 0; k < (int)(sizeof sets / sizeof sets[0]); k++) for (int i = 0; i < sets[k]->n; i++) { free(sets[k]->s[i].p); free(sets[k]->s[i].m); }
-    for (int i = 0; i < 4; i++) { free(P->bark[i].p); free(P->bark[i].n); }
+    for (int i = 0; i < BARK_SCANS; i++) { free(P->bark[i].p); free(P->bark[i].n); }
 }
 // Bilinear sample at (x, y) in sprite texels: o = colour (weighted by
 // coverage) and coverage, then the material (tilt right, tilt tipward, light
@@ -464,12 +465,13 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
         [L_PODO] = {0.024f, 0.056f, 0.026f}, [L_LEAF] = {0.045f, 0.095f, 0.03f}, [L_LEAF2] = {0.032f, 0.075f, 0.026f},
         [L_LEAF3] = {0.048f, 0.1f, 0.034f}, [L_PALM] = {0.05f, 0.098f, 0.04f}, [L_SHRUB] = {0.036f, 0.08f, 0.028f},
         [L_BARK] = {0.085f, 0.068f, 0.052f}, [L_BARK_CON] = {0.11f, 0.062f, 0.042f}, [L_BARK_PALM] = {0.09f, 0.076f, 0.058f},
-        [L_BARK_FERN] = {0.055f, 0.04f, 0.028f},
+        [L_BARK_FERN] = {0.055f, 0.04f, 0.028f}, [L_BARK_ARAU] = {0.1f, 0.075f, 0.058f}, [L_BARK_PODO] = {0.12f, 0.075f, 0.055f},
+        [L_BARK_GINKGO] = {0.1f, 0.088f, 0.072f}, [L_BARK_PLANE] = {0.13f, 0.12f, 0.095f},
         [L_GRASS] = {0.046f, 0.102f, 0.027f}, [L_SEDGE] = {0.04f, 0.09f, 0.033f}, [L_REED] = {0.056f, 0.098f, 0.034f},
     };
     const float* t = T[layer];
     if (is_bark_layer(layer)) {
-        const BarkImg* b = &P->bark[layer == L_BARK ? 0 : layer == L_BARK_CON ? 1 : layer == L_BARK_PALM ? 2 : 3];
+        const BarkImg* b = &P->bark[bark_index(layer)];
         if (!b->ok) return false;
         // Pale flakes and lichen in a bark photo (the metasequoia photo's
         // white flecks most of all) read as birch-like white blotches once lit:
@@ -1381,16 +1383,17 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     // Debug (CRET_DUMP_ATLAS=FILE): every layer at half size, side by side, as a PPM strip.
     int dw = AT / 2 * L_COUNT, dh = AT / 2; uint8_t* strip = dump ? calloc((size_t)dw * dh, 3) : NULL;
     // Painted bark is one neutral layer; species tones it when photos are missing.
-    static const float BARK_TINT[4][3] = {{0.95f, 0.82f, 0.68f}, {0.95f, 0.75f, 0.6f}, {1.05f, 1.0f, 0.92f}, {0.45f, 0.33f, 0.22f}};
+    static const float BARK_TINT[BARK_SCANS][3] = {{0.95f, 0.82f, 0.68f}, {0.95f, 0.75f, 0.6f}, {1.05f, 1.0f, 0.92f}, {0.45f, 0.33f, 0.22f},
+                                                   {0.9f, 0.8f, 0.72f}, {0.95f, 0.75f, 0.62f}, {0.9f, 0.86f, 0.8f}, {1.1f, 1.05f, 0.92f}};
     #pragma omp parallel for schedule(dynamic, 1) reduction(+:nphoto)
     for (int k = 0; k < L_COUNT; k++) {
         Px* img = malloc(sizeof(Px) * AT * AT);
-        if (k >= L_CL_MAGN) { new_layer(k, img, &photos); grade_layer(k, img); }
+        if (k >= L_CL_MAGN && !is_bark_layer(k)) { new_layer(k, img, &photos); grade_layer(k, img); }
         else if (photo_layer(k, img, &photos)) { grade_layer(k, img); nphoto++; }
         else {
             paint_layer(FALLBACK[k], img);
             if (is_bark_layer(k)) {
-                const float* tn = BARK_TINT[k == L_BARK ? 0 : k == L_BARK_CON ? 1 : k == L_BARK_PALM ? 2 : 3];
+                const float* tn = BARK_TINT[bark_index(k)];
                 for (int i = 0; i < AT * AT; i++) { img[i].r *= tn[0]; img[i].g *= tn[1]; img[i].b *= tn[2]; }
             }
         }

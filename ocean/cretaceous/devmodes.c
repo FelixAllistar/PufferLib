@@ -642,7 +642,14 @@ static void gallery_meadow(CretSim* sim, float t) {
 // LODs of one distance should agree in brightness and hue; tools/lodmatch.py
 // measures them. Clouds are off. CRET_GALLERY_TOD sets the time of day (0..1, default 0.4375).
 static int capture_match(Gallery* g, CretSim* sim, CretView* view, const char* dir, const char* list) {
-    static const float DIST[3] = {30, 150, 300};
+    // CRET_GALLERY_MATCH_DIST="3,30" picks other distances (up to 3); under 10 m the
+    // eye is 1.2 m up and aims 0.8 m up the trunk. CRET_GALLERY_MATCH_AZ (degrees)
+    // swings the camera round the tree, to see the sunlit side.
+    float DIST[3] = {30, 150, 300}; int nd = 3;
+    if (getenv("CRET_GALLERY_MATCH_DIST")) {
+        nd = 0; for (const char* p = getenv("CRET_GALLERY_MATCH_DIST"); *p && nd < 3;) { DIST[nd++] = (float)atof(p); const char* e = strchr(p, ','); if (!e) break; p = e + 1; }
+    }
+    float maz = getenv("CRET_GALLERY_MATCH_AZ") ? (float)atof(getenv("CRET_GALLERY_MATCH_AZ")) * PI / 180 : 0;
     static const char* LM[4] = {"bare", "full", "reduced", "impostor"};
     CretVeg* v = &view->veg; float C = gal_centre(), z0 = gal_row_z(GI_TREE); int rc = 0;
     if (getenv("CRET_GALLERY_TOD")) sim->time_of_day = (float)atof(getenv("CRET_GALLERY_TOD"));
@@ -662,7 +669,7 @@ static int capture_match(Gallery* g, CretSim* sim, CretView* view, const char* d
     // Per distance: the empty plain first, which sets the exposure, then every
     // tree with the eye adaptation held (dt 0), so a big dark crown does not
     // re-expose the sky and the frames differ only in the tree.
-    for (int d = 0; d < 3; d++) for (int s = 0; s < ns; s++) {
+    for (int d = 0; d < nd; d++) for (int s = 0; s < ns; s++) {
         int kind = subj[s][0], var = subj[s][1];
         for (int t = 0; t < v->tiles_n * v->tiles_n; t++) v->tiles[t].ntrees = 0;
         float H = 10;
@@ -673,10 +680,12 @@ static int capture_match(Gallery* g, CretSim* sim, CretView* view, const char* d
         v->imp_built = false;   // the impostor buffer is built from the tiles: rebuild it for this subject (it stayed empty after the bare frame)
         for (int lm = kind < 0 ? 0 : 1; lm < (kind < 0 ? 1 : 4); lm++) {
             // Every frame aims at the same point (5.5 m up), so the bare frame frames each tree alike.
-            CretCamera cam = {{C, GAL_GROUND + 2, z0 - DIST[d]}, PI / 2, atan2f(5.5f - 2, DIST[d]), 60};
+            float eye = DIST[d] < 10 ? 1.2f : 2, aim = DIST[d] < 10 ? 0.8f : 5.5f;
+            CretCamera cam = {{C + sinf(maz) * DIST[d], GAL_GROUND + eye, z0 - cosf(maz) * DIST[d]}, PI / 2 + maz, atan2f(aim - eye, DIST[d]), 60};
             g->lod_mode = lm;
             if (kind < 0) { view->adapt_valid = false; view->cam_pos[1] += 1e4f; }
-            for (int f = 0; f < 30; f++) { gallery_apply_lod(g, view, &cam); BeginDrawing(); cret_view_render(view, sim, &cam, kind < 0 ? 1.0f / 30 : 0.0f); EndDrawing(); }
+            int nf = getenv("CRET_GALLERY_MATCH_FRAMES") ? atoi(getenv("CRET_GALLERY_MATCH_FRAMES")) : 30;   // fewer on software GL
+            for (int f = 0; f < nf; f++) { gallery_apply_lod(g, view, &cam); BeginDrawing(); cret_view_render(view, sim, &cam, kind < 0 ? 1.0f / 30 : 0.0f); EndDrawing(); }
             char path[1024];
             if (kind < 0) snprintf(path, sizeof path, "%s/match_bare_%.0fm.png", dir, DIST[d]);
             else snprintf(path, sizeof path, "%s/match_%s%d_%.0fm_%s.png", dir, VEG_NAME[kind], var, DIST[d], LM[lm]);

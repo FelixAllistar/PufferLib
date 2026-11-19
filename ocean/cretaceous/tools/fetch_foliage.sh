@@ -50,7 +50,11 @@ grass_medium_02 grass_medium_02 grass_medium_02 2k up 9 1024
 fir_tree_01 fir_tree_01 fir_tree_01_twig 2k up 6 1024
 jacaranda_tree jacaranda_tree jacaranda_tree_leaves 2k ccw 1 1024
 "
-PH_BARK="metasequoia_bark palm_bark bark_brown_02 japanese_cedar_bark"
+# Bark scans (CC0), one per bark layer (render/veg_layers.h bark_index):
+# angiosperm (smooth grey), dawn redwood, palm and cycad, tree fern, araucaria
+# (plates), podocarp (fibrous strips), ginkgo (furrowed grey), plane (flakes).
+# 2K, shrunk to 512 px.
+PH_BARK="chinese_hackberry_bark metasequoia_bark palm_bark japanese_cedar_bark pine_bark japanese_cedar_bark bark_brown_02 bark_platanus"
 
 get() { [ -s "$2" ] || curl -sfL -A "$UA" -o "$2" "$1"; }
 echo "$ACG" | while read -r id orient n px; do
@@ -71,8 +75,10 @@ echo "$PH" | while read -r set model pre res orient n px; do
 done
 for b in $PH_BARK; do
     mkdir -p "$DL/$b"
-    get "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/$b/${b}_diff_1k.jpg" "$DL/$b/${b}_diff_1k.jpg"
-    get "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/$b/${b}_nor_gl_1k.jpg" "$DL/$b/${b}_nor_gl_1k.jpg"
+    get "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/$b/${b}_diff_2k.jpg" "$DL/$b/${b}_diff_2k.jpg"
+    get "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/$b/${b}_nor_gl_2k.jpg" "$DL/$b/${b}_nor_gl_2k.jpg"
+    get "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/$b/${b}_ao_2k.jpg" "$DL/$b/${b}_ao_2k.jpg"
+    get "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/$b/${b}_disp_2k.jpg" "$DL/$b/${b}_disp_2k.jpg"
 done
 
 "$PY" -I - "$DL" "$OUT" "$ACG" "$PH" "$PH_BARK" <<'EOF'
@@ -204,9 +210,30 @@ for line in ph.strip().splitlines():
     sid, model, pre, res, orient, n, px = line.split()
     d = os.path.join(dl, sid)
     save_sprites(sid, Image.open(d + "/diff.jpg"), Image.open(d + "/alpha.png"), Image.open(d + "/nor_gl.jpg"), None, orient, int(n), int(px))
-for b in barks:
-    Image.open(os.path.join(dl, b, b + "_diff_1k.jpg")).convert("RGB").resize((512, 512), Image.LANCZOS).save(os.path.join(out, "bark_%s.png" % b))
-    Image.open(os.path.join(dl, b, b + "_nor_gl_1k.jpg")).convert("RGB").resize((512, 512), Image.LANCZOS).save(os.path.join(out, "bark_%s_n.png" % b))
+def bark_albedo(b):
+    """The scan's colour with its own shade put back: the ambient occlusion,
+    and the furrows (the low end of the displacement map) darkened, so the bark
+    keeps its relief where the normal map can no longer show it (in shade, and
+    in the mips of a distant trunk)."""
+    d = os.path.join(dl, b)
+    col = Image.open(os.path.join(d, b + "_diff_2k.jpg")).convert("RGB")
+    try:
+        ao = Image.open(os.path.join(d, b + "_ao_2k.jpg")).convert("L").resize(col.size, Image.BILINEAR)
+        disp = Image.open(os.path.join(d, b + "_disp_2k.jpg")).convert("L").resize(col.size, Image.BILINEAR)
+    except OSError:
+        return col
+    h = disp.histogram(); tot = sum(h); acc = 0; lo = hi = None
+    for v in range(256):   # the 5th and 95th percentiles: furrow floor and plate top
+        acc += h[v]
+        if lo is None and acc >= 0.05 * tot: lo = v
+        if hi is None and acc >= 0.95 * tot: hi = v
+    hi = max(hi, lo + 1)
+    shade = disp.point(lambda v: int(255 * (0.5 + 0.5 * min(max((v - lo) / (hi - lo), 0.0), 1.0) ** 0.8)))
+    k = ImageChops.multiply(ao, shade)
+    return ImageChops.multiply(col, Image.merge("RGB", (k, k, k)))
+for b in dict.fromkeys(barks):
+    bark_albedo(b).resize((512, 512), Image.LANCZOS).save(os.path.join(out, "bark_%s.png" % b))
+    Image.open(os.path.join(dl, b, b + "_nor_gl_2k.jpg")).convert("RGB").resize((512, 512), Image.LANCZOS).save(os.path.join(out, "bark_%s_n.png" % b))
     print("bark", b)
 EOF
 du -sh "$OUT"
