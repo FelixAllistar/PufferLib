@@ -4,6 +4,7 @@
 in vec3 v_world, v_base;
 in vec2 v_uv;
 in float v_fade, v_w, v_hue, v_blend;
+flat in float v_tone;
 flat in float v_layer0, v_layer1;
 flat in vec2 v_rot;
 uniform sampler2DArray t_imp_albedo, t_imp_normal;
@@ -50,7 +51,7 @@ void main() {
     vec3 N = normalize(vec3(c * n.x - s * n.z, n.y, s * n.x + c * n.z));
     // Baked impostor texels mix leaves and bark; tint by greenness so trunks keep their colour.
     float leafy = smoothstep(0.0, 0.04, a.g - a.r);
-    vec3 albedo = a.rgb * mix(vec3(1.0), vec3(1.0 + 0.14 * v_hue, 1.0 + 0.05 * v_hue, 1.0 - 0.12 * v_hue) * stand_tint(v_base.xz), leafy);
+    vec3 albedo = a.rgb * mix(vec3(1.0), vec3(1.0 + 0.14 * v_hue, 1.0 + 0.05 * v_hue, 1.0 - 0.12 * v_hue) * stand_tint(v_base.xz) * v_tone, leafy);
     // Bark texels are lit as bark (Lambert, no translucency, no green-filtered
     // sky), as the mesh lights them: shaded as a leaf, a bare trunk glowed in
     // the sun and read as a bright stick under a dark crown.

@@ -1169,6 +1169,30 @@ static const float TREE_LOD[VEG_KINDS] = {1.0f, 1.0f, 0.6f, 1.0f, 0.8f, 1.0f, 0.
 // cost). The fixed metres let a 35 m conifer turn into an impostor at the
 // same distance as a 20 m one, where its larger silhouette shows the swap.
 #define TREE_SWITCH_MAX 1.15f
+#define VEG_IMP_TONES 64   // impostor variants with a tone (veg_imp.vs u_imp_tone)
+// Leaf tone of the reduced mesh and of the impostor against the full mesh, per kind and variant (1: as
+// baked). The reduced mesh draws its crown with fewer, larger whole-layer cards whose sprites are lighter or
+// darker than the full mesh's clusters, and an impostor (one card) cannot shade its own crown from the sun as
+// the meshes' shadow maps do: left alone, a redwood's impostor drew 21% lighter than its mesh at 150 m and a
+// magnolia's reduced crown 27% lighter at 30 m, so forests changed tone where each level took over. These
+// scale the leaf albedo (veg.fs, veg_imp.fs) so the three agree; measured with the gallery's LOD-match pages
+// (devmodes.c CRET_GALLERY_MATCH, tools/lodmatch.py) at 30 m (reduced) and 150 m (impostor) by day.
+// Variants: conifer {araucaria, podocarp, redwood, young redwood, old araucaria, old podocarp, cypress, old
+// redwood}, broadleaf {magnolia, laurel, katsura, ginkgo, magnolia, laurel, plane, chloranth}, tree fern
+// {Cyathea x2, Dicksonia x2, ...}, palm {Sabal x3, feather palm, ...} (render/flora.h FLORA_SLOT).
+static const float LOD_TONE[VEG_KINDS][VEG_VARIANTS] = {
+    [VEG_CONIFER] = {0.91f, 0.93f, 0.91f, 0.8f, 0.91f, 0.93f, 0.84f, 1.07f},
+    [VEG_BROADLEAF] = {0.69f, 0.72f, 0.93f, 1.45f, 0.69f, 0.72f, 0.8f, 0.72f},
+    [VEG_TREEFERN] = {0.78f, 0.78f, 0.78f, 0.78f, 0.78f, 0.78f, 0.78f, 0.78f},
+    [VEG_PALM] = {1, 1, 1, 1, 1, 1, 1, 1},
+};
+static const float IMP_TONE[VEG_KINDS][VEG_VARIANTS] = {
+    [VEG_CONIFER] = {0.86f, 1, 0.66f, 1.03f, 0.86f, 1, 1.25f, 0.63f},
+    [VEG_BROADLEAF] = {1.1f, 0.96f, 0.73f, 0.77f, 1.1f, 0.96f, 0.81f, 0.96f},
+    [VEG_TREEFERN] = {1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f},
+    [VEG_PALM] = {0.68f, 0.68f, 0.68f, 0.68f, 0.68f, 0.68f, 0.68f, 0.68f},
+};
+static float lod_tone(int k, int q) { float t = LOD_TONE[k][q]; return t > 0 ? t : 1.0f; }
 static float tree_switch_scale(const CretVeg* v, const VegInstance* in) {
     float h = v->mesh[in->kind][in->variant].height * in->scale, m = v->kind_height[in->kind];   // m: the kind's mean over the island
     return m > 0 ? clampf(sqrtf(h / m), 0.85f, TREE_SWITCH_MAX) : 1.0f;
@@ -2019,7 +2043,16 @@ static void select_impostors(CretVeg* v, const VFrustum* fr, float cx, float cz)
 // Fade inputs for veg_imp.vs: the mesh range (times the per-tree factor), the
 // crossfade band and the far range, as cret_veg_prepare chooses meshes.
 #define VEG_FAR_BAND 18.0f
-static void imp_uniforms(const CretVeg* v, const GfxProgram* p) { gfx_set3f(p, "u_imp_range", v->near_range, VEG_FAR_BAND, v->far_range); gfx_set1i(p, "u_imp_blend", v->imp_blend); }
+static void imp_uniforms(const CretVeg* v, const GfxProgram* p) {
+    gfx_set3f(p, "u_imp_range", v->near_range, VEG_FAR_BAND, v->far_range); gfx_set1i(p, "u_imp_blend", v->imp_blend);
+    // Each variant's leaf tone (IMP_TONE), by its first layer / VEG_IMPOSTOR_VIEWS.
+    float tone[VEG_IMP_TONES]; for (int i = 0; i < VEG_IMP_TONES; i++) tone[i] = 1.0f;
+    for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
+        int l = v->imp_layer[k][q] / VEG_IMPOSTOR_VIEWS;
+        if (v->imp_layer[k][q] >= 0 && l < VEG_IMP_TONES && IMP_TONE[k][q] > 0) tone[l] = IMP_TONE[k][q];
+    }
+    GLint loc = glGetUniformLocation(p->id, "u_imp_tone"); if (loc >= 0) glUniform1fv(loc, VEG_IMP_TONES, tone);
+}
 // Draws the impostor runs with p already in use.
 static void draw_impostor_runs(const CretVeg* v) {
     for (int r = 0; r < v->nimp_run; r++) {
@@ -2082,11 +2115,11 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
                 // 8 m crossfade to the reduced mesh: the meshes share a skeleton, only leaf tone and detail trade.
                 float out = 1.0f - sstep(n_eff - band, n_eff, d), L0 = v->tree_lod_dist * TREE_LOD[in->kind] * sz, lb = 4.0f, ht = vm->height * in->scale;
                 if (!v->mesh_lo[in->kind][in->variant].tris || d < L0 - lb) push(&near[in->kind][in->variant], in, out, 0, 0, ht);
-                else if (d > L0 + lb) push(&near[in->kind][VEG_VARIANTS + in->variant], in, out, 0, 0, ht);
+                else if (d > L0 + lb) push(&near[in->kind][VEG_VARIANTS + in->variant], in, out, lod_tone(in->kind, in->variant) - 1.0f, 0, ht);
                 else {
                     float f = 1.0f - sstep(L0 - lb, L0 + lb, d);
                     push(&near[in->kind][in->variant], in, f, 0, 0, ht);
-                    push(&near[in->kind][VEG_VARIANTS + in->variant], in, -1.0f - f, 0, 0, ht);
+                    push(&near[in->kind][VEG_VARIANTS + in->variant], in, -1.0f - f, lod_tone(in->kind, in->variant) - 1.0f, 0, ht);
                 }
             }
         }

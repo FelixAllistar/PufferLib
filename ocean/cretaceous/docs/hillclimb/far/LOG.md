@@ -13,3 +13,12 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
    takes the stand's canopy (the terrain's canopy density, as the ground, props and animals beside it do) on its
    sky light, to 0.42/0.5/0.36 of it under a full canopy, faded in from 15 to 40 m (`veg_light.glsl`). Kept: the
    trunks sit in the forest's shade; lone trees in the open are unchanged.
+2. Fault: each level of detail drew its crown in another tone, so a forest changed colour where the levels
+   took over (lodmatch, luma against the full mesh: magnolia's reduced crown 1.27 at 30 m, laurel 1.22, young
+   redwood 1.15, tree fern 1.17, ginkgo 0.79; the redwood impostors 1.21-1.23 at 150 m, katsura 1.13, palm 1.18).
+   The reduced mesh's merged cards are whole sprites lighter or darker than the full mesh's clusters, and an
+   impostor cannot shade its own crown from the sun as the meshes' shadow maps do. Change: a leaf tone per kind
+   and variant for the reduced mesh (`LOD_TONE`, passed in the instance's spare slot) and for the impostor
+   (`IMP_TONE`, a uniform per variant), fitted in two rounds of lodmatch. Kept: reduced crowns within 5% of the
+   full mesh at 30 m for 16 of 20 trees measured (was 6 of 13), impostors within 5% at 150 m for 18 of 20 (was
+   8 of 13); in `mid` and `hill` the reduced broadleaf crowns lost their lime glare and the stand reads as one.

@@ -7,7 +7,7 @@ layout(location = 3) in vec4 a_attr;     // layer, wind weight along the plant (
 layout(location = 7) in vec4 a_wind;     // limb phase, sub-branch weight, sub-branch phase, leaf flutter (0..1; render/veg_gen.h)
 layout(location = 4) in vec4 i_ps;       // position, scale
 layout(location = 5) in vec4 i_rot;      // cos yaw, sin yaw, hue, phase
-layout(location = 6) in vec4 i_extra;    // fade, -, bend (0 rigid .. 1 grass; ground cover only), plant height (m)
+layout(location = 6) in vec4 i_extra;    // fade, leaf tone - 1 (reduced tree meshes: veg.c LOD_TONE), bend (0 rigid .. 1 grass; ground cover only), plant height (m)
 uniform mat4 u_viewproj;
 uniform float u_time;
 uniform int u_bake;
@@ -21,7 +21,7 @@ uniform vec4 u_trample;
 out vec3 v_world, v_normal, v_base;
 out vec3 v_rel;    // position relative to the camera: card normals from its screen derivatives (common.glsl veg_card_normal)
 out vec2 v_uv;
-out float v_ao, v_leaf, v_hue, v_fade, v_w, v_var;
+out float v_ao, v_leaf, v_hue, v_fade, v_w, v_var, v_tone;
 out vec3 v_cell;   // the fade key's lattice: 12.5 cm cells of the plant's own mesh, offset per plant (veg.fs veg_fade_key)
 flat out float v_bark;
 flat out float v_layer;
@@ -96,7 +96,7 @@ void main() {
     vec3 wp = wl + i_ps.xyz;
     v_normal = n;
     v_world = wp; v_rel = wp - u_cam; v_base = i_ps.xyz; v_uv = a_uv; v_layer = a_attr.x;
-    v_ao = a_normal.w; v_leaf = a_attr.z; v_bark = a_attr.w; v_hue = i_rot.z; v_fade = i_extra.x;
+    v_ao = a_normal.w; v_leaf = a_attr.z; v_bark = a_attr.w; v_hue = i_rot.z; v_fade = i_extra.x; v_tone = u_bake == 1 ? 1.0 : 1.0 + i_extra.y;
     // Per-leaf variation: a hash of the mesh-space cell (about 40 cm), so
     // neighbouring leaves and fronds differ a little and no two plants match.
     vec3 hc = floor(a_pos * 2.5) + i_rot.w * 7.0;
