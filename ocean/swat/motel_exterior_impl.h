@@ -202,12 +202,26 @@ static void arch_piece_draw(const SwatEnvironmentArt* art,const SwatObject* o,co
     location_mesh_draw(art,o,&p,&view,&art->motel_architecture,shadow,cutaway,false,NULL);
 }
 
+// A section opened by a breach (or shot through over a large share of its face)
+// drops its overlay chunk, so trim, joints or fixtures never bridge the hole.
+// Small bullet holes keep it.
+static bool arch_section_open(const SwatObject* o) {
+    if(!o->cuts)return false;
+    float area=0,face=4*o->half.y*o->half.z;
+    for(int i=0;i<o->cuts->count;i++) {
+        const SwatCut* c=&o->cuts->cuts[i];
+        if(c->kind==SWAT_CUT_BREACH)return true;
+        area+=4*c->height*c->width;
+    }
+    return area>.15f*face;
+}
+
 static void arch_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(o->tag.index>0 && o->tag.index<=SWAT_MOTEL_INSTANCES) {
         for(int i=arch_object_first[o->tag.index];i>=0;i=arch_next[i])arch_piece_draw(art,o,&swat_arch_placements[i],shadow,cutaway);
         return;
     }
-    if(o->part!=SWAT_PART_SKIN || !o->wall_group || o->motion)return;
+    if(o->part!=SWAT_PART_SKIN || !o->wall_group || o->motion || arch_section_open(o))return;
     for(int i=arch_hash[arch_key(o->center.x,o->center.y,o->center.z)];i>=0;i=arch_next[i]) {
         const SwatArchPlacement* a=&swat_arch_placements[i];
         if(fabsf(a->x-o->center.x)>.006f || fabsf(a->y-o->center.y)>.006f || fabsf(a->z-o->center.z)>.006f)continue;

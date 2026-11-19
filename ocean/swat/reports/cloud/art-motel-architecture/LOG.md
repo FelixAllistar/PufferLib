@@ -95,3 +95,10 @@ Blender view `roof`, eye (-2,1.6,-20) -> (-2,2.7,-4), 38 deg (ground-level eleva
 - iter 3: stacks black iron -> galvanized, 90 -> 110 mm (light stacks like the reference). closer: yes
 - engine e1: same camera + the old ext7 roofline view: coolers, stacks, J-vents and antennas break the roofline; awning very bright from above.
 - engine e2: corrugated sheet albedo .42 -> .34 (the bloom on the awning calms down, corrugation still reads). closer: yes
+
+## Verification
+
+- Breach: `exterior_capture --breach` (wall-breacher opening beside the rear VEXO tag) first showed block joints and a window frame bridging the hole (the cut sections stay active). Sections opened by a breach cut, or cut over >15% of their face, now drop their overlay chunk; the hole is clean, small bullet holes keep the trim. Sheet: `breach_after.jpg`.
+- Performance (llvmpipe, `performance_tool --motel --hidden --draw-only --frames 120`, alternating runs): total 205-209 ms off vs 219-224 ms on (+5%); draw CPU 47.6-49.0 vs 50.4-52.3 ms. Awning corrugation reduced to 2 segments per wave (35k -> 29k triangles) after the first measurement.
+- `make -C ocean/swat test -j4`: pass (4 m 57 s).
+- Kit build is byte-reproducible (two builds, same SHA-256); `sections.json` regenerates identically.

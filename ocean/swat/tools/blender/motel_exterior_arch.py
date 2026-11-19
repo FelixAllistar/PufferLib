@@ -38,7 +38,7 @@ P = dict(
     office_full=True, office_eave=2.85, office_ridge=3.55, office_front=2.45, office_fascia='red', office_fascia_h=0.40, office_sign_y=2.92, office_tie=True, office_tie_h=0.32, office_trim=True,
     annex_parapet=0.55, cooler=True, corbel=True, front_meter=True, capital=True, post_mat='cream', beam_mat='teal', parapet_mat='stucco', coping_mat='teal', coping_out=0.07, service_mast=True, end_plinth_h=0.20, end_meter=True, quoins=True, roof_vents=True, vent_h=0.75,
     canopy_style='corrugated', sheet_wall_y=3.0, sheet_eave_y=2.72, sheet_eave_z=2.10,
-    wave=0.068, wave_amp=0.016, bullnose=0.36, bullnose_drop=0.06, canopy_gutter=False, canopy_board=0.22,
+    wave=0.068, wave_amp=0.016, bullnose=0.36, bullnose_drop=0.06, wave_segs=2, canopy_gutter=False, canopy_board=0.22,
 )
 if len(argv) > 1 and os.path.exists(argv[1]):
     P.update(json.load(open(argv[1])))
@@ -279,14 +279,14 @@ def corrugated(g, xa, xb, cx):
             ang = a_start - (a_start - 0.0) * k / steps
             prof.append(ctr + Vector((math.cos(ang), math.sin(ang))) * R)
         prof.append(prof[-1] + Vector((0, -P['bullnose_drop'])))
-    nseg = int(round((xb - xa) / P['wave'] * 3)); amp = P['wave_amp']
+    nseg = int(round((xb - xa) / P['wave'] * P['wave_segs'])); amp = P['wave_amp']
     norms = []
     for i in range(len(prof)):
         t = (prof[min(i + 1, len(prof) - 1)] - prof[max(i - 1, 0)]).normalized()
         norms.append(Vector((-t.y, t.x)))
     def pt(x, i, off):
         k = (x - xa) / P['wave'] * 2 * math.pi
-        q = prof[i] + norms[i] * (amp * math.sin(k) + off)
+        q = prof[i] + norms[i] * (amp * math.cos(k) + off)
         return Vector((x, q.y, q.x))
     for i in range(nseg):
         xs, xt = xa + (xb - xa) * i / nseg, xa + (xb - xa) * (i + 1) / nseg

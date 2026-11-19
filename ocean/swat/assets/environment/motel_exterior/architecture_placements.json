@@ -65,6 +65,7 @@
   "wave_amp": 0.016,
   "bullnose": 0.36,
   "bullnose_drop": 0.06,
+  "wave_segs": 2,
   "canopy_gutter": false,
   "canopy_board": 0.22
  },

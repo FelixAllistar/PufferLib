@@ -457,6 +457,27 @@ CC0 Poly Haven source URLs/MD5s and budgets are in that folder's README.
   `reports/cloud/art-motel-exterior/`. `SWAT_MOTEL_EXTERIOR=0` gives the
   before state.
 
+### Motel architecture overlay (presentation only)
+
+`assets/environment/motel_exterior/architecture_kit.glb` (built by
+`tools/blender/motel_exterior_arch.py`, header `motel_exterior_arch_data.h`)
+gives the building its silhouette and depth: parapets with dark coping, a
+corrugated bull-nose awning with exposed rafters, sleeved posts with corbel
+brackets, plinths, door/window surrounds, AC collars, per-room meters, block
+coursing and small high bathroom windows on the rear, rear plumbing and
+service mast, end-wall quoins and fixtures, roof coolers/vents/antennas, a red
+front-gable office roof and a parapeted laundry annex. Wall pieces are
+pre-clipped per authoritative skin section and drawn only with that section
+(matched by centre; dropped once the section is breached or mostly cut), so
+breach behaviour matches the rest of the wall; object pieces follow their roof,
+canopy, post or walkway. It replaces the exterior kit's gutters, downspouts,
+post bases and canopy membrane while active. No collision, navigation, cover,
+sight, acoustics, protocol or determinism change. `SWAT_MOTEL_ARCHITECTURE=0`
+restores the previous look. Details, budget and rebuild steps:
+`assets/environment/motel_exterior/README.md`; reference hill-climb log and
+contact sheets: `reports/cloud/art-motel-architecture/`. `exterior_capture`
+takes `--eye X,Y,Z --target X,Y,Z --fov F --name NAME` for one custom view.
+
 ## Motel surroundings, atmosphere and grade (presentation only)
 
 `tools/blender/motel_surroundings.py` (Blender 4.2, fixed seeds, no external
