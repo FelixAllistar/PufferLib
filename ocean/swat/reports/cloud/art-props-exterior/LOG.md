@@ -122,3 +122,20 @@ pedestal payphone. All lettering on the real one is replaced by blank colour.
 8. payphone game 2: moved to the back edge of the sidewalk (-4.6, 34.85) facing the road, paint (0.76,0.57,0.16); closer: yes. Stop.
 
 Budget: 1,074 triangles, 3 materials, shared grain; GLB ~0.17 MB.
+
+## Newspaper boxes (BC2_NEWSBOX01)
+
+Reference: https://commons.wikimedia.org/wiki/File:Group_of_Newspaper_Vending_Machines.jpg
+by Twzink (CC0; copy in refs/newsboxes_ref.jpg). One prop = a row of four
+street boxes; titles and logos replaced by blank tone blocks.
+
+1. newsboxes iter 1: blue coin box, tall three-tier red rack, red coin box; camera far; closer: baseline
+2. newsboxes iter 2: added the black pedestal box (a key silhouette of the ref), tighter spacing, camera closer; closer: yes
+3. newsboxes iter 3: camera higher and closer (22 mm, 1.6 m) like the ref; closer: yes
+4. newsboxes iter 4: rusty_painted_metal grain at full contrast, darker bottoms; closer: yes (small)
+5. newsboxes iter 5: slanted front/top on the blue box; closer: yes
+6. newsboxes iter 6: recessed lower doors on the coin boxes; closer: yes. Stop (Blender).
+7. newsboxes game 1: first spot (-8, 34.95) was inside the existing bus shelter; colours far too saturated; closer: n/a
+8. newsboxes game 2: moved east of the driveway (6.6, 34.95), paints desaturated, paper 0.88 -> 0.72; closer: yes. Stop.
+
+Budget: 960 triangles, 3 materials, rusty_painted_metal grain 512 px; GLB ~0.1 MB.
