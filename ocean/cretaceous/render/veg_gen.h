@@ -692,24 +692,64 @@ static void gen_broadleaf(Gen* g, int s) {
     env_init(g, &E, v3(grr(g, -0.06f, 0.06f) * H, H * cy, grr(g, -0.06f, 0.06f) * H), v3(rx, H * ry, rz), 6, 0.16f);
     crown_tree(g, &C, &E);
 }
-// Podocarp (Podocarpus, Prumnopitys, Dacrycarpus): a straight trunk with
-// fibrous bark under a dense, dark, fine-textured evergreen crown. Many short
-// limbs spiral up the leader, rising a little and sagging at the tips, and
-// their foliage gathers in pads on the outer part of each limb, so the crown
-// reads irregular and layered with dark gaps rather than as one smooth egg.
-// The clusters are small (0.34 m) and many, shoots of narrow spiralled leaves
-// (L_CL_PODO); the reduced mesh keeps every third, as branch cards (L_PODO).
+// Podocarp (Podocarpus totara, Prumnopitys, Dacrycarpus): a straight trunk
+// with fibrous bark under a dense, dark, fine-textured evergreen crown. Limbs
+// rise steeply off the leader and end in rounded pads of foliage (shoots of
+// narrow spiralled leaves, L_CL_PODO), so the crown is a tall, irregular
+// column of dark masses with deep shade between them, never a see-through
+// egg of twigs. Each pad is a cloud of leaf points biased to its surface, a
+// few twigs running into it from the limb; the reduced mesh keeps every
+// sixth card as a whole 2x2 cluster card, three times as long.
 static void gen_podocarp(Gen* g) {
     float H, r0; species_dims(VEG_CONIFER, g->variant, &H, &r0);
-    Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.22f, 0.3f), .stems = 1, .leader = 1, .sp1 = 0.4f, .el1 = 0.12f,
-               .sp2 = 0.3f, .sp3 = 0.15f, .ang2 = 1.0f, .ang3 = 0.95f, .trop1 = 0.05f, .trop2 = 0.08f, .trop3 = 0.2f, .twig_len = 0.45f,
-               .leaf_layer = L_CL_PODO, .lod_layer = L_PODO, .nleaf = 3400, .leaf_size = 0.34f, .lod_size = 0.95f, .curl = 0.15f, .upbias = 0.45f,
-               .lobes = 0.35f, .droop = 0.3f, .pad = 0.85f};
-    Env E; env_init(g, &E, v3(0, H * 0.6f, 0), v3(H * 0.26f * grr(g, 0.9f, 1.15f), H * 0.43f, H * 0.26f * grr(g, 0.9f, 1.15f)), 8, 0.3f);
-    // Lumps may bulge the crown anywhere but never pull its top in: the
-    // crown must taper up to the leader, or the leader stands bare above it.
-    for (int i = 0; i < E.nl; i++) if (E.lump[i][1] > 0.4f) E.lump[i][3] = fmaxf(E.lump[i][3], 0);
-    crown_tree(g, &C, &E);
+    Path T; grow(g, &T, v3(0, -0.3f, 0), vnorm(v3(grr(g, -0.04f, 0.04f), 1, grr(g, -0.04f, 0.04f))), H * 0.93f + 0.3f, 12, r0, 0.04f, 0.02f, 0.05f, NULL, 0, 0, 0.25f, 0, 0);
+    float stem_v = bark(g, &T, 0, 0, 0, 0.35f);
+    LeafPts L = {0}; float h0 = H * grr(g, 0.24f, 0.32f), az = grr(g, 0, 2 * VPI), Rm = H * 0.27f * grr(g, 0.9f, 1.1f);
+    // The crown's radius at height fraction hr of the crown: full from a third
+    // of the way up, rounding in to the top.
+    #define PODO_R(hr) (Rm * (0.55f + 0.45f * sstep(0.0f, 0.3f, (hr))) * sqrtf(fmaxf(1.0f - powf(fmaxf((hr) - 0.35f, 0) / 0.65f, 2.2f), 0.04f)))
+    for (float h = h0; h < H * 0.9f; h += grr(g, 0.32f, 0.5f)) {
+        float hr = (h - h0) / (H - h0), t = (h + 0.3f) / (H * 0.93f + 0.3f); az += 2.39996f + grr(g, -0.3f, 0.3f);
+        V3 pt; float rt, hwt; path_at(&T, t, &pt, NULL, &rt, &hwt, NULL);
+        float el = lerpf(0.3f, 0.85f, hr) + grr(g, -0.15f, 0.15f), R = PODO_R(hr), len = R * grr(g, 0.6f, 0.95f) / fmaxf(cosf(el), 0.35f), ph = gr(g);
+        if (len < 0.6f) len = 0.6f;
+        Path P; grow(g, &P, pt, dir_ae(az, el), len, 6, fminf(rt * 0.55f, 0.025f + 0.025f * len), 0.012f, -0.05f, 0.3f, NULL, 0, hwt, fminf(hwt + 0.7f, 1), 0, 0);
+        if (!g->lod || P.r[0] > 0.05f) bark(g, &P, stem_v * t, ph, 0, 0);
+        // Pads: one at the limb's end, one or two along its outer half.
+        int np = 1 + (len > 2.0f) + (len > 3.5f);
+        for (int k = 0; k < np; k++) {
+            float tp = k == 0 ? 1.0f : grr(g, 0.45f, 0.8f); V3 c, dc; float hp; path_at(&P, tp, &c, &dc, NULL, &hp, NULL);
+            float pr = (0.75f + 0.2f * len) * grr(g, 0.8f, 1.15f) * (k ? 0.8f : 1.0f), phs = gr(g);
+            c = vadd(c, v3(0, pr * 0.3f, 0));
+            // Twigs from the limb up into the pad (the full mesh only: fine, view only).
+            VRng s2 = fork_in(g);
+            if (!g->lod) for (int q = 0; q < 3; q++) {
+                V3 e = vadd(c, v3(grr(g, -0.5f, 0.5f) * pr, grr(g, 0.0f, 0.5f) * pr, grr(g, -0.5f, 0.5f) * pr));
+                V3 st; path_at(&P, tp * grr(g, 0.75f, 0.95f), &st, NULL, NULL, NULL, NULL);
+                Path Q; Q.n = 3; Q.len = vlen(vsub(e, st));
+                for (int m = 0; m < 3; m++) { Q.p[m] = vlerp(st, e, m * 0.5f); Q.r[m] = lerpf(0.014f, 0.005f, m * 0.5f); Q.hw[m] = hp; Q.ws[m] = m * 0.3f; }
+                int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &Q, 3, 1, 0.12f, 0, ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt;
+            }
+            fork_out(g, s2);
+            int nq = (int)(22 * pr * pr) + 6;
+            for (int q = 0; q < nq; q++) {
+                V3 o = vnorm(v3(grr(g, -1, 1), grr(g, -0.55f, 1.0f), grr(g, -1, 1))); float rr = pr * sqrtf(grr(g, 0.15f, 1.0f));
+                V3 lp = vadd(c, v3(o.x * rr, o.y * rr * 0.7f, o.z * rr));
+                V3 ld = vnorm(vadd(o, v3(0, 0.35f, 0)));
+                lp_add(&L, lp, ld, (Wnd){fminf(hp + 0.1f * rr, 1), ph, 0.4f + 0.4f * rr / pr, phs, 0}, 1);
+                if ((q & 7) == 0) tip_add(g, lp, ld, (Wnd){hp, ph, 0.6f, phs, 0}, 0.4f + 0.5f * rr / pr);
+            }
+        }
+    }
+    #undef PODO_R
+    // The top: a pad round the leader's end.
+    V3 top = T.p[T.n - 1];
+    for (int q = 0; q < 60; q++) {
+        V3 o = vnorm(v3(grr(g, -1, 1), grr(g, -0.6f, 1.0f), grr(g, -1, 1))); float rr = 1.1f * sqrtf(grr(g, 0.15f, 1.0f));
+        lp_add(&L, vadd(top, v3(o.x * rr, o.y * rr, o.z * rr)), vnorm(vadd(o, v3(0, 0.4f, 0))), (Wnd){0.4f, 0, 0.6f, 0, 0}, 1);
+    }
+    leaf_cards(g, &L, 7000, v3(0, H * 0.6f, 0), L_CL_PODO, 0.55f, 1.0f, 0.15f, 0.45f, 2, L_CL_PODO, 1.25f, 7);
+    free(L.a);
 }
 // Araucaria. umbrella = 0: Norfolk-like tiers of cords; 1: monkey-puzzle-like
 // dome of upturned scale-leaf ropes on a bare trunk.
