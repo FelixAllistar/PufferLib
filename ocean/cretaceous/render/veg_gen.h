@@ -1475,16 +1475,31 @@ static void gen_herb(Gen* g) {
         else ball(g, top, v3(0, 1, 0), 0.009f, 1.3f, SKIN_GREEN, 5, 3, w);   // a bud
     }
 }
+// One gunnera leaf: a thick, prickly stalk rising at e and arching, the blade cupped up from its end.
+static void gunnera_leaf(Gen* g, float a, float L, float e, float R, float ph, int sides) {
+    V3 d = dir_az(a); Path P; P.n = 5;
+    for (int q = 0; q < 5; q++) { float t = q / 4.0f, el = e - 0.7f * t * t; P.p[q] = vadd(vmul(d, L * t * cosf(el) * 0.8f), v3(0, L * sinf(e) * t - 0.25f * L * t * t, 0)); P.r[q] = lerpf(0.045f, 0.018f, t) * (0.7f + 0.3f * L); P.hw[q] = 0.6f * t; P.ws[q] = 0; }
+    int bt = g->bark_tone; g->bark_tone = 7; tube(g, &P, sides, 1, 0.3f, 0, ph, 0, g->bark_layer, 0, 0); g->bark_tone = bt;
+    // The blade: a big lobed leaf over the stalk's end, tilted up and out like a shallow dish, bending down at the rim.
+    V3 c = P.p[4], ax = vnorm(vadd(d, v3(0, 0.7f, 0))), sd = vnorm(vcross(v3(0, 1, 0), d));
+    card(g, vsub(c, vmul(ax, R * 0.4f)), ax, sd, R * 1.5f, R * 1.5f, L_GUNNERA, 0, 0, 1, 1, 3, -0.7f, (Wnd){0.6f, ph, 0.4f, gr(g), 0});
+}
+// Gunnera (round 2: four thin stalks with leaves under a metre across read as a scrap of a plant): a clump
+// of big leaves, up to 1.5 m across, on stout stalks up to 1.8 m, the outer ones arching out low, the
+// inner ones standing up; the full mesh fills the clump with more leaves (its own stream).
 static void gen_gunnera(Gen* g) {
     int nl = 4 + (int)grr(g, 0, 4);
     for (int k = 0; k < nl; k++) {
-        float a = k * 2.39996f + gr(g), L = grr(g, 0.7f, 1.4f), e = grr(g, 0.85f, 1.25f), ph = gr(g), R = grr(g, 0.55f, 0.85f);
-        V3 d = dir_az(a); Path P; P.n = 5;
-        for (int q = 0; q < 5; q++) { float t = q / 4.0f, el = e - 0.7f * t * t; P.p[q] = vadd(vmul(d, L * t * cosf(el) * 0.8f), v3(0, L * sinf(e) * t - 0.25f * L * t * t, 0)); P.r[q] = lerpf(0.035f, 0.015f, t); P.hw[q] = 0.6f * t; P.ws[q] = 0; }
-        int bt = g->bark_tone; g->bark_tone = 7; tube(g, &P, 5, 1, 0.3f, 0, ph, 0, g->bark_layer, 0, 0); g->bark_tone = bt;
-        // The blade: a big lobed leaf cupped up from the stalk's end, two crossed halves bending down at the rim.
-        V3 c = P.p[4], ax = vnorm(vadd(d, v3(0, 0.25f, 0))), sd = vnorm(vcross(v3(0, 1, 0), d));
-        card(g, vsub(c, vmul(ax, R * 0.15f)), ax, sd, R * 1.5f, R * 1.5f, L_GUNNERA, 0, 0, 1, 1, 3, -0.7f, (Wnd){0.6f, ph, 0.4f, gr(g), 0});
+        float a = k * 2.39996f + gr(g), L = grr(g, 1.2f, 2.1f), e = grr(g, 0.9f, 1.3f), ph = gr(g), R = grr(g, 0.8f, 1.15f);
+        gunnera_leaf(g, a, L, e, R, ph, 5);
+    }
+    if (!g->lod) {
+        VRng sv = fork_in(g); int nx = 3 + (int)grr(g, 0, 2.99f);
+        for (int k = 0; k < nx; k++) {
+            float a = (k + 0.5f) * 2.39996f * 1.618f + gr(g), inner = gr(g);
+            gunnera_leaf(g, a, grr(g, 0.8f, 1.5f) * (1 - 0.3f * inner), grr(g, 1.05f, 1.4f) + 0.15f * inner, grr(g, 0.55f, 0.9f), gr(g), 4);
+        }
+        fork_out(g, sv);
     }
     // The flower spike: a tall knobbly cone of tiny red-brown flowers.
     float h = grr(g, 0.4f, 0.7f); ball(g, v3(0, h * 0.5f, 0), v3(0, 1, 0), h * 0.16f, 3.0f, SKIN_PALM, 8, 6, (Wnd){0.2f, 0, 0, 0, 0});
