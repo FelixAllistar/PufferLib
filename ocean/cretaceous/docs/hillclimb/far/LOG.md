@@ -75,3 +75,9 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
     runs from -32% to +16%, more darker crowns than lighter. Kept: `mid`, `val3` and `hill` keep the mottle of
     single crowns without the lime ones and read darker and richer, as the reference does; the levels still
     agree (the same factor on every level of a tree).
+12. Fault: the young redwood's reduced crown was 24% fatter than its full crown at 30 m and 21% at 150 m (a
+    shorter tree drawn with the mature tree's 1.9 m merged cards): a woolly column where the full mesh is a
+    layered spire. Change: 1.6 m merged cards on the young tree, its leaf tone 0.8 -> 0.89 to hold. Kept: 1.13
+    and 1.12 of the full cover; the outline is the full crown's at 30 m. (Note: lodmatch moves by up to 4% from
+    run to run when the shots before a tree change, through the camera's exposure; tones were fitted on runs of
+    the same tree list.)

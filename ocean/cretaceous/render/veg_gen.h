@@ -1164,7 +1164,7 @@ static void gen_metasequoia(Gen* g) {
         lp_add(&L, q, dir_ae(u * 40, -0.2f), (Wnd){hq, 0, 0.3f, 0, 0}, 1.5f);
     }
     // Sprays leave their shoots on every roll, mostly lying flat in the layer.
-    leaf_cards(g, &L, age == 2 ? 6600 : 5400, v3(0, H * 0.5f, 0), L_CL_SPRAY, 0.72f, 0.85f, 0.35f, 0.05f, 1, L_CL_SPRAY, age == 2 ? 2.1f : 1.9f, age == 2 ? 11 : 8);
+    leaf_cards(g, &L, age == 2 ? 6600 : 5400, v3(0, H * 0.5f, 0), L_CL_SPRAY, 0.72f, 0.85f, 0.35f, 0.05f, 1, L_CL_SPRAY, age == 2 ? 2.1f : age == 0 ? 1.6f : 1.9f, age == 2 ? 11 : 8);   // (the young tree's shorter crown: 1.9 m cards drew it 24% fatter than its full mesh)
     free(L.a);
 }
 // Cycad crown on top of a trunk at `top`.
