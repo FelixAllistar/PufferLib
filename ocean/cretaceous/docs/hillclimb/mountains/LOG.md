@@ -67,3 +67,8 @@ Checks after pass 15: the brief's world shots (`ridge`, `canopy`, `aerial`, `coa
 less cream, `canopy` and `ground` stand in denser forest, the rest are unchanged. `TERRA_VERSION` 25.
 Bake with horizons on 4 CPU cores: about 26 s, as on 5.0 (51.8 s first run against 26.1 s cached; 5.0
 51.1 against 25.0). Trees on the island: 164,025 on 5.0, 183,574 now.
+
+Sheets (5.0 left, this branch right, 1280x720 renders): `mtD.jpg`, `mtE.jpg`, `mtA.jpg` (the main
+summit from the south, south-west and west), `alp2.jpg` (20 m over the summit's south face), `tl2.jpg`
+(4 m up at 456 m), `skyh.jpg`, `ridge.jpg`, `canopy.jpg`, `aerial.jpg`, `des1.jpg` and `des2.jpg` (the
+near-desert from 2 m and 120 m).
