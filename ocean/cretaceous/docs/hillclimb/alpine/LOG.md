@@ -48,3 +48,10 @@ is at the end of this file.
    the dark voids between real talus blocks. Change: `terrain.fs` darkens scree by its height map
    (0.4 in the lowest gaps, none on the blocks), near only (gone by 60-150 m, where the mips average the
    height). Kept: the blocks stand up out of dark gaps; `mtS` unchanged.
+9. Fault: above the tree line the last conifers are lone stems scattered evenly over bare slopes
+   (`tl1`, `tl3`, `mtS`), like lowland trees planted on rock. Change: `terra.c` they stand in tree
+   islands: a noise stretched 3:1 along the prevailing wind picks tight clumps (density 0.85 inside,
+   none between; more in hollows), and scrub forms a skirt round each clump that reaches 9 m further
+   downwind. `TERRA_VERSION` 26. Kept, modest: `tl3` and `mtS` show clumps of trees with open stony
+   ground between, as the krummholz reference does. Trees on the island 183,574 to 184,215. The stems
+   themselves are still full-height straight trees; their shape is the tree meshes' (another track).

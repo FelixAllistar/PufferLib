@@ -1286,10 +1286,16 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         v[TERRA_VEG_PALM] = grow * sstep(0.2f, 0.6f, coast[i] * 2) * (1 - sstep(8.0f, 30.0f, h)) * sstep(20.0f, 24.0f, temp) * (0.3f + 0.7f * clump2);
         // The tree line is not an edge: above it a few stunted outlying conifers stand alone or in small
         // clumps for another 60-140 m (more in the hollows), among thickets of scrub.
+        // They stand in tree islands, as at a real tree line: tight clumps of a few stems, drawn out along
+        // the prevailing wind (a noise stretched 3:1 along it), each with a skirt of scrub that reaches
+        // further on its downwind side, in the shelter of the clump; bare stony ground between the islands.
         float above = sstep(tline - 20, tline + 30, h) * (1 - sstep(tline + 60 + 40 * clampf(hollow, 0, 1), tline + 140, h));
-        float outl = above * grow * (1 - summit) * sstep(-0.1f, 0.25f, n2 + 0.3f * n3) * sstep(0.0f, 8.0f, temp) * (1 - 0.6f * expo[i]);
-        v[TERRA_VEG_CONIFER] = fmaxf(v[TERRA_VEG_CONIFER], 0.5f * outl);
-        v[TERRA_VEG_SHRUB] = grow * (0.25f + 0.4f * sstep(0.6f, 0.3f, moist) + 0.35f * alpine + 0.3f * above * sstep(-0.1f, 0.3f, n2)) * (0.5f + 0.5f * n2) * (1 - sstep(tline + 60, tline + 170, h));
+        float wca = cosf(p->wind_angle), wsa = sinf(p->wind_angle), wal = wx * wca + wz * wsa, wac = -wx * wsa + wz * wca;
+        float isl = fbm(wal / 45.0f, wac / 15.0f, s + 9, 3, 2, 0.5f), isl_lee = fbm((wal - 9.0f) / 45.0f, wac / 15.0f, s + 9, 3, 2, 0.5f);
+        float outl = above * grow * (1 - summit) * sstep(0.12f, 0.24f, isl + 0.15f * clampf(hollow, 0, 1)) * sstep(0.0f, 8.0f, temp) * (1 - 0.6f * expo[i]);
+        v[TERRA_VEG_CONIFER] = fmaxf(v[TERRA_VEG_CONIFER], 0.85f * outl);
+        float skirt = above * (1 - summit) * sstep(0.0f, 0.14f, fmaxf(isl, isl_lee - 0.04f));
+        v[TERRA_VEG_SHRUB] = grow * (0.25f + 0.4f * sstep(0.6f, 0.3f, moist) + 0.35f * alpine * (1 - 0.6f * above) + 0.75f * skirt) * (0.5f + 0.5f * n2) * (1 - sstep(tline + 60, tline + 170, h));
         if (desert > 0) {   // a tree only here and there; cycads and scrub in clumps with bare ground between
             float d = desert, cl = sstep(0.05f, 0.3f, n2 + 0.25f * n3);
             v[TERRA_VEG_CONIFER] *= 1 - 0.93f * d; v[TERRA_VEG_BROADLEAF] *= 1 - 0.95f * d; v[TERRA_VEG_TREEFERN] *= 1 - d; v[TERRA_VEG_PALM] *= 1 - 0.7f * d;
