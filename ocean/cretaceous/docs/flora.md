@@ -115,6 +115,36 @@ margin beyond); moisture, nearness to river water and canopy shade are 0..1.
 | clubmoss and moss | - | Selaginella / Lycopodiales mats and moss cushions of damp shade | any | > 0.45 | any | > 0.4 | 1 | 0.5 | 0.2 / 0 / 0 / 0 | - |
 | bracket fungi and mushrooms | - | polypores and gilled mushrooms on dead wood (Cretaceous mushrooms in amber: Palaeoagaracites) | any | any | any | any | 1 | 0.0 | 0 / 0 / 0 / 0 | - |
 
+### Size and habit of the broadleaves, cycads and tree ferns
+
+Heights are at scale 1 (`veg_species_dims` in `render/veg_place.h`); each
+plant is drawn at 0.75 to 1.25 of that. Trunk girth is about 1/25 to 1/40 of
+the height across. The crowns are grown in `render/veg_gen.h`
+(`gen_broadleaf`, `gen_ginkgo`, `gen_plane`, `gen_cycad`, `gen_treefern`);
+`docs/hillclimb/broadleaf/LOG.md` has what was changed and why.
+
+| species | height (m) | habit |
+|---|---|---|
+| ginkgo | 16-22 | a straight leader; long limbs leave it low and rise steeply, leaf tufts all along them |
+| katsura | 13-18 | 2-4 stems in a broad vase, a full rounded crown |
+| laurel | 9-13 | a dense, dark, upright oval from low down on a short trunk |
+| river plane | 21-27 | a broad crown on a few limbs from a stout trunk |
+| magnolia | 11-16 | a central leader under a tall, dense oval |
+| chloranth | 3.5-5.5 | a shrub of 2-3 stems, leafy from knee height |
+| cycad (Cycas) | trunk 0.9-2.2, the tall form 2.2-3.8 | a stout trunk under a rosette of stiff fronds; a taller trunk carries longer and more fronds |
+| squat cycad | trunk 0.25-0.8 | a low rosette round a central cone |
+| williamsonia | trunk 1.4-2.4 | a slim trunk forking into 2-3 crowned branches |
+| tree fern | trunk 4.5-8 | a slim trunk, 30-40 arching fronds (18-24 on the reduced mesh) in a broad rosette, a skirt of dead fronds |
+| stout tree fern | trunk 2.2-4.2 | a thick trunk under a vase of more upright fronds |
+
+Broadleaf crowns gather their leaves in masses round the outer part of each
+branch (`Crown.clump`), not only along the twigs, and are scaled with the
+tree (`crown_scale`): taller trees get more and slightly larger leaf
+clusters, so a tall crown is not sparser than a small one. The full mesh
+draws every second or third twig and spends those triangles on leaves
+(`crown_full`); the reduced mesh keeps a fixed number of merged cards and
+drops the branches hidden inside the crown.
+
 ### What each is modelled on
 
 - **araucaria**: *Araucaria* (section *Eutacta*, Norfolk-like); araucarian
