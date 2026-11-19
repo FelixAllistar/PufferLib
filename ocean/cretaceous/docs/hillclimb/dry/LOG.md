@@ -75,3 +75,10 @@ plain (Atriplex vesicaria, SW Queensland), Atriplex glauca up close, a cracked r
     shared shrub card, and in dry country the plant shader's leaf tint and green leaf ambient (veg_light.glsl,
     the colour track's) set their colour whatever the texture or frond dryness; a grey dwarf shrub needs a
     change there.
+
+Stopped after pass 12 (three of the last four passes brought no visible gain, and the round's time was up).
+
+Sheets (`cret/hc` left, this branch right, 1280x720 each, Mesa llvmpipe): `01_desB` the near-desert from 260 m,
+`02_desA` toward it from 120 m, `03_dAir` straight down on its heart from 480 m, `04_dPan` its valley floor from
+25 m (the dwarf shrubs), `05_pA` a pan from 40 m, `06_pG` on that pan at 1.8 m (a stony wash bed before), `07_desH`
+on a desert hillside at 2 m, `08_dW` among the shrubs at 0.9 m, `09_grB` dry grassland and forest from 180 m.
