@@ -1,0 +1,19 @@
+0000 policy_check perf=0.719243
+0000 magnet perf=0.736715
+0001 magnet perf=0.670947
+0002 magnet perf=0.651639
+0003 magnet perf=0.695024
+0004 magnet perf=0.688103
+0005 magnet perf=0.648819
+0006 magnet perf=0.574281
+0007 magnet perf=0.639590
+0009 magnet perf=0.688995
+0010 magnet perf=0.601749
+0011 magnet perf=0.741667
+0012 magnet perf=0.702808
+0013 magnet perf=0.644040
+0014 magnet perf=0.689853
+0015 magnet perf=0.733807
+0016 magnet perf=0.744391
+rescore done
+Wed Nov 18 22:41:33 UTC 2026 finalize done

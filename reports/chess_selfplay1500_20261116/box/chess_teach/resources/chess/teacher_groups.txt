@@ -1,0 +1,14 @@
+# chess teacher bank groups (gen_teacher_banks.py): name path
+kqk /workspace/teacher_banks/kqk.txt
+krk /workspace/teacher_banks/krk.txt
+krrk /workspace/teacher_banks/krrk.txt
+kbbk /workspace/teacher_banks/kbbk.txt
+kqkr /workspace/teacher_banks/kqkr.txt
+kqrkr /workspace/teacher_banks/kqrkr.txt
+kqppkpp /workspace/teacher_banks/kqppkpp.txt
+krppkpp /workspace/teacher_banks/krppkpp.txt
+knppkpp /workspace/teacher_banks/knppkpp.txt
+kqnppkrpp /workspace/teacher_banks/kqnppkrpp.txt
+krrppkrpp /workspace/teacher_banks/krrppkrpp.txt
+krnppknpp /workspace/teacher_banks/krnppknpp.txt
+kqbpppkrnppp /workspace/teacher_banks/kqbpppkrnppp.txt

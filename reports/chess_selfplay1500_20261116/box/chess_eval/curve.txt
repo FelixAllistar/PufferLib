@@ -1,0 +1,13 @@
+main1c_3407872000.magnet maia1100-top perf=0.853081 draw=0.104265  (21s)
+main1c_3407872000 maia1100-top perf=0.833333 draw=0.129630  (21s)
+main1c_262144000.magnet maia1100-top perf=0.635266 draw=0.227053  (21s)
+main1c_262144000 maia1100-top perf=0.673171 draw=0.156098  (21s)
+main1c_524288000.magnet maia1100-top perf=0.757075 draw=0.136792  (23s)
+main1c_524288000 maia1100-top perf=0.685644 draw=0.163366  (21s)
+main1c_786432000.magnet maia1100-top perf=0.745283 draw=0.169811  (22s)
+main1c_786432000 maia1100-top perf=0.712500 draw=0.135000  (21s)
+main1c_1048576000.magnet maia1100-top perf=0.817308 draw=0.153846  (21s)
+main1c_1048576000 maia1100-top perf=0.690045 draw=0.185520  (21s)
+main1c_2621440000.magnet maia1500-top perf=0.699519 draw=0.187500  (22s)
+main1c_2621440000 maia1500-top perf=0.723810 draw=0.171429  (23s)
+done

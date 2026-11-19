@@ -1,0 +1,1 @@
+A a256_feat_teach_bc.bin vs B a256_feat_base_bc.bin: A scores 0.486 +-0.025 over 400 games (W/D/L 146/97/157)

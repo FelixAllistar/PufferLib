@@ -1,0 +1,14 @@
+# chess teacher bank groups (gen_teacher_banks.py): name path
+kqk /mnt/d/puffer_media/chess_bc/teacher_banks/kqk.txt
+krk /mnt/d/puffer_media/chess_bc/teacher_banks/krk.txt
+krrk /mnt/d/puffer_media/chess_bc/teacher_banks/krrk.txt
+kbbk /mnt/d/puffer_media/chess_bc/teacher_banks/kbbk.txt
+kqkr /mnt/d/puffer_media/chess_bc/teacher_banks/kqkr.txt
+kqrkr /mnt/d/puffer_media/chess_bc/teacher_banks/kqrkr.txt
+kqppkpp /mnt/d/puffer_media/chess_bc/teacher_banks/kqppkpp.txt
+krppkpp /mnt/d/puffer_media/chess_bc/teacher_banks/krppkpp.txt
+knppkpp /mnt/d/puffer_media/chess_bc/teacher_banks/knppkpp.txt
+kqnppkrpp /mnt/d/puffer_media/chess_bc/teacher_banks/kqnppkrpp.txt
+krrppkrpp /mnt/d/puffer_media/chess_bc/teacher_banks/krrppkrpp.txt
+krnppknpp /mnt/d/puffer_media/chess_bc/teacher_banks/krnppknpp.txt
+kqbpppkrnppp /mnt/d/puffer_media/chess_bc/teacher_banks/kqbpppkrnppp.txt

@@ -78,9 +78,28 @@ static int chess_dgrid(long n) { return (int)((n + BLOCK_SIZE - 1) / BLOCK_SIZE)
 // Per-move lookahead features (2026-11-14, -DCHESS_MOVE_FEATS), as bc_train.py --move-feats: for each legal move m of
 // the side to move, logit[a_m] += sum_f feat_m[f] * (mf_w[f] + (h @ mf_u^T)[f]), feat_m the 7 one-hot bits of the
 // slot code that chess.h writes after CHESS_OBS_END (swing bucket | check << 3 | mate << 4; 255 = empty).
+#ifdef CHESS_MOVE_FEATS2
+#define CHESS_MF 9        // + allows mate in 1 (bit 5), check-led loss (bit 6): chess_tactics.h
+#define CHESS_MF_EMPTY 127
+#else
 #define CHESS_MF 7
+#define CHESS_MF_EMPTY 31
+#endif
+// mf_w is stored with 8 elements (the last one unused, always 0). The allocator starts every tensor on a 16-byte
+// boundary while checkpoints, Muon and the magnet index the parameters as one flat array with no gaps, so a
+// 7-float tensor put every later tensor (mf_u, the MinGRU) one float off: loaded nets had shifted recurrent
+// weights and Muon orthogonalised shifted matrices (found 2026-11-17; every -DCHESS_MOVE_FEATS run before that,
+// mfrl included, was affected). Keep every parameter tensor a multiple of 4 floats.
+// 2026-11-19: the live param buffer is bf16, so 16 bytes = 8 elements: feat2's 12 still left a 4-element gap (mf_u and
+// the GRU 4 elements after their flat offsets in every feat2 run from 11-17 to 11-19). Keep every parameter tensor a
+// multiple of 8 elements. Old feat2 checkpoints convert by appending 4 zeros (buffer offsets do not move).
+#ifdef CHESS_MOVE_FEATS2
+#define CHESS_MF_STORE 16  // 2026-11-19: 12 broke the 16-byte rule for the bf16 param buffer (8 elements), see below
+#else
+#define CHESS_MF_STORE 8
+#endif
 __device__ __forceinline__ float chess_mf_bit(int code, int f) {
-    return f < 5 ? (float)((code & 7) == f) : (float)((code >> (f - 2)) & 1);  // f 5: bit 3, f 6: bit 4
+    return f < 5 ? (float)((code & 7) == f) : (float)((code >> (f - 2)) & 1);  // f 5..8: bits 3..6
 }
 // out[b, a_m] += sum_f bit_f * (mf_w[f] + C[b, f]); one thread per (b, slot); a position never repeats an action
 __global__ void chess_mf_bias(const precision_t* __restrict__ obs, const precision_t* __restrict__ C,
@@ -90,7 +109,7 @@ __global__ void chess_mf_bias(const precision_t* __restrict__ obs, const precisi
     int m = i % CHESS_MF_SLOTS; long b = i / CHESS_MF_SLOTS;
     const precision_t* o = obs + b * OBS_SIZE + O_MOVE_FEATS + 3 * m;
     int code = (int)to_float(o[2]);
-    if (code > 31) return;
+    if (code > CHESS_MF_EMPTY) return;
     int a = (int)to_float(o[0]) * 64 + (int)to_float(o[1]);
     float s = 0.0f;
     for (int f = 0; f < CHESS_MF; f++)
@@ -107,7 +126,7 @@ __global__ void chess_mf_grad(const precision_t* __restrict__ obs, const float* 
     const precision_t* o = obs + (long)b * OBS_SIZE + O_MOVE_FEATS;
     for (int m = 0; m < CHESS_MF_SLOTS; m++) {
         int code = (int)to_float(o[3 * m + 2]);
-        if (code > 31) continue;
+        if (code > CHESS_MF_EMPTY) continue;
         float g = gl[(long)b * A + (int)to_float(o[3 * m]) * 64 + (int)to_float(o[3 * m + 1])];
         for (int f = 0; f < CHESS_MF; f++) acc[f] += chess_mf_bit(code, f) * g;
     }
@@ -224,7 +243,7 @@ static void chess_decoder_init(void* w, ulong* seed, cudaStream_t st) {
     puf_kaiming_init(&dw->w1, 1.0f, (*seed)++, st);
     puf_kaiming_init(&dw->w2, 1.0f, (*seed)++, st);
 #ifdef CHESS_MOVE_FEATS  // start with no feature bias (checkpoints from bc_train.py --move-feats set them)
-    chess_mf_zero<<<1, BLOCK_SIZE, 0, st>>>(dw->mf_w.data, CHESS_MF);
+    chess_mf_zero<<<1, BLOCK_SIZE, 0, st>>>(dw->mf_w.data, CHESS_MF_STORE);
     chess_mf_zero<<<chess_dgrid((long)CHESS_MF * dw->hidden), BLOCK_SIZE, 0, st>>>(dw->mf_u.data, (long)CHESS_MF * dw->hidden);
 #endif
 }
@@ -238,7 +257,7 @@ static void chess_decoder_params(void* w, Allocator* alloc) {
     // mf_w 1-D: Muon skips it (plain momentum SGD). As {1, 7} Muon normalized every update to a unit vector, a fixed
     // lr-sized step on 7 logit scales: 0.5B RL steps pushed "loses >= 2.5 pawns" from -0.28 to -4.9 (Maia greedy
     // 1713 -> 1425, 2026-11-14)
-    dw->mf_w = {.shape = {CHESS_MF}};
+    dw->mf_w = {.shape = {CHESS_MF_STORE}};
     dw->mf_u = {.shape = {CHESS_MF, dw->hidden}};
     alloc_register(alloc, &dw->mf_w); alloc_register(alloc, &dw->mf_u);
 #endif
@@ -270,7 +289,7 @@ static void chess_decoder_train(void* w, void* activations, Allocator* acts, All
 #ifdef CHESS_MOVE_FEATS
     a->dmfc = {.shape = {B, CHESS_MF}}; a->mftmp = {.shape = {B, dw->hidden}};
     alloc_register(acts, &a->dmfc); alloc_register(acts, &a->mftmp);
-    a->dmf_w = {.shape = {CHESS_MF}};
+    a->dmf_w = {.shape = {CHESS_MF_STORE}};  // elements >= CHESS_MF are never written: stay 0, so those mf_w stay 0
     a->dmf_u = {.shape = {CHESS_MF, dw->hidden}};
     alloc_register(grads, &a->dmf_w); alloc_register(grads, &a->dmf_u);  // same order as the parameters
 #endif
