@@ -167,7 +167,7 @@ static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstan
         if ((kind == VEG_FERN || kind == VEG_HORSETAIL || kind == VEG_SHRUB) && vp_r(&r) > vp_patch(x, z, kind)) continue;   // patches, open ground between
         FloraSite site = flora_site(m, x, z);
         float d = d0 * (kind < TERRA_VEG_COUNT ? flora_density_mul(kind, &site) : site.gap);
-        if (kind == VEG_CONIFER || kind == VEG_BROADLEAF) d *= vp_clump(m, x, z);   // groups and small openings
+        if (kind == VEG_CONIFER || kind == VEG_BROADLEAF) d *= vp_lerp(vp_clump(m, x, z), 1.0f, 0.65f * fl_sstep(0.75f, 0.95f, site.moist));   // groups and small openings; the wet forest stays closed
         if (u > d * d * 1.6f) continue;
         float y; if (!placeable(m, x, z, is_tree(kind) ? 0.95f : 1.1f, kind == VEG_HORSETAIL ? 0.5f : -1.0f, &y)) continue;
         if (cnt == cap) return cnt;

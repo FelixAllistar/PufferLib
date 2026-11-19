@@ -1259,6 +1259,10 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float open = (1 - rockiness) * (1 - clampf(beach, 0, 1));
         float flat = 1 - sstep(0.1f, 0.35f, slope);
         float canopy = sstep(0.25f, 0.55f, moist + 0.25f * patch) * (1 - sstep(0.7f, 1.1f, slope)) * sstep(-2.0f, 6.0f, temp) * (1 - alpine) * (1 - 0.6f * nearface);
+        // Wet forest: the wettest gentle lowland ground (valley floors, the backs of the floodplains, below
+        // about 260 m and off the dry country) carries a closed, conifer-led forest (redwoods and podocarps
+        // by their habitat, render/flora.h) over a floor of moss and litter, with tree ferns under it.
+        float wetfor = sstep(0.62f, 0.85f, moist) * (1 - sstep(0.18f, 0.4f, slope)) * (1 - sstep(200.0f, 280.0f, h)) * (1 - desert) * (1 - alpine);
         // Mud only in a narrow strip at the waterline; banks beyond are vegetated.
         float waterline = sstep(0.0f, -1.2f, h - (m->water[i] > TERRA_DRY ? m->water[i] : h - 10.0f));
         w[TERRA_MAT_MUD] = open * flat * (sstep(0.85f, 1.0f, riparian) * 0.5f + waterline * 1.4f + sstep(0.9f, 1.0f, moist) * 0.4f);
@@ -1297,6 +1301,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
             w[TERRA_MAT_FOREST] += open * d * 0.75f * scrubg;
             dpan = pan; dwash = wash; dpave = pave;
         }
+        w[TERRA_MAT_MOSS] += open * canopy * wetfor * 0.85f * sstep(-0.15f, 0.25f, n3 + 0.4f * n2);   // moss carpets in patches between the litter
         float tot = 0; for (int k = 0; k < TERRA_MAT_COUNT; k++) { w[k] = fmaxf(w[k], 0); w[k] *= w[k]; tot += w[k]; }
         if (tot < 1e-6f) { w[TERRA_MAT_DIRT] = 1; tot = 1; }
         int acc = 0, big = 0;
@@ -1313,7 +1318,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         // and patch noise only shift the mix between conifers and angiosperms.
         float fan = sstep(0.1f, 0.6f, talus[i]);   // live scree: a few trees on its old outer edge only
         float forest = grow * (0.6f + 0.4f * sstep(0.05f, 0.45f, moist)) * (1 - sstep(0.95f, 1.25f, slope)) * (1 - 0.85f * nearface) * (1 - 0.5f * fan);
-        float conshare = clampf(0.55f + 0.5f * (clump - clump2) - 0.35f * riparian + 0.2f * sstep(0.3f, 0.7f, slope), 0.1f, 0.9f);
+        float conshare = clampf(0.55f + 0.5f * (clump - clump2) - 0.35f * riparian + 0.2f * sstep(0.3f, 0.7f, slope) + 0.3f * wetfor, 0.1f, 0.9f);
         // At the tree line conifers go highest, the broadleaf groves stop below them; scrub carries on
         // a little higher as a low thicket, then thins out.
         // The scatter keeps a tree with a chance that goes as its layer's density squared
@@ -1321,12 +1326,12 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         // of a pure stand and every mixed forest read as open parkland. Both are raised so the stand's
         // stems do not depend on its mix.
         float mixfix = 1.0f / sqrtf(conshare * conshare + (1 - conshare) * (1 - conshare));
-        forest *= mixfix;
+        forest *= mixfix * (1 + 0.25f * wetfor);
         v[TERRA_VEG_CONIFER] = forest * conshare * sstep(0.0f, 8.0f, temp) * (1 - sstep(tline - 30, tline + 50, h));
         v[TERRA_VEG_BROADLEAF] = forest * (1 - conshare) * sstep(12.0f, 18.0f, temp) * (1 - sstep(tline - 90, tline, h));
         v[TERRA_VEG_CYCAD] = grow * sstep(0.55f, 0.2f, moist) * sstep(16.0f, 22.0f, temp) * (0.3f + 0.4f * n2) * (1 - alpine);
         v[TERRA_VEG_FERN] = grow * (0.55f + 0.45f * sstep(0.1f, 0.5f, moist)) * (0.65f + 0.35f * n2) * (1 - 0.5f * alpine) * (1 - 0.85f * summit) * (1 - 0.7f * fan);
-        v[TERRA_VEG_TREEFERN] = grow * sstep(0.7f, 0.95f, moist) * sstep(0.0f, 3.0f, curv[i]) * sstep(15.0f, 20.0f, temp) * (1 - alpine) * (1 - nearface);
+        v[TERRA_VEG_TREEFERN] = grow * fmaxf(sstep(0.7f, 0.95f, moist) * sstep(0.0f, 3.0f, curv[i]), 0.55f * wetfor * sstep(-0.2f, 0.3f, n2)) * sstep(15.0f, 20.0f, temp) * (1 - alpine) * (1 - nearface);
         v[TERRA_VEG_HORSETAIL] = (1 - sstep(0.1f, 0.3f, slope)) * sstep(0.4f, 0.9f, riparian) * (wetcell ? 0.3f : 1.0f);
         v[TERRA_VEG_PALM] = grow * sstep(0.2f, 0.6f, coast[i] * 2) * (1 - sstep(8.0f, 30.0f, h)) * sstep(20.0f, 24.0f, temp) * (0.3f + 0.7f * clump2);
         // The tree line is not an edge: above it a few stunted outlying conifers stand alone or in small

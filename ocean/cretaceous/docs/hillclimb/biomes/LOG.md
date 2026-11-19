@@ -43,3 +43,9 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
    4.9% fern prairie (`CRET_BIOME_DBG=1`). Kept: `airW` (420 m over the west coast) shows forest, green prairie and
    straw grassland as three countries where before there were two; `prA` is a green meadow behind the beach. The
    noise moved the open patches, so `grs` and `desA` now look at forest where they looked at grassland.
+6. Fault: the wet valley forest (`wetF`, moisture 0.93) is open woodland on a dry-looking floor, like any other
+   forest, and pass 3's openings made it more so. Change: `terra.c` a wet-forest term (the wettest gentle lowland
+   below about 260 m, off the dry country): conifers lead (+0.3 of the mix), 25% more stems, moss patches in the
+   litter, tree ferns under it in patches; `veg_place.h` keeps it closed (the group openings fade out above
+   moisture 0.75). Kept, small: `wetF` closes up, `river` has a tree-fern understorey along the bank; the moss shows
+   little under the shader's litter tint. Trees on the island 101,539 to 109,145, tree ferns 25,736 to 28,473.
