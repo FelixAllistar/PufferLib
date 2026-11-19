@@ -55,3 +55,6 @@ is at the end of this file.
    downwind. `TERRA_VERSION` 26. Kept, modest: `tl3` and `mtS` show clumps of trees with open stony
    ground between, as the krummholz reference does. Trees on the island 183,574 to 184,215. The stems
    themselves are still full-height straight trees; their shape is the tree meshes' (another track).
+10. Fault: past 25-60 m, where the fracture faded out, steep rock still reads as smears down the fall line
+    (the upper slope in `af4`). Change: the fracture (only the big slabs are left there) fades from 40 to
+    120 m. Kept: `af4`'s upper slope keeps slabs and joints; `tl1` about the same.

@@ -513,12 +513,12 @@ void main() {
             albedo = mix(albedo, moss, ledge * smoothstep(0.35, 0.6, mz + 0.15 * cov.b) * 0.75);
         }
     }
-    // Fractured rock, near (under about 60 m): the rock is broken into slabs of 1.5-4 m, most split into
+    // Fractured rock, near (under about 120 m): the rock is broken into slabs of 1.5-4 m, most split into
     // plates of 0.4-1.5 m within 30 m and some of those again, each plate its own tone and tilted a little on its own, the
     // cracks dark. Read triplanar (the planes facing x, y and z), so it holds on faces and flats alike.
     // The heightfield (4 m) and the photo alone drew high rock as flat paint at a hatchling's eye.
     {
-        float fr = float(u_detail > 0) * clamp(w[0] * 1.3, 0.0, 1.0) * (1.0 - smoothstep(25.0, 60.0, dist));
+        float fr = float(u_detail > 0) * clamp(w[0] * 1.3, 0.0, 1.0) * (1.0 - smoothstep(40.0, 120.0, dist));
         if (fr > 0.0) {
             vec3 tw = pow(abs(N), vec3(4.0)); tw /= dot(tw, vec3(1.0)); tw = max(tw - 0.05, 0.0); tw /= dot(tw, vec3(1.0));
             float px = max(0.004, dist * 0.0012);   // about a pixel (m)
