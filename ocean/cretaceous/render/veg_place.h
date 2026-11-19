@@ -141,11 +141,11 @@ static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstan
 static inline void veg_species_dims(int kind, int variant, float* H, float* r0) {
     VpRng r = {vp_hash((uint32_t)kind * 7919u + (uint32_t)variant * 104729u + 12345u)}; float h = 0, rr = 0;
     switch (kind == VEG_SNAG ? -2 : flora_species(kind, variant)) {
-    case FL_ARAUCARIA: h = vp_rr(&r, 15, 23); rr = 0.1f + 0.018f * h; break;
-    case FL_PODOCARP: h = vp_rr(&r, 12, 18); rr = 0.1f + 0.02f * h; break;
+    case FL_ARAUCARIA: h = vp_rr(&r, 26, 34); rr = 0.1f + 0.013f * h; break;
+    case FL_PODOCARP: h = vp_rr(&r, 17, 22); rr = 0.1f + 0.016f * h; break;
     case FL_UMBRELLA: h = vp_rr(&r, 18, 24); rr = 0.12f + 0.02f * h; break;
-    case FL_REDWOOD: h = vp_rr(&r, 22, 30); rr = 0.25f + 0.02f * h; break;
-    case FL_CHEIROLEP: h = vp_rr(&r, 6, 10); rr = 0.08f + 0.02f * h; break;
+    case FL_REDWOOD: h = vp_rr(&r, 32, 40); rr = 0.2f + 0.014f * h; break;
+    case FL_CHEIROLEP: h = vp_rr(&r, 15, 22); rr = 0.08f + 0.016f * h; break;
     case FL_UNDERSTOREY: h = vp_rr(&r, 4.5f, 6.5f); rr = 0.05f + 0.02f * h; break;
     case FL_KATSURA: h = vp_rr(&r, 9, 14); rr = (0.05f + 0.016f * h) * 1.5f; break;   // several stems: their spread
     case FL_MAGNOLIA: h = vp_rr(&r, 8, 13); rr = 0.06f + 0.024f * h; break;
