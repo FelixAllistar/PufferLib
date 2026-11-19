@@ -1285,7 +1285,7 @@ static void gen_treefern(Gen* g, bool stout) {
     Path T; T.n = 8;
     // The trunk: a slim column (Cyathea) or a stout, nearly even one (Dicksonia), its root mantle swelling at the foot
     // and shaggy all the way up (bark relief, trunk rings every 0.25 m).
-    for (int k = 0; k < 8; k++) { float t = k / 7.0f; T.p[k] = v3(lx * t * t, -0.2f + (H + 0.2f) * t, lz * t * t); T.r[k] = (stout ? lerpf(r0, r0 * 0.78f, t) : lerpf(r0, 0.15f, sqrtf(t))) + (k == 7 ? 0.06f : 0) + 0.12f * expf(-t * 10); T.hw[k] = 0.15f * t; T.ws[k] = 0; }
+    for (int k = 0; k < 8; k++) { float t = k / 7.0f; T.p[k] = v3(lx * t * t, -0.2f + (H + 0.2f) * t, lz * t * t); T.r[k] = (stout ? lerpf(r0, r0 * 0.78f, t) : lerpf(r0, 0.15f, sqrtf(t))) * (k == 7 ? 0.55f : 1) + (k == 6 ? 0.04f : 0) + 0.12f * expf(-t * 10); T.hw[k] = 0.15f * t; T.ws[k] = 0; }   // (round 2: the apex rounds into the crown; it ended in a flat ledge)
     relief_trunk(g, &T, (sides_for(g, r0) + 2) * (g->lod ? 1 : 2), fmaxf(1, roundf(r0 * 6)), 1.0f, 0.3f);
     V3 top = T.p[7];
     int nd = 8 + (int)grr(g, 0, 5); if (g->lod) nd = 5;
