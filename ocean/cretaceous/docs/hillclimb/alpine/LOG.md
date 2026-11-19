@@ -39,3 +39,12 @@ is at the end of this file.
    (`tl6`, 30 m over the slope east of the summit). Change: big slabs (3x, 1.5-4 m) carry the pattern to
    60 m; the 0.9 m plates split most of them and fade out from 12 to 30 m, the finer cracks with them.
    Kept: `tl6` shows slabs and joints like bare rock, `af4` and `c3` unchanged in character.
+7. Fault: a face seen from its foot (`c2`) is a blurred mush. Change: rock's triplanar weights (and the
+   fracture layer's) at exponent 12 instead of 4, so a face turned 45 degrees does not show two copies
+   of the photo at equal weight. Reverted: no visible change. The blur is the face running away at a
+   grazing angle: the ground arrays ask for 8x anisotropic filtering, which a GPU gives and this
+   sandbox's software renderer apparently does not.
+8. Fault: the talus blocks lie flat on a mid-grey bed (`af1`, `p3`): the photo's gaps are fines, not
+   the dark voids between real talus blocks. Change: `terrain.fs` darkens scree by its height map
+   (0.4 in the lowest gaps, none on the blocks), near only (gone by 60-150 m, where the mips average the
+   height). Kept: the blocks stand up out of dark gaps; `mtS` unchanged.

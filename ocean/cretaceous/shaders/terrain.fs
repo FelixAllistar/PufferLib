@@ -280,6 +280,9 @@ void main() {
         // Its photo is pale (a dry lowland track), so where the stony soil wins a spot between rock and scree
         // it read as cream blotches down the high slopes: darker, the tone of the weathered rock it comes from.
         if (k == 2) al = mix(al, vec3(dot(al, vec3(0.3, 0.59, 0.11))) * vec3(1.06, 1.0, 0.9) * STONY_SOIL, stony);
+        // Talus: the voids between the blocks are deep and dark (the photo's gaps are mid-grey fines).
+        // From its height map, near only; past 60-150 m the mips average it away.
+        if (k == 1) al *= mix(mix(0.4, 1.0, smoothstep(0.2, 0.42, mats[j].height)), 1.0, smoothstep(60.0, 150.0, dist));
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
     albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
