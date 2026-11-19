@@ -472,7 +472,10 @@ static void scene_depth_end(CretView* v) {
 static void set_scene_depth(const CretView* v, const GfxProgram* p) { gfx_set2f(p, "u_depth", v->depth_ab[0], v->depth_ab[1]); }
 
 
-static const char* MAT_NAMES[TERRA_MAT_COUNT] = {"rock", "scree", "dirt", "forest", "fern", "mud", "sand", "moss"};
+// The ground texture arrays hold the splat materials and, after them, the cracked mud of the near-desert's pans
+// (terrain.fs draws it in place of sand in dry country; it has no splat weight of its own).
+#define GROUND_LAYERS (TERRA_MAT_COUNT + 1)
+static const char* MAT_NAMES[GROUND_LAYERS] = {"rock", "scree", "dirt", "forest", "fern", "mud", "sand", "moss", "pan"};
 static const char* MAT_MAPS[5] = {"albedo", "normal", "rough", "height", "ao"};
 typedef struct { int S; void** a; void** b; } MatJob;
 // One material's five maps, decoded, resized and packed (a worker thread; no GL).
@@ -505,27 +508,27 @@ static void load_materials(CretView* v) {
     // 2K by default; CRET_MAT_SIZE=1024 (or 512) for low-memory/mobile.
     const char* ms = getenv("CRET_MAT_SIZE"); int S = ms ? atoi(ms) : 2048; if (S < 256 || S > 4096) S = 2048;
     bool bc = gfx_use_bc3();
-    char paths[TERRA_MAT_COUNT * 5][256]; const char* files[TERRA_MAT_COUNT * 5];
-    for (int k = 0; k < TERRA_MAT_COUNT; k++) for (int q = 0; q < 5; q++) {
+    char paths[GROUND_LAYERS * 5][256]; const char* files[GROUND_LAYERS * 5];
+    for (int k = 0; k < GROUND_LAYERS; k++) for (int q = 0; q < 5; q++) {
         snprintf(paths[k * 5 + q], sizeof paths[0], TEX_DIR "%s_%s.jpg", MAT_NAMES[k], MAT_MAPS[q]); files[k * 5 + q] = paths[k * 5 + q];
     }
     uint64_t key = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "ground materials v1");
     key = cret_hash_u64(cret_hash_u64(key, (uint64_t)S), bc);
-    key = cret_hash_files(key, files, TERRA_MAT_COUNT * 5);
+    key = cret_hash_files(key, files, GROUND_LAYERS * 5);
     CRET_LOAD_MARK("materials: hash sources");
     v->t_mat_a = cret_tex_cache_load("ground_albedo", key); v->t_mat_b = v->t_mat_a ? cret_tex_cache_load("ground_detail", key) : 0;
     if (v->t_mat_a && v->t_mat_b) { CRET_LOAD_MARK("materials: from cache"); return; }
     if (v->t_mat_a) { glDeleteTextures(1, &v->t_mat_a); v->t_mat_a = 0; }
-    void* a[TERRA_MAT_COUNT]; void* b[TERRA_MAT_COUNT]; MatJob job = {S, a, b};
-    cret_parallel_for(TERRA_MAT_COUNT, 0, mat_decode, &job);
+    void* a[GROUND_LAYERS]; void* b[GROUND_LAYERS]; MatJob job = {S, a, b};
+    cret_parallel_for(GROUND_LAYERS, 0, mat_decode, &job);
     CRET_LOAD_MARK("materials: decode and pack");
     // BC3 (DXT5) block compression: a quarter of the memory and bandwidth.
     // Uncompressed 2K arrays (357 MB) made terrain texture-bound (52 ms of a
     // 1080p ground view on a GTX 1060; 16 ms compressed). Mips and blocks are
     // made on threads (texbuild.h); CRET_TEX_COMPRESS=0 keeps RGBA8.
-    v->t_mat_a = cret_tex_build("ground_albedo", key, GL_TEXTURE_2D_ARRAY, bc ? TB_BC3_SRGB : GL_SRGB8_ALPHA8, S, S, TERRA_MAT_COUNT, (const void* const*)a, true, true, true, 8.0f);
-    v->t_mat_b = cret_tex_build("ground_detail", key, GL_TEXTURE_2D_ARRAY, bc ? TB_BC3 : GL_RGBA8, S, S, TERRA_MAT_COUNT, (const void* const*)b, true, true, true, 8.0f);
-    for (int k = 0; k < TERRA_MAT_COUNT; k++) { free(a[k]); free(b[k]); }
+    v->t_mat_a = cret_tex_build("ground_albedo", key, GL_TEXTURE_2D_ARRAY, bc ? TB_BC3_SRGB : GL_SRGB8_ALPHA8, S, S, GROUND_LAYERS, (const void* const*)a, true, true, true, 8.0f);
+    v->t_mat_b = cret_tex_build("ground_detail", key, GL_TEXTURE_2D_ARRAY, bc ? TB_BC3 : GL_RGBA8, S, S, GROUND_LAYERS, (const void* const*)b, true, true, true, 8.0f);
+    for (int k = 0; k < GROUND_LAYERS; k++) { free(a[k]); free(b[k]); }
     CRET_LOAD_MARK("materials: mips, compression, upload and store");
 }
 

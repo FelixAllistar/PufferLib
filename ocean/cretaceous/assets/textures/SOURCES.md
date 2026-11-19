@@ -10,3 +10,4 @@ All CC0 (public domain). Regenerate with tools/fetch_textures.py.
 - mud: https://polyhaven.com/a/brown_mud_03
 - sand: https://ambientcg.com/view?id=Ground088
 - moss: https://ambientcg.com/view?id=Moss003
+- pan: https://polyhaven.com/a/mud_cracked_dry_03

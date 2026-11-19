@@ -109,8 +109,9 @@ margin beyond); moisture, nearness to river water and canopy shade are 0..1.
 | feather palm | palm (3,7) | a pinnate-leaved palm of the strand (palm fossils: Phoenicites-like leaves) | < 12 m | any | any | any | 0.6 | 0.5 | 1 / 2 / 3 / 0 | palm fruit |
 | berry shrub | shrub (0,4) | a fleshy-fruited early angiosperm shrub (cf. Sapindopsis, Chloranthaceae shrubs) | < 500 m | 0.3-0.9 | any | 0.15-0.75 | 1 | 0.4 | 3 / 0 / 2 / 0 | berries |
 | flowering herb | shrub (1,5) | an early eudicot herb (Leefructus, Ranunculales-like) of clearings and banks | any | > 0.25 | any | 0-0.3 | 1.1 | 0.6 | 1.5 / 0 / 0.3 / 0 | - |
-| gunnera | shrub (2,6) | Gunnera (Gunneraceae: pollen from the Late Cretaceous), huge leaves at streamsides | < 400 m | > 0.55 | > 0.5 | any | 1 | 0.4 | 4 / 0 / 0 / 1 | - |
-| evergreen scrub | shrub (3,7) | small-leaved evergreen scrub of dry ridges and the strand | any | 0-0.55 | 0-0.3 | 0-0.6 | 0.9 | 0.4 | 2 / 0 / 0.3 / 0 | - |
+| gunnera | shrub (2) | Gunnera (Gunneraceae: pollen from the Late Cretaceous), huge leaves at streamsides | < 400 m | > 0.55 | > 0.5 | any | 1 | 0.4 | 4 / 0 / 0 / 1 | - |
+| evergreen scrub | shrub (3) | small-leaved evergreen scrub of dry ridges and the strand | any | 0-0.55 | 0-0.3 | 0-0.6 | 0.9 | 0.4 | 2 / 0 / 0.3 / 0 | - |
+| dwarf shrub | shrub (6,7) | a low grey dwarf shrub of dry flats (as Karoo bush and saltbush today; small-leaved early angiosperm or gnetalean shrubs) | any | 0-0.3 | 0-0.3 | 0-0.55 | 8 | 0.2 | 1 / 0 / 0.2 / 0 | - |
 | water lily | - | Nymphaeales (Microvictoria, Turonian; Nymphaeaceae pads and flowers) | any | any | any | any | 1 | 0.6 | 0 / 0 / 0.2 / 3 | - |
 | clubmoss and moss | - | Selaginella / Lycopodiales mats and moss cushions of damp shade | any | > 0.45 | any | > 0.4 | 1 | 0.5 | 0.2 / 0 / 0 / 0 | - |
 | bracket fungi and mushrooms | - | polypores and gilled mushrooms on dead wood (Cretaceous mushrooms in amber: Palaeoagaracites) | any | any | any | any | 1 | 0.0 | 0 / 0 / 0 / 0 | - |
@@ -212,6 +213,10 @@ drops the branches hidden inside the crown.
   Cretaceous; living *Gunnera* has huge leaves at streamsides.
 - **evergreen scrub**: small-leaved evergreen scrub; dry-ground angiosperm and
   conifer shrubs of Cretaceous coastal and upland settings.
+- **dwarf shrub** (round 3, dry hill-climb): no Cretaceous dwarf shrubland is known as such; modelled on
+  the living dwarf shrubs of dry flats (Karoo bush, saltbush): a dome 0.2-0.55 m high of wiry grey stems
+  with small leaves in tufts, a bush every metre or two. It takes the shrub layer's last two seeds (gunnera's
+  and evergreen scrub's second ones); it keeps off hollows, where the evergreen scrub stays.
 - **water lily**: Nymphaeales (*Microvictoria*, Turonian of New Jersey;
   nymphaealean seeds and leaves from the Early Cretaceous on).
 - **clubmoss and moss**: *Selaginella* and Lycopodiales, and mosses, known
@@ -273,11 +278,15 @@ How a kind's plants become a community (`render/flora.h`):
   into tongues and islands (an 80-300 m noise), so desert and forest interfinger. Inside, the ground is
   not one colour: bare earth; pale silt pans in the flat hollows; dry washes of gravel and some sand on
   the valley floors and fans; stony flats and stony hillsides in 90 m and 260 m patches; broken rock on
-  the crests; litter under the scrub clumps. Ferns are down by 85% and trees by 93-95%; scrub grows in
+  the crests; litter under the scrub clumps. (Round 3, dry: three quarters of the desert is steeper than 27
+  degrees, so the pans take most of its flat ground, 2.3% of it; the ground shader draws them as cracked
+  clay, a ninth ground layer, and tints the dry country by the material it draws: golden straw for grass,
+  red-brown earth, varnished stones, pale grey-brown pans; up close the bare soil is hard and stony.) Ferns are down by 85% and trees by 93-95%; scrub grows in
   loose clumps with bare ground between and thicker in a line along the washes, with the odd small tree;
-  nothing grows on the pans, less on the stony ground; tall grass takes bare earth only at 0.25 (was
+  the flats, stony ones too, are speckled with the dwarf shrub (the shrub layer near full there, 55% of it
+  dwarf shrubs; round 3); nothing grows on the pans, not even a tree at the desert's edge; tall grass takes bare earth only at 0.25 (was
   0.55), so it reads as scrub, not a meadow. From afar the ground shader dots the earth with dark dwarf
-  scrub in loose stands.
+  scrub, gathered in 27 m stands.
 - **Open country** (`world.c` `grassland_build`, at load): about 14% of the land, in a few large pieces
   picked by a 700 m noise on rotated, warped axes, loses nearly all its trees. Where that ground is dry
   it is dry grassland (straw-coloured, ferns thinned, good grazing; 6.9%); where it is moist it is fern

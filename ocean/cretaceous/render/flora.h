@@ -45,6 +45,8 @@ enum {
     // not on a bake layer: water lilies on still water, clubmoss and moss in
     // the sward, fungi on dead wood
     FL_LILY, FL_CLUBMOSS, FL_FUNGI,
+    // the dwarf shrub of the near-desert flats (a shrub-layer species, listed last so the others keep their numbers)
+    FL_DWARF,
     FL_COUNT
 };
 
@@ -124,6 +126,8 @@ static const FloraSpecies FLORA[FL_COUNT] = {
                       {-20, 400, 80}, {0, 0.4f, 0.15f}, {0.55f, 1.0f, 0.1f}, {0.5f, 1.0f, 0.15f}, {0, 0.3f, 0.2f}, FL_ANY, FL_ANY, {4, 0, 0, 1}, DROP_NONE, 0},
     [FL_SCRUB]     = {"evergreen scrub", "small-leaved evergreen scrub of dry ridges and the strand", 7, 0.9f, 0.4f,
                       FL_ANY, FL_ANY, {0.0f, 0.55f, 0.15f}, {0, 0.3f, 0.2f}, FL_ANY, FL_ANY, {0, 0.6f, 0.3f}, {2, 0, 0.3f, 0}, DROP_NONE, 0},
+    [FL_DWARF]     = {"dwarf shrub", "a low grey dwarf shrub of dry flats (as Karoo bush and saltbush today; small-leaved early angiosperm or gnetalean shrubs)", 7, 8.0f, 0.2f,
+                      FL_ANY, {0, 1.2f, 0.4f}, {0.0f, 0.3f, 0.12f}, {0, 0.3f, 0.2f}, {0, 0.5f, 0.2f}, {-1.0f, 0.25f, 0.2f}, {0, 0.55f, 0.2f}, {1, 0, 0.2f, 0}, DROP_NONE, 0},
     [FL_LILY]      = {"water lily", "Nymphaeales (Microvictoria, Turonian; Nymphaeaceae pads and flowers)", -1, 1.0f, 0.6f,
                       FL_ANY, FL_ANY, FL_ANY, FL_ANY, FL_ANY, FL_ANY, FL_ANY, {0, 0, 0.2f, 3}, DROP_NONE, 0},
     [FL_CLUBMOSS]  = {"clubmoss and moss", "Selaginella / Lycopodiales mats and moss cushions of damp shade", -1, 1.0f, 0.5f,
@@ -144,7 +148,7 @@ static const int8_t FLORA_SLOT[TERRA_VEG_COUNT][8] = {
     /* treefern  */ {FL_CYATHEA, FL_CYATHEA, FL_DICKSONIA, FL_DICKSONIA, FL_CYATHEA, FL_CYATHEA, FL_DICKSONIA, FL_DICKSONIA},
     /* horsetail */ {FL_HORSETAIL_GIANT, FL_HORSETAIL_GIANT, FL_HORSETAIL_FIELD, FL_HORSETAIL_FIELD, FL_HORSETAIL_GIANT, FL_HORSETAIL_GIANT, FL_HORSETAIL_FIELD, FL_HORSETAIL_FIELD},
     /* palm      */ {FL_SABAL, FL_SABAL, FL_SABAL, FL_FEATHER_PALM, FL_SABAL, FL_SABAL, FL_SABAL, FL_FEATHER_PALM},
-    /* shrub     */ {FL_BERRY_SHRUB, FL_HERB, FL_GUNNERA, FL_SCRUB, FL_BERRY_SHRUB, FL_HERB, FL_GUNNERA, FL_SCRUB},
+    /* shrub     */ {FL_BERRY_SHRUB, FL_HERB, FL_GUNNERA, FL_SCRUB, FL_BERRY_SHRUB, FL_HERB, FL_DWARF, FL_DWARF},   // (round 3, dry: the dwarf shrub took gunnera's and scrub's second seeds)
 };
 // The species in variant slot v of bake-layer kind k (-1 for other kinds).
 static inline int flora_species(int kind, int variant) { return kind >= 0 && kind < TERRA_VEG_COUNT && variant >= 0 && variant < 8 ? FLORA_SLOT[kind][variant] : -1; }

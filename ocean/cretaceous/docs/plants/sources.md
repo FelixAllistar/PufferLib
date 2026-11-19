@@ -42,6 +42,7 @@ T translucency (ambientCG calls it Scattering).
 | Poly Haven metasequoia_bark, palm_bark, bark_brown_02, japanese_cedar_bark | polyhaven.com/a/<id> | CC0 | 2k (8k), packed to 512 | C N AO D | were C only: trunk bark | **use**, with normal maps; AO and furrows (D) baked into the colour |
 | Poly Haven pine_bark, bark_platanus, chinese_hackberry_bark | polyhaven.com/a/<id> | CC0 | 2k (8k), packed to 512 | C N AO D | araucaria plates, plane, smooth grey broadleaf bark | **use** (trunks hill-climb, 2026-11-19) |
 | Poly Haven gray_rocks | https://polyhaven.com/a/gray_rocks | CC0 | 2k (8k) | C N R AO D | was Poly Haven rocks_ground_01 (pale pebbles in soil): the scree ground material, `tools/fetch_textures.py` | **use** (alpine hill-climb, 2026-11-19): angular grey blocks read as talus at 2 m; the shader mixes a second copy at twice the size so the blocks vary |
+| Poly Haven mud_cracked_dry_03 | https://polyhaven.com/a/mud_cracked_dry_03 | CC0 | 2k (8k) | C N R AO D | new: the cracked clay of the near-desert's pans, a ninth ground layer (`pan`) that the terrain shader draws in place of sand in dry country, `tools/fetch_textures.py` | **use** (dry hill-climb, 2026-11-19): polygons of 20-40 cm at its 4.6 m tile, cracks darkened from its height map |
 
 Why 2K and not 4K for most: the atlas layer is 512 texels and a leaf stamps
 into it at 40-500 texels, so a 2K scan already gives every sprite at least
