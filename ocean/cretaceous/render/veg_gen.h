@@ -868,9 +868,9 @@ static void gen_araucaria(Gen* g, bool umbrella) {
                     // dense flat frond from above and below and still has some depth from the side.
                     for (int sn = -1; sn <= 1; sn += 2) {
                         float a = grr(g, 0.8f, 1.1f);
-                        V3 dd = vnorm(vadd(vadd(vmul(dp, cosf(a)), vmul(sd, sn * sinf(a))), v3(0, -0.15f + 0.12f * t, 0)));
+                        V3 dd = vnorm(vadd(vadd(vmul(dp, cosf(a)), vmul(sd, sn * sinf(a))), v3(0, grr(g, -0.45f, -0.2f) + 0.2f * t, 0)));
                         float ll = lerpf(0.95f, 0.5f, t) * grr(g, 0.85f, 1.1f) * fminf(1, 0.45f + bl / 4);
-                        V3 flat = vnorm(vcross(dd, v3(0, 1, 0))); float roll = grr(g, -0.15f, 0.15f) + (((bi + (sn > 0)) & 1) ? 0.45f : -0.45f);
+                        V3 flat = vnorm(vcross(dd, v3(0, 1, 0))); float roll = grr(g, -0.15f, 0.15f) + (((bi + (sn > 0)) & 1) ? 0.6f : -0.6f);
                         if (!g->lod)   // the reduced mesh lays whole fronds along the branch instead (below)
                             card(g, vsub(p, vmul(dd, 0.04f * big)), dd, vrot(flat, dd, roll), ll * big, ll * 0.85f * big, L_ARAU, 0, 0, 1, 1, 1, 0, w);
                     }
