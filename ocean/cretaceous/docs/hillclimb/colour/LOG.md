@@ -78,5 +78,5 @@ green under it, and the teal is mostly the haze.
    cycads read olive beside the green tree ferns; in `ga0` the tree-fern crowns go deeper, less lime.
 11. Fault: in `mid` the meadow sward 0-40 m out is greener than the terrain's olive grass beyond it, so its
    end draws a line. Change tried: an olive tint (x1.1/1/0.82) on the sward and tall-grass kinds in
-   `LEAF_TINT`. Reverted: nothing moved (the near sward there is drawn by the grass system, `grass.*`,
-   not the plant meshes), and its shader is outside this track's colour terms.
+   `LEAF_TINT`. Reverted: nothing moved, so the green there is not the plant meshes' (most likely the
+   terrain's own ground material, `terrain.fs`, outside this track).
