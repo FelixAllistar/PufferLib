@@ -723,7 +723,7 @@ static void gen_broadleaf(Gen* g, int s) {
     float spread = 1.0f, cy = 0.6f, ry = 0.4f;
     if (s == 0) {   // magnolia: a central leader under a tall, dense oval crown from low down (Magnolia grandiflora)
         C.leaf_layer = L_CL_MAGN; C.lod_layer = L_LEAF; C.leaf_size = 0.62f; C.lod_size = 1.9f; C.nleaf = 1000; C.twig_len = 0.8f;
-        C.leader = 1; C.fork *= 0.5f; C.sp1 = 1.0f; C.el1 = 0.55f; C.inner = 0.3f; spread = 0.78f; cy = 0.54f; ry = 0.48f;
+        C.leader = 1; C.fork *= 0.5f; C.sp1 = 1.0f; C.el1 = 0.55f; C.inner = 0.6f; spread = 0.78f; cy = 0.54f; ry = 0.48f;
     }
     else if (s == 2) { C.leaf_layer = L_CL_HEART; C.lod_layer = L_LEAF3; C.stems = 2 + (int)grr(g, 0, 2.99f); C.fork = 0.3f; C.sp1 = 1.0f; C.el1 = 0.55f;
                        C.leaf_size = 0.38f; C.nleaf = 1350; spread = 0.98f; cy = 0.6f; ry = 0.42f; }   // broad, a vase of stems
