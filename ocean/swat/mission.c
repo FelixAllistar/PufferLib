@@ -19,9 +19,12 @@ static const SwatMissionDef missions[SWAT_MISSION_COUNT]={
     {"Controller test range","Stairs, ramps, crouch clearance, cover, doors and target lanes. No live hostiles.",
         {0,0,0},{0,0,0},0,{{0}}},
     {"Briar Court motel","Two armed occupants reported. Secure rooms and reception, recover weapons and evacuate civilians. Choose your entry routes.",
-        // Staging against Room 104's blind east wall, behind the building
-        // line: no front door or window can see (or fire on) the squad.
-        {10.5f,-.079f,-2},{0,-.079f,10},0,{{0}}},
+        // Staging in the east breezeway between Room 105 and the east wing,
+        // behind the building line: no occupied door or window (reception,
+        // Rooms 101-104 face the court) can see or fire on the squad. It opens
+        // onto the walkway corner and the rear service drive (MOTEL_LAYOUT.md).
+        // Extraction is in the court's cross aisle.
+        {14.1f,-.079f,-3},{0,-.079f,12},0,{{0}}},
     {"Morrow Block","Clear the laundromat, pawn shop and shared rear service area. Secure occupants and return to the street.",
         {-3,-.139f,5},{-3,-.139f,7},0,{{0}}},
     {"Generated building scenario","Reported armed occupants and civilians. Secure occupants and return to staging.",{0,0,3},{-1.5f,0,3},0,{{0}}},

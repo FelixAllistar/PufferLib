@@ -79,8 +79,8 @@ decal ac_drip  5.60 2.80 -6.09 0 0 -1 anchor=top alpha=0.6 layer=2 scale=1.1
 decal splash -7.62 0.26 -6.09 0 0 -1 alpha=0.9 layer=1
 decal splash  7.62 0.26 -6.09 0 0 -1 alpha=0.9 layer=1
 decal splash -11.62 0.26 -10.10 0 0 -1 alpha=0.9 layer=1
-# End-wall fixtures: east wall pack, west porch lamp.
-decal rust_a 8.09 2.25 -3.0 1 0 0 anchor=top alpha=0.85 layer=2
+# End-wall fixtures: east wall pack (now on Room 105's end wall, MOTEL_LAYOUT.md), west porch lamp.
+decal rust_a 12.09 2.25 -3.0 1 0 0 anchor=top alpha=0.85 layer=2
 decal rust_b -12.09 2.10 -1.25 -1 0 0 anchor=top alpha=0.7 layer=2
 # Original graffiti: two tags on the rear wall, one on the annex, one on the dumpster.
 decal tag_vexo  1.20 1.20 -6.09 0 0 -1 alpha=0.92 layer=3 rot=3

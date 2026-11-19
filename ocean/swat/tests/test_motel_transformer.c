@@ -16,7 +16,8 @@ static void sync_state(bool fresh) {
     assert(swat_replay_digest(&sim)==swat_replay_digest(&replica));
     if(trace)assert(fprintf(trace,"%d %08x\n",sim.tick,swat_replay_digest(&sim))>0);
 }
-static b3Pos point(float x,float y,float z){return (b3Pos){10.8+x,-.08+y,-7.6+z};}
+// Transformer placement: 2 m further back than 5.0, clear of Room 105 (motel_transformer_impl.h).
+static b3Pos point(float x,float y,float z){return (b3Pos){10.8+x,-.08+y,-9.6+z};}
 static SwatHit ray(float x,float y,float z,b3Vec3 d,float length){return swat_world_ray(&sim.world,point(x,y,z),d,length,b3_nullBodyId);}
 static void place(b3Pos feet,float yaw) {
     SwatController* c=&sim.actors[0].controller;b3Body_SetTransform(c->body.body,b3OffsetPos(feet,swat_v(0,c->body.totalHeight*.5f,0)),b3Quat_identity);
@@ -38,7 +39,7 @@ static void route(float from_x,float to_x,float z) {
 static void captured_corner_exit(void) {
     // Recorded from the original route failure. Preserve the roof-edge contact
     // even though waypoint-aware steering now avoids overshooting onto it.
-    b3Pos start={9.8245f,.115f,-7.4734f},goal={9,-.08f,-7.6f},waypoint;
+    b3Pos start={9.8245f,.115f,-9.4734f},goal={9,-.08f,-9.6f},waypoint;
     place(start,0);SwatController* c=&sim.actors[0].controller;
     assert(!swat_body_clear_at(&c->body,start));
     assert(swat_navigation_next_for_actor(&sim,0,goal,&waypoint));int tick;

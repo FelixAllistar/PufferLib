@@ -1,4 +1,7 @@
 enum { SWAT_PARTIAL_NAV_CASES=2 };
+// The captured case is staged around the walkway post that stood at x=-8;
+// the court layout moved that post to x=-9 (3 m post spacing, MOTEL_LAYOUT.md).
+#define PX (-1.0f)
 static void test_motel_partial_navigation(int variant) {
     assert(variant>=0 && variant<SWAT_PARTIAL_NAV_CASES);
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.motel_occupancy=SWAT_MOTEL_MIXED;cfg.layout_seed=7;
@@ -12,12 +15,12 @@ static void test_motel_partial_navigation(int variant) {
     // from the failed blast-staging journal. Setup ends before normal AI steps.
     sim.actors[1].gear.surrendered=sim.actors[1].gear.restrained=false;
     sim.actors[1].alive=false;sim.actors[1].health=0;b3Body_Disable(sim.actors[1].controller.body.body);
-    swat_sim_spawn_actor(&sim,0,SWAT_OFFICER,(b3Pos){-7.4905f,-.065f,2.1916f},-.767f);
-    swat_sim_spawn_actor(&sim,3,SWAT_OFFICER,variant?(b3Pos){-7.29499f,.015f,.59643f}:(b3Pos){-7.14525f,.015f,.52872f},-2.669f);
-    swat_sim_spawn_actor(&sim,4,SWAT_OFFICER,(b3Pos){-9.4804f,-.065f,3.8981f},2.375f);
-    swat_sim_spawn_actor(&sim,5,SWAT_OFFICER,(b3Pos){-8.6807f,-.065f,2.1935f},2.375f);
+    swat_sim_spawn_actor(&sim,0,SWAT_OFFICER,(b3Pos){PX-7.4905f,-.065f,2.1916f},-.767f);
+    swat_sim_spawn_actor(&sim,3,SWAT_OFFICER,variant?(b3Pos){PX-7.29499f,.015f,.59643f}:(b3Pos){PX-7.14525f,.015f,.52872f},-2.669f);
+    swat_sim_spawn_actor(&sim,4,SWAT_OFFICER,(b3Pos){PX-9.4804f,-.065f,3.8981f},2.375f);
+    swat_sim_spawn_actor(&sim,5,SWAT_OFFICER,(b3Pos){PX-8.6807f,-.065f,2.1935f},2.375f);
     place_actor(7,(b3Pos){.6956f,-.065f,7.6179f});sim.actors[7].rescued=true;
-    const b3Pos goals[]={{-8.9311f,-.065f,3.5789f},{-9.889f,-.065f,3.738f},{-8.736f,-.065f,2.628f}};
+    const b3Pos goals[]={{PX-8.9311f,-.065f,3.5789f},{PX-9.889f,-.065f,3.738f},{PX-8.736f,-.065f,2.628f}};
     for(int i=3;i<6;i++){sim.actors[i].mind.bot=true;sim.actors[i].mind.order=SWAT_ORDER_MOVE;sim.actors[i].mind.order_yaw=2.375f;sim.actors[i].mind.goal=goals[i-3];}
     bool head=swat_world_sight_clear(&sim.world,swat_controller_eye(&sim.actors[3].controller),swat_controller_eye(&sim.actors[4].controller));
     printf("PARTIAL_NAV start%d head%d\n",variant,head);assert(head==(variant!=0));

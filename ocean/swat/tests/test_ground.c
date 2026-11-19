@@ -12,6 +12,9 @@ static float support_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fractio
     // The preserved bank lip and rocks sit above the joined ground. Probe the
     // support underneath them, rather than mistake that cover for a bad seam.
     if(tag->index!=0 && tag->index<SWAT_MOTEL_GROUND_FIRST && swat_motel_surroundings_part(q->world,o)!=0)return -1;
+    // The court's closed guest rooms (MOTEL_LAYOUT.md) stand on the lot and
+    // the verge supports; probe the support beneath their floors.
+    if(tag->index>=SWAT_MOTEL_COURT_FIRST && tag->index<SWAT_MOTEL_COURT_END)return -1;
     // Overhead fixtures added after this probe (e.g. the 2.2 m steel canopy at
     // x -8, z 34.8) overhang ground samples; they are not ground seams. Anything
     // resting on the ground still blocks.
@@ -91,8 +94,9 @@ int main(void) {
     // Physical controllers, not nav coordinates, cross each material/grade.
     place(0,20);walk(0,46);walk(0,20);
     // Go around the existing raised bank/rocks, along the new end grades.
-    place(22,14);walk(34,14);walk(22,14);
-    place(-22,10);walk(-34,10);walk(-22,10);
+    // Start just behind the court's side wings (rear walls at x=-22 and 23).
+    place(23.6f,14);walk(34,14);walk(23.6f,14);
+    place(-23,10);walk(-34,10);walk(-23,10);
     place(-58,40);walk(58,40);
     printf("PASS ground: %d rays, exact closed thickness, court/asphalt/shoulder seams, finite edges and live controller crossings\n",rays);fflush(stdout);
     // The wider grid exceeds uint16 capacity; distant road routes remain valid.

@@ -86,22 +86,25 @@ static SwatInput towards(b3Pos goal,float throttle,int gait,bool crouch) {
     in.yaw_delta=swat_clamp(angle,-3*SWAT_RAD,3*SWAT_RAD);in.forward=fabsf(angle)<50*SWAT_RAD?throttle:0;
     in.gait=(SwatGait)gait;in.crouch=crouch;return in;
 }
+// Wheel stop 143 moved from x=-2 to a 2.7 m stall centre at x=-3.3
+// (MOTEL_LAYOUT.md); its captured contact cases move with it.
+#define STOP_DX (-1.3f)
 static void lip_reentry(void) {
     for(int stance=0;stance<2;stance++)for(int gait=0;gait<2;gait++) {
         // Retained grounded departure state, now driven solely by ordinary
         // player inputs. No navigation planner or per-frame pose correction.
-        swat_sim_spawn_actor(&sim,0,SWAT_OFFICER,(b3Pos){-2.385337114,.064999998,4.499994278},SWAT_PI);
+        swat_sim_spawn_actor(&sim,0,SWAT_OFFICER,(b3Pos){-2.385337114+STOP_DX,.064999998,4.499994278},SWAT_PI);
         SwatInput idle=swat_neutral_input();idle.crouch=stance;for(int t=0;t<20;t++)fixture_step(idle);
         assert(sim.actors[0].controller.body.onGround);
         b3Body_SetLinearVelocity(sim.actors[0].controller.body.body,swat_v(-.161651954f,-.250439614f,.000012911f));
         for(int t=0;t<360;t++) {
-            b3Pos goal=t<30?(b3Pos){-2.3,-.08,5.7}:t<75?(b3Pos){-2.9,-.08,4.5}:(b3Pos){-2.9,-.08,6.3};
+            b3Pos goal=t<30?(b3Pos){-2.3+STOP_DX,-.08,5.7}:t<75?(b3Pos){-2.9+STOP_DX,-.08,4.5}:(b3Pos){-2.9+STOP_DX,-.08,6.3};
             fixture_step(towards(goal,.7f,gait,stance));bounded("lip reentry",143,stance*2+gait,t,.4f);
             if(t%30==0)sample(false);
         }
         b3Pos end=swat_body_feet_position(&sim.actors[0].controller.body);
         fprintf(stderr,"Lip departure stance%d gait%d end %.6f %.6f %.6f\n",stance,gait,end.x,end.y,end.z);
-        assert(end.z>5.2f && end.y<.02f && b3Distance(end,(b3Pos){-2.9,-.065,6.3})<1);
+        assert(end.z>5.2f && end.y<.02f && b3Distance(end,(b3Pos){-2.9+STOP_DX,-.065,6.3})<1);
         sample(false);
     }
     puts("PASS captured lip departure/reentry: four ordinary-input standing/crouched slow/walk cases retain bounded height/velocity without the discarded planner");
@@ -109,11 +112,11 @@ static void lip_reentry(void) {
 static void recorded_route(const char* path,SwatConfig cfg) {
     swat_sim_close(&sim);swat_sim_init(&sim,cfg,81);sample(true);
     SwatReplay journal;assert(swat_replay_record(&journal,path,&sim));char save[4096];assert(snprintf(save,sizeof(save),"%s.save",path)<(int)sizeof(save));
-    // Legs -2/-1 walk from staging behind Room 104's east wall out past the
-    // building line, then along the open court strip to the route's start.
+    // Legs -2/-1 walk from staging in the east breezeway beyond Room 105 out
+    // past the building line, then along the court's rear row to the route's start.
     for(int leg=-2;leg<13;leg++) {
-        b3Pos goal={leg==0?-2.38:(leg%4<2?-2.38:-2.64),-.08,leg%2?3.2:6.2};int t,limit=leg<0?1500:900;
-        if(leg==-2)goal=(b3Pos){10.5,-.08,3.2};
+        b3Pos goal={(leg==0?-2.38:(leg%4<2?-2.38:-2.64))+STOP_DX,-.08,leg%2?3.2:6.2};int t,limit=leg<0?1500:900;
+        if(leg==-2)goal=(b3Pos){13.0,-.08,3.2};
         for(t=0;t<limit;t++) {
             b3Pos p=swat_body_feet_position(&sim.actors[0].controller.body);
             if(hypotf(p.x-goal.x,p.z-goal.z)<.22f)break;

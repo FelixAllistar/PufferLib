@@ -1,17 +1,18 @@
-// Original closed exterior in the rear utility court. Owner order follows the
+// Original closed exterior in the rear utility court (2 m further back than
+// 5.0, clear of Room 105; MOTEL_LAYOUT.md). Owner order follows the
 // support graph; asset order preserves the delivered GLB node traversal.
 static const SwatMotelInstance transformer_instances[]={
-    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+3,{10.8f,-.08f,-7.6f},{1,1,1},0,SWAT_CONCRETE,false,false},
-    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST,{10.8f,-.08f,-7.6f},{1,1,1},0,SWAT_STEEL,false,false},
-    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+1,{10.8f,-.08f,-7.6f},{1,1,1},0,SWAT_STEEL,false,false},
-    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+2,{10.8f,-.08f,-7.6f},{1,1,1},0,SWAT_STEEL,false,false}
+    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+3,{10.8f,-.08f,-9.6f},{1,1,1},0,SWAT_CONCRETE,false,false},
+    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST,{10.8f,-.08f,-9.6f},{1,1,1},0,SWAT_STEEL,false,false},
+    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+1,{10.8f,-.08f,-9.6f},{1,1,1},0,SWAT_STEEL,false,false},
+    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+2,{10.8f,-.08f,-9.6f},{1,1,1},0,SWAT_STEEL,false,false}
 };
 // Sections tune existing game damage. The cabinet is a joined exterior, so its
 // aggregate section is an approximation, not a physical strength specification.
 static const float transformer_sections[]={.18f,.04f,.022f,.022f};
 bool swat_motel_transformer(const SwatWorld* w,int owner,SwatMotelInstance* out) {
     int index=owner-SWAT_MOTEL_TRANSFORMER_FIRST;
-    if(!w->motel || (w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_OBJECTS) || index<0 || index>=SWAT_MOTEL_TRANSFORMER_PARTS)return false;
+    if(!w->motel || (w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_PICNIC_END && w->count!=SWAT_MOTEL_OBJECTS) || index<0 || index>=SWAT_MOTEL_TRANSFORMER_PARTS)return false;
     *out=transformer_instances[index];return true;
 }
 static const SwatMotelAsset* transformer_asset(int index) {
@@ -45,7 +46,7 @@ static bool transformer_supports(const SwatWorld* w,int index,int supports[SWAT_
 }
 static bool transformer_validate(const SwatWorld* w) {
     if(w->count<=SWAT_MOTEL_TRANSFORMER_FIRST)return true; // Previous canonical map.
-    if((w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_OBJECTS))return false;
+    if((w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_PICNIC_END && w->count!=SWAT_MOTEL_OBJECTS))return false;
     for(int i=0;i<SWAT_MOTEL_TRANSFORMER_PARTS;i++) {
         const SwatObject* o=&w->objects[SWAT_MOTEL_TRANSFORMER_FIRST+i];const SwatMotelAsset* a=transformer_asset(i);
         int supports[SWAT_MAX_SUPPORTS];
@@ -57,7 +58,7 @@ static bool transformer_validate(const SwatWorld* w) {
     return true;
 }
 static void transformer_bind(SwatWorld* w) {
-    if((w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_OBJECTS))return;
+    if((w->count!=SWAT_MOTEL_TRANSFORMER_END && w->count!=SWAT_MOTEL_PICNIC_END && w->count!=SWAT_MOTEL_OBJECTS))return;
     for(int i=0;i<SWAT_MOTEL_TRANSFORMER_PARTS;i++) {
         SwatObject* o=&w->objects[SWAT_MOTEL_TRANSFORMER_FIRST+i];if(!o->active)continue;
         const SwatMotelInstance* p=&transformer_instances[i];

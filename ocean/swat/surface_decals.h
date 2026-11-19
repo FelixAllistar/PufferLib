@@ -23,6 +23,7 @@
 // corner for corner. Scatter is deterministic: seeded per rule and surface.
 #ifndef SWAT_SURFACE_DECALS_H
 #define SWAT_SURFACE_DECALS_H
+#include "motel.h"
 #include "world.h"
 #include "fracture_types.h"
 #include <math.h>
@@ -351,6 +352,10 @@ static inline int swat_decal_room_at(const SwatWorld* w,const float* p) {
 // surface kind of face f of object o, or -1.
 static inline int swat_decal_surface_kind(const SwatWorld* w,const SwatObject* o,int f) {
     if(o->door || o->motion || o->rubble || fabsf(o->pitch)>1e-4f || o->part!=SWAT_PART_SOLID)return -1;
+    // Court rows (MOTEL_LAYOUT.md) are mesh-collided kit pieces whose boxes
+    // include trim and openings: only their walkway slabs take scatter.
+    SwatMotelInstance court;
+    if(swat_motel_court(w,o->tag.index,&court,NULL) && court.asset!=6)return -1;
     bool parent=!o->active && o->wall_group;
     if(!o->active && !parent)return -1;
     float n[3];float d=swat_decal_face_plane(o,f,n);(void)d;

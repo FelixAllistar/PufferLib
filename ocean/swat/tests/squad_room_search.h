@@ -132,7 +132,9 @@ static void task_room_motel(void) {
     }
     assert(swat_sim_set_player(&sim,1,true) && swat_sim_set_player(&sim,2,true));
     place_actor(0,b3OffsetPos(point,swat_v(0,-sim.world.objects[door].half.y,1.4f)));
-    place_actor(4,b3OffsetPos(point,swat_v(.8f,-sim.world.objects[door].half.y,1.3f)));
+    // West of the door: the 3 m walkway posts (MOTEL_LAYOUT.md) put one at
+    // x=-6, which with a player parked east of the door closes the walkway.
+    place_actor(4,b3OffsetPos(point,swat_v(-.8f,-sim.world.objects[door].half.y,1.3f)));
     SwatController* leader=&sim.actors[0].controller;b3Vec3 aim=b3SubPos(point,swat_controller_eye(leader));
     leader->yaw=b3Atan2(aim.z,aim.x);leader->pitch=b3Atan2(aim.y,hypotf(aim.x,aim.z));
     SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_ROOM_SEARCH;in.squad_team=2;swat_sim_step(&sim,&in);

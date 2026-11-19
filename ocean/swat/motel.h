@@ -45,7 +45,14 @@
 #define SWAT_MOTEL_TRANSFORMER_END (SWAT_MOTEL_TRANSFORMER_FIRST+SWAT_MOTEL_TRANSFORMER_PARTS)
 #define SWAT_MOTEL_PICNIC_FIRST SWAT_MOTEL_TRANSFORMER_END
 #define SWAT_MOTEL_PICNIC_PARTS 50
-#define SWAT_MOTEL_OBJECTS (SWAT_MOTEL_PICNIC_FIRST+SWAT_MOTEL_PICNIC_PARTS)
+#define SWAT_MOTEL_PICNIC_END (SWAT_MOTEL_PICNIC_FIRST+SWAT_MOTEL_PICNIC_PARTS)
+// Court layer (MOTEL_LAYOUT.md): closed guest-room bays, end walls, piers and
+// walkway posts that wrap the lot into a motor court. Maps that end at the
+// picnic table (SWAT_MOTEL_PICNIC_END) are the previous canonical prefix.
+#include "motel_court_count.h"
+#define SWAT_MOTEL_COURT_FIRST SWAT_MOTEL_PICNIC_END
+#define SWAT_MOTEL_COURT_END (SWAT_MOTEL_COURT_FIRST+SWAT_MOTEL_COURT_INSTANCES)
+#define SWAT_MOTEL_OBJECTS SWAT_MOTEL_COURT_END
 #define SWAT_MOTEL_DRESSING_ASSETS 9
 #define SWAT_MOTEL_DRESSING_INSTANCES (4*SWAT_MOTEL_DRESSING_ASSETS)
 #define SWAT_MOTEL_FOLIAGE_INSTANCES 36
@@ -95,6 +102,19 @@ const SwatMotelAsset* swat_motel_surroundings_asset(int part);
 bool swat_motel_surroundings_instance(int owner,SwatMotelInstance* out);
 int swat_motel_bank_triangle_part(int triangle);
 const SwatMotelAsset* swat_motel_asset(int index);
+// Court layer row of owner: its motel_v1 placement (static mesh collision,
+// never a door or a room) and the authored template owner whose exterior and
+// architecture art it repeats.
+bool swat_motel_court(const SwatWorld*,int owner,SwatMotelInstance* placement,int* template_owner);
+// Presentation frame for art authored against an owner's 5.0 placement:
+// court rows repeat their template's pieces, and authored owners that the
+// court layout moved (walkway posts, wheel stops, roadside sign) carry their
+// own. Returns false when the owner's art is drawn where it was authored.
+// Pieces map world p -> to * inverse(from) * p.
+bool swat_motel_art_frame(const SwatWorld*,int owner,int* source,SwatMotelInstance* from,SwatMotelInstance* to);
+// The 5.0 authored placement of base/utility instance index (before the court
+// layout moved posts, stops, sign and fence); swat_motel_instance is current.
+const SwatMotelInstance* swat_motel_authored_instance(int index);
 const SwatMotelInstance* swat_motel_instance(int index);
 bool swat_motel_service(const SwatWorld*,int owner,SwatMotelInstance*);
 // Static closed-lid refuse container: steel body and two dependent soft lids.

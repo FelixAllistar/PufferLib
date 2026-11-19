@@ -311,7 +311,7 @@ bool swat_world_damage(SwatWorld* w, int object, float damage) {
     }
     // An angled picnic leg needs an attached bearer to retain its source pose.
     // Floor contact alone must not leave a loose, unsupported leg standing.
-    if(object>=SWAT_MOTEL_PICNIC_FIRST && object<SWAT_MOTEL_OBJECTS) {
+    if(object>=SWAT_MOTEL_PICNIC_FIRST && object<SWAT_MOTEL_PICNIC_END) {
         uint64_t loose=swat_motel_picnic_unstable_roots(w);
         for(int i=0;i<SWAT_MOTEL_PICNIC_PARTS;i++)if(loose&(UINT64_C(1)<<i)) {
             SwatObject* leg=&w->objects[SWAT_MOTEL_PICNIC_FIRST+i];
