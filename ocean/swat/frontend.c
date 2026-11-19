@@ -465,7 +465,7 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
         if(app->plan_tab==0) {
             const char* report=(sim->config.mission==SWAT_GENERATED || sim->config.mission==SWAT_BUILDING) ? TextFormat("%d reported gunmen / three hostages",1+sim->config.difficulty) :
                 sim->config.mission==SWAT_MOTEL ? TextFormat("Two armed occupants / %d civilians",swat_motel_occupancy_civilians(sim->config.motel_occupancy)) :
-                (sim->config.mission==SWAT_HOUSE || sim->config.mission==SWAT_STOREFRONT ? "Two armed occupants / three civilians" : "One armed target / one civilian");
+                (sim->config.mission==SWAT_HOUSE || sim->config.mission==SWAT_STOREFRONT ? "Two armed occupants / three civilians" : sim->config.mission==SWAT_HOLLOW ? "Two armed men / one hostage" : "One armed target / one civilian");
             DrawText(report,(int)x,(int)y,16,menu_paper); y+=30;
             DrawText(sim->config.tactical_rules ? "Secure occupants. Recover weapons." : "Clear the annex. Extract at the far end.",(int)x,(int)y,16,menu_muted); y+=21;
             if(sim->config.tactical_rules)DrawText("Escort civilians and regroup at staging.",(int)x,(int)y,16,menu_muted);
@@ -574,13 +574,14 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             bool next=GuiButton((Rectangle){x+192,y,184,34},"Next seed"); y+=40;
             bool cedar=GuiButton((Rectangle){x,y,184,30},"Cedar House");
             bool motel=GuiButton((Rectangle){x+192,y,184,30},"Briar Court motel"); y+=40;
-            bool storefront=GuiButton((Rectangle){x,y,376,30},"Morrow Block storefronts"); y+=40;
-            if(build || next || cedar || motel || storefront || building || occupancy>=0) {
+            bool storefront=GuiButton((Rectangle){x,y,184,30},"Morrow Block storefronts");
+            bool hollow=GuiButton((Rectangle){x+192,y,184,30},"The Hollow"); y+=40;
+            if(build || next || cedar || motel || storefront || hollow || building || occupancy>=0) {
                 char* end; errno=0; unsigned long long seed=strtoull(app->layout_seed,&end,10);
-                if(!cedar && !storefront && (errno || end==app->layout_seed || *end || app->layout_seed[0]=='-' || seed>UINT32_MAX))
+                if(!cedar && !storefront && !hollow && (errno || end==app->layout_seed || *end || app->layout_seed[0]=='-' || seed>UINT32_MAX))
                     snprintf(app->notice,sizeof(app->notice),"Use a seed from 0 to 4294967295.");
                 else {
-                    app->scenario=sim->config; app->scenario.mission=(building || (next && sim->config.mission==SWAT_BUILDING)) ? SWAT_BUILDING : storefront ? SWAT_STOREFRONT : (motel || occupancy>=0 || ((build || next) && sim->config.mission==SWAT_MOTEL)) ? SWAT_MOTEL : (cedar ? SWAT_HOUSE : SWAT_GENERATED);
+                    app->scenario=sim->config; app->scenario.mission=hollow ? SWAT_HOLLOW : (building || (next && sim->config.mission==SWAT_BUILDING)) ? SWAT_BUILDING : storefront ? SWAT_STOREFRONT : (motel || occupancy>=0 || ((build || next) && sim->config.mission==SWAT_MOTEL)) ? SWAT_MOTEL : (cedar ? SWAT_HOUSE : SWAT_GENERATED);
                     app->scenario.layout_seed=(uint32_t)seed+(next ? 1u : 0u);
                     app->scenario.generator=app->layout_generator; app->scenario.difficulty=app->layout_difficulty;
                     if(occupancy>=0)app->scenario.motel_occupancy=occupancy;

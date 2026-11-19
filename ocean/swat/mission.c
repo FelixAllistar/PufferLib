@@ -28,6 +28,11 @@ static const SwatMissionDef missions[SWAT_MISSION_COUNT]={
     {"Breach material samples","Door, timber partition and painted masonry. Compare tool damage and surviving structure.",{0,0,0},{0,0,0},0,{{0}}},
     {"Weapon test range","Three target lanes: open, tall cover and waist cover, with a door behind the line. Targets never return fire.",
         {0,0,0},{0,0,0},0,{{0}}},
+    {"The Hollow","A missing woman's phone was last traced to a farm at the end of a gravel lane. The owner is armed; a second man is often seen on the property. Find the hostage, arrest both men and return to the lane.",
+        {-2,0,-19},{-3.5f,0,-19},3,
+        {{"Southeast woodline",{46,3.2f,-16},{20,1.6f,-5}},
+         {"Hill above the cellar",{26,3.8256f,16},{18,1.4f,1}},
+         {"Lane bend",{-4,2.6f,-12},{16,1.6f,-6}}}},
 };
 const SwatMissionDef* swat_mission(int mission) {
     return &missions[mission>=0 && mission<SWAT_MISSION_COUNT ? mission : SWAT_ANNEX];
@@ -258,3 +263,4 @@ void swat_mission_build_test_range(SwatWorld* w) {
     swat_world_box(w,(b3Pos){20,1.2f,-5},swat_v(.1f,1.2f,.4f),SWAT_STEEL,0);
     w->rooms[0]=(SwatRoom){{12,1.5f,0},{17,1.5f,17},SWAT_CONCRETE,SWAT_CONCRETE}; w->room_count=1;
 }
+#include "hollow_impl.h"

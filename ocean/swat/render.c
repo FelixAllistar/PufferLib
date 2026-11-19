@@ -569,10 +569,10 @@ static void swat_draw_plan(SwatView* view,const SwatSim* sim) {
         camera.fovy=55; camera.projection=CAMERA_PERSPECTIVE;
     } else {
         float yaw=view->plan_yaw+.65f;
-        float center=sim->config.mission==SWAT_STOREFRONT ? 0 : sim->config.mission==SWAT_MOTEL ? -2 : (sim->config.mission==SWAT_GENERATED ? 4+sim->layout.width*.5f : 11);
-        float center_z=sim->config.mission==SWAT_STOREFRONT ? -5 : 0;
+        float center=sim->config.mission==SWAT_HOLLOW ? 24 : sim->config.mission==SWAT_STOREFRONT ? 0 : sim->config.mission==SWAT_MOTEL ? -2 : (sim->config.mission==SWAT_GENERATED ? 4+sim->layout.width*.5f : 11);
+        float center_z=sim->config.mission==SWAT_STOREFRONT ? -5 : sim->config.mission==SWAT_HOLLOW ? -1 : 0;
         camera.position=(Vector3){center-20*cosf(yaw),24,center_z-20*sinf(yaw)};
-        camera.target=(Vector3){center,0,center_z}; camera.fovy=28; camera.projection=CAMERA_ORTHOGRAPHIC;
+        camera.target=(Vector3){center,0,center_z}; camera.fovy=sim->config.mission==SWAT_HOLLOW ? 52 : 28; camera.projection=CAMERA_ORTHOGRAPHIC;
         // Centre the model in the space left of the planning sidebar.
         camera.position.x-=7.2f*sinf(yaw); camera.target.x-=7.2f*sinf(yaw);
         camera.position.z+=7.2f*cosf(yaw); camera.target.z+=7.2f*cosf(yaw);
