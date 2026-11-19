@@ -1001,8 +1001,10 @@ static void gen_treefern(Gen* g, bool stout) {
         float az = f * 2.39996f + grr(g, -0.2f, 0.2f), age = (float)f / nf; bool young = f >= nf - 3; int pairs = 18 + (int)grr(g, 0, 5);
         g->dry = age < 0.2f ? (int)grr(g, 30, 110) : 0;
         float L = (young ? grr(g, 0.9f, 1.4f) : grr(g, 2.3f, 3.2f)) * (stout ? 0.95f : 1.0f) * fminf(1.0f + 0.06f * fmaxf(H - 4.0f, 0.0f), 1.25f);
-        float e0 = (young ? grr(g, 1.25f, 1.45f) : lerpf(0.55f, 1.1f, age) + grr(g, -0.1f, 0.1f)) + (stout ? 0.25f : 0);
-        float droop = (young ? 0.6f : lerpf(2.1f, 1.4f, age) + grr(g, -0.2f, 0.2f)) * (stout ? 0.7f : 1.0f);
+        float e0 = (young ? grr(g, 1.25f, 1.45f) : lerpf(0.4f, 1.05f, age) + grr(g, -0.1f, 0.1f)) + (stout ? 0.2f : 0);
+        // Arching: up out of the crown, out to level and the tip below it (the
+        // oldest, lowest fronds furthest), a broad open rosette, not a mop.
+        float droop = (young ? 0.5f : lerpf(1.05f, 0.8f, age) + grr(g, -0.12f, 0.12f)) * (stout ? 0.75f : 1.0f);
         Frond F = {.base = top, .az = az, .e0 = e0, .droop = droop, .twist = grr(g, -0.3f, 0.3f), .L = L, .bare = 0.1f,
                    .pairs = g->lod ? 8 : pairs, .lmax = L * 0.4f, .lw = g->lod ? 0.55f : 0.38f, .ang = 1.25f, .keel = 0.35f, .curl = -0.5f,
                    .profile = 1, .layer = L_FPINNA, .cols = 4, .rachis_r = g->lod ? 0 : 0.022f, .segs = g->lod ? 4 : 8, .lsegs = g->lod ? 1 : 2, .ph = gr(g), .flex = 0.6f};
