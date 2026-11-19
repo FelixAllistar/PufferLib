@@ -309,10 +309,42 @@ Two more keys came from that, off by default:
 
 **Run 13** (run 12's settings plus the target pose below) was stopped after
 six minutes: run 12's result says those settings lose the pose whatever the
-policy sees. **Run 14 (256x2, live):** target pose seen, `reward_speed 0.4`,
-`pose_each 1` with `reward_pose 0.3, k_pose 10`, `reward_ee 0.1, k_ee 25`,
-`reward_effort 0.1, effort_scale 3`, `kernel 1`, `cadence 1.5`,
-`reward_vel 0`, `reward_com 0`. Not evaluated yet.
+policy sees.
+
+**Run 14 (256x2): the same hunched result, so that was not the cause.**
+Target pose seen, `reward_speed 0.4`, `pose_each 1` with `reward_pose 0.3,
+k_pose 10`, `reward_ee 0.1, k_ee 25`, `reward_effort 0.1, effort_scale 3`,
+`kernel 1`, `cadence 1.5`. At 598M steps: joints 33.7 degrees off, step rate
+2.77x, cost of transport 37.
+
+**What it was: the actions sat at their clamp.** Measured on the final
+checkpoints, mean (noise-free) actions on the walk and run clips:
+
+| Run | Learned noise per axis | Mean offset from the clip | Joint steps at the +-29 degree clamp |
+|---|---|---|---|
+| 10 (plain tracking) | 5.1 deg | 6.0 deg | 0% |
+| 12 | 14.3 deg | 24.0 deg | 68% |
+| 14 | 15.0 deg | 25.3 deg | 73% |
+
+In run 12 the spine is at the clamp on 100% of steps, a thigh on 99%, the
+forearms on 97 to 99%. The trainer's entropy shows when: it stays near its
+start in runs 9 and 10 (98, peak 116, back to 108) and climbs all run long
+in 11, 12 and 14 (98 to 143 to 164), with the pose error climbing beside it
+(14 to 21 to 26 to 29 to 32 degrees). Even the 26 actions this rig does not
+use end with a std of 2.8 (run 10: 1.9): where no reward depends on an
+action, its noise grows. An offset is clamped to +-action_scale, and past
+the clamp an action changes nothing, so nothing points back. In runs 2 to
+10 the sharp pose term (weight 0.65) kept every action inside its range;
+the speed-first runs loosened it. So runs 11 to 14 say little about reward
+kernels or per-joint terms: all of them were saturated.
+
+`reward_action` (off by default): a term 1 / (1 + m), m the mean squared raw
+action in units of its clamp, taken before the clamp, so it slopes back from
+anywhere and costs the sampled action, noise included. The log's
+`action_size` is m (0.04 at the start of training).
+
+**Run 15 (256x2, live):** run 14 with `reward_action 0.2` (`reward_speed
+0.35`, `reward_effort 0.05`). Not evaluated yet.
 
 ## The policy sees the target pose (2026-11-18)
 

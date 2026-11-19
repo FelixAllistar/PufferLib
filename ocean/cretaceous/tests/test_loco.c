@@ -301,6 +301,13 @@ static void test_each_effort(void) {
     w->cfg.w_effort = 0.2f; w->cfg.effort_scale = 3; loco_reset_agent(w, 0, 0.3f); loco_step(w, NULL, rew, term);
     float pw = w->ag[0].power, re = w->ag[0].r_effort;
     CHECK(off == 0 && pw > 0 && isfinite(pw) && re > 0 && re < 1 && fabsf(rew[0] - (r_off + 0.2f * re)) < 5e-3f, "effort: power %.1f W over a step, term %.4f, added to the reward (%.4f against %.4f)", pw, re, rew[0], r_off);
+    // The action-size term: zero actions score 1; every action at twice its clamp gives m = 4, the term 0.2.
+    static float act[LOCO_MAX_DOF]; const float* ap[1] = {act}; memset(act, 0, sizeof act);
+    w->cfg.w_effort = 0; w->cfg.w_action = 0.5f; loco_reset_agent(w, 0, 0.3f); loco_step(w, ap, rew, term);
+    float calm = w->ag[0].r_action; bool t0 = term[0] != 0;
+    for (int d = 0; d < w->rig.ndof; d++) act[d] = (d & 1 ? -2.0f : 2.0f) * w->cfg.action_scale / w->cfg.action_unit;
+    loco_reset_agent(w, 0, 0.3f); loco_step(w, ap, rew, term);
+    CHECK(calm == 1.0f && (term[0] != 0 || fabsf(w->ag[0].r_action - 0.2f) < 1e-4f) && !t0, "action size: zero actions score 1 (%.4f), all at twice the clamp 0.2 (%.4f)", calm, w->ag[0].r_action);
     free_world(w);
 }
 // The step rate (cadence) and the commanded-speed reward term.

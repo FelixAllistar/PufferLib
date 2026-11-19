@@ -92,6 +92,15 @@
 //     step) per unit of weight and commanded speed, P / (m g max(speed,
 //     speed_floor)): a cost of transport. Nothing else here costs effort,
 //     and run 12 stepped at the fastest rate allowed on every gait.
+//   Action size (reward_action > 0): 1 / (1 + m), m the mean over the
+//     rig's actions of (action x action_unit / action_scale)^2, taken before
+//     the clamp (the step-rate action against its own range). An offset is
+//     clamped to +-action_scale, and past the clamp an action changes
+//     nothing, so no reward points back: in runs 12 and 14 the mean action
+//     sat at the clamp on about 70% of joint steps (run 10: none) and the
+//     learned noise was 14 degrees per axis (run 10: 5), which is what
+//     held every joint 30 to 40 degrees off the clip. This term slopes
+//     back from anywhere and costs the sampled action, noise included.
 //   Step rate (cadence > 0): the action after the rig's last joint sets how
 //     fast the clip plays, 2^e with e = 2 action_unit per output unit,
 //     clamped to +-cadence and eased (a quarter of the way per policy step).
@@ -135,6 +144,7 @@ typedef struct LocoConfig {
     int kernel;            // reward terms: 0 exp(-x), 1 the long-tailed 1 / (1 + x)
     int pose_each;         // 1: the pose and end-effector terms are means of per-joint terms
     float w_effort, effort_scale;   // the effort term's weight (0: off) and the cost of transport at which it is 0.5
+    float w_action;        // the action-size term's weight (0: off)
 } LocoConfig;
 
 static LocoConfig loco_default_config(void) {
@@ -149,7 +159,7 @@ static LocoConfig loco_default_config(void) {
     c.push_interval = 0; c.push_min = 0.5f; c.push_max = 1.5f; c.push_seconds = 0.1f; c.push_adapt = 0;
     c.w_heading = 0; c.k_heading = 1.0f;
     c.clip_switch = 0; c.clip_blend = 0.3f;
-    c.w_speed = 0; c.speed_floor = 1.0f; c.cadence = 0; c.kernel = 0; c.pose_each = 0; c.w_effort = 0; c.effort_scale = 1.0f;
+    c.w_speed = 0; c.speed_floor = 1.0f; c.cadence = 0; c.kernel = 0; c.pose_each = 0; c.w_effort = 0; c.effort_scale = 1.0f; c.w_action = 0;
     return c;
 }
 
@@ -163,13 +173,14 @@ typedef struct LocoAgent {
     float elapsed, ret, err_pose, err_ee; int steps; bool fallen;
     float r_pose, r_vel, r_ee, r_com, r_heading, r_speed, r_effort;   // last step's reward terms
     float power;           // joint power summed over this policy step's physics steps (W), then its mean
+    float act_size, r_action;   // this step's mean squared action in units of its clamp, and the term from it
     float rate_log;        // log2 of the clip's playback rate (cadence); 0 after a reset
     float start_x;         // pelvis x at the reset
     int push_left, push_body; b3Vec3 push_force;   // the shove under way: physics steps left, body, force (N)
 } LocoAgent;
 
 // clip_speed: the target speed summed over steps, like reward (divide by steps); rate: the playback rate, the same way.
-typedef struct LocoStats { double episodes, falls, length, ret, distance, reward, pose_deg, ee_cm, steps, push_level, clip_speed, rate, effort; } LocoStats;
+typedef struct LocoStats { double episodes, falls, length, ret, distance, reward, pose_deg, ee_cm, steps, push_level, clip_speed, rate, effort, act_size; } LocoStats;
 
 typedef struct LocoWorld {
     LocoConfig cfg; LocoRig rig; LocoPhys phys;
@@ -487,6 +498,7 @@ static float loco_reward(LocoWorld* w, LocoAgent* a) {
         a->r_effort = 1.0f / (1.0f + cot / c->effort_scale);
         rew += c->w_effort * a->r_effort;
     }
+    if (c->w_action > 0) { a->r_action = 1.0f / (1.0f + a->act_size); rew += c->w_action * a->r_action; }
     return rew;
 }
 
@@ -539,7 +551,13 @@ static void loco_step(LocoWorld* w, const float* const* act, float* reward, floa
     for (int i = 0; i < n; i++) {
         LocoAgent* a = &w->ag[i]; a->fallen = false; loco_push_maybe(w, i); loco_switch_maybe(w, i);
         if (c->cadence > 0 && act) a->rate_log += 0.25f * (fminf(fmaxf(2.0f * c->action_unit * act[i][w->rig.ndof], -c->cadence), c->cadence) - a->rate_log);
-        a->power = 0;
+        a->power = 0; a->act_size = 0;
+        if (act) {
+            const float* x = act[i]; float m = 0, u = c->action_unit / c->action_scale; int nd = w->rig.ndof;
+            for (int d = 0; d < nd; d++) m += (x[d] * u) * (x[d] * u);
+            if (c->cadence > 0) { float e = 2.0f * c->action_unit * x[nd] / c->cadence; m += e * e; nd++; }
+            a->act_size = m / nd;
+        }
     }
     for (int s = 0; s < k; s++) {
         for (int i = 0; i < n; i++) {
@@ -567,7 +585,7 @@ static void loco_step(LocoWorld* w, const float* const* act, float* reward, floa
         bool done = a->fallen || a->elapsed >= c->episode_seconds - 1e-4f;
         if (reward) reward[i] = r;
         if (terminal) terminal[i] = done ? 1.0f : 0.0f;
-        w->stats.reward += r; w->stats.steps += 1; w->stats.clip_speed += w->ref[a->clip].speed; w->stats.rate += exp2f(a->rate_log); w->stats.effort += a->power / (w->rig.total_mass * 9.81f * fmaxf(w->ref[a->clip].speed, c->speed_floor));
+        w->stats.reward += r; w->stats.steps += 1; w->stats.clip_speed += w->ref[a->clip].speed; w->stats.rate += exp2f(a->rate_log); w->stats.act_size += a->act_size; w->stats.effort += a->power / (w->rig.total_mass * 9.81f * fmaxf(w->ref[a->clip].speed, c->speed_floor));
         if (done) {
             LocoStats* st = &w->stats;
             st->episodes += 1; st->falls += a->fallen; st->length += a->elapsed; st->ret += a->ret;
@@ -606,5 +624,5 @@ static uint64_t loco_hash(const LocoWorld* w) {
     X(push_interval, push_interval, float) X(push_min, push_min, float) X(push_max, push_max, float) X(push_seconds, push_seconds, float) X(push_adapt, push_adapt, float) \
     X(clip_switch, clip_switch, float) X(clip_blend, clip_blend, float) \
     X(w_speed, reward_speed, float) X(speed_floor, speed_floor, float) X(cadence, cadence, float) X(kernel, kernel, int) \
-    X(pose_each, pose_each, int) X(w_effort, reward_effort, float) X(effort_scale, effort_scale, float)
+    X(pose_each, pose_each, int) X(w_effort, reward_effort, float) X(effort_scale, effort_scale, float) X(w_action, reward_action, float)
 #endif

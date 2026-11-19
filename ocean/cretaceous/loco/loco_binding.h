@@ -35,7 +35,7 @@ static_assert(LOCO_MAX_DOF == 69, "ACT_SIZES lists LOCO_MAX_DOF ones");
 // clip_speed: the mean target speed (m/s) over the steps since the last log
 // update, the mix of clips (weighted by the episodes ended, so the trainer's
 // division by n gives the mean). cadence: the mean playback rate, the same way.
-struct Log { float perf, score, episode_return, episode_length, distance, falls, pose_deg, ee_cm, push_level, clip_speed, cadence, effort, n; };
+struct Log { float perf, score, episode_return, episode_length, distance, falls, pose_deg, ee_cm, push_level, clip_speed, cadence, effort, action_size, n; };
 
 struct Env {
     Log log;
@@ -89,6 +89,7 @@ void puf_step(Env* env) {
         l->clip_speed += ne * (float)(ds > 0 ? (s->clip_speed - p->clip_speed) / ds : 0.0);
         l->cadence += ne * (float)(ds > 0 ? (s->rate - p->rate) / ds : 1.0);
         l->effort += ne * (float)(ds > 0 ? (s->effort - p->effort) / ds : 0.0);
+        l->action_size += ne * (float)(ds > 0 ? (s->act_size - p->act_size) / ds : 0.0);
         l->n += ne;
         *p = *s;
     }
@@ -99,7 +100,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "perf", log->perf); dict_set(out, "score", log->score);
     dict_set(out, "episode_return", log->episode_return); dict_set(out, "episode_length", log->episode_length);
     dict_set(out, "distance", log->distance); dict_set(out, "falls", log->falls);
-    dict_set(out, "pose_deg", log->pose_deg); dict_set(out, "ee_cm", log->ee_cm); dict_set(out, "push_level", log->push_level); dict_set(out, "clip_speed", log->clip_speed); dict_set(out, "cadence", log->cadence); dict_set(out, "effort", log->effort); dict_set(out, "n", log->n);
+    dict_set(out, "pose_deg", log->pose_deg); dict_set(out, "ee_cm", log->ee_cm); dict_set(out, "push_level", log->push_level); dict_set(out, "clip_speed", log->clip_speed); dict_set(out, "cadence", log->cadence); dict_set(out, "effort", log->effort); dict_set(out, "action_size", log->action_size); dict_set(out, "n", log->n);
 }
 
 // Training renders nothing; tools/loco_view.c draws the ragdolls.
