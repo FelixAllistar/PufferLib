@@ -49,3 +49,10 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
    litter, tree ferns under it in patches; `veg_place.h` keeps it closed (the group openings fade out above
    moisture 0.75). Kept, small: `wetF` closes up, `river` has a tree-fern understorey along the bank; the moss shows
    little under the shader's litter tint. Trees on the island 101,539 to 109,145, tree ferns 25,736 to 28,473.
+7. Fault (from pass 4): with nearness to water now 1 for 20 m, the bank sand and bank mud rules spread a 20 m sandy
+   and muddy skirt along every river, and the horsetail layer stood at full density over the whole 20 m (a wall of
+   horsetails on every flat bank). Change: `terra.c` sand bars and bank mud read the raw blur again (sand only on the
+   wide reaches, as before; mud a strip of a few metres); horsetails dense in the nearest few metres and in patchy
+   brakes over the rest of a flat bank. Kept: `wetl` has a green riparian corridor (broadleaves, tree ferns, a
+   horsetail fringe) through the dry country, `river` keeps its horsetail edge without sand, horsetails on the
+   island 25,166 to 6,275. `rivG` stands in a brake at the water's edge.

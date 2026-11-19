@@ -1255,7 +1255,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
                            + (1 - rockiness) * sstep(0.15f, 0.4f, slope) * (1 - sstep(0.3f, 1.0f, soil)) * (0.9f * alpine + 0.5f * nearface * sstep(-0.5f, 1.0f, cv))
                            + (1 - rockiness) * 0.3f * summit * (0.7f + 0.6f * n3)   // the summits' stony ground
                            + (1 - rockiness) * 1.1f * sstep(0.15f, 0.6f, talus[i] + 0.15f * n3);   // fans under the faces
-        w[TERRA_MAT_SAND] = beach * 2.0f + (sea[i] ? 1.5f : 0) + sstep(0.6f, 0.9f, riparian) * sstep(0.0f, 0.3f, soil - 0.3f) * 0.6f;
+        w[TERRA_MAT_SAND] = beach * 2.0f + (sea[i] ? 1.5f : 0) + sstep(0.2f, 0.3f, wet[i]) * sstep(0.0f, 0.3f, soil - 0.3f) * 0.6f;   // bars on the wide reaches (the raw blur: riparian is 1 for 20 m)
         float open = (1 - rockiness) * (1 - clampf(beach, 0, 1));
         float flat = 1 - sstep(0.1f, 0.35f, slope);
         float canopy = sstep(0.25f, 0.55f, moist + 0.25f * patch) * (1 - sstep(0.7f, 1.1f, slope)) * sstep(-2.0f, 6.0f, temp) * (1 - alpine) * (1 - 0.6f * nearface);
@@ -1265,7 +1265,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float wetfor = sstep(0.62f, 0.85f, moist) * (1 - sstep(0.18f, 0.4f, slope)) * (1 - sstep(200.0f, 280.0f, h)) * (1 - desert) * (1 - alpine);
         // Mud only in a narrow strip at the waterline; banks beyond are vegetated.
         float waterline = sstep(0.0f, -1.2f, h - (m->water[i] > TERRA_DRY ? m->water[i] : h - 10.0f));
-        w[TERRA_MAT_MUD] = open * flat * (sstep(0.85f, 1.0f, riparian) * 0.5f + waterline * 1.4f + sstep(0.9f, 1.0f, moist) * 0.4f);
+        w[TERRA_MAT_MUD] = open * flat * (sstep(0.12f, 0.2f, wet[i]) * 0.5f + waterline * 1.4f + sstep(0.9f, 1.0f, moist) * 0.4f);
         w[TERRA_MAT_FOREST] = open * canopy * 1.1f;
         // Fern prairie is the default open ground (no grasses yet); bare soil only
         // where it is very dry or steep.
@@ -1332,7 +1332,9 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         v[TERRA_VEG_CYCAD] = grow * sstep(0.55f, 0.2f, moist) * sstep(16.0f, 22.0f, temp) * (0.3f + 0.4f * n2) * (1 - alpine);
         v[TERRA_VEG_FERN] = grow * (0.55f + 0.45f * sstep(0.1f, 0.5f, moist)) * (0.65f + 0.35f * n2) * (1 - 0.5f * alpine) * (1 - 0.85f * summit) * (1 - 0.7f * fan);
         v[TERRA_VEG_TREEFERN] = grow * fmaxf(sstep(0.7f, 0.95f, moist) * sstep(0.0f, 3.0f, curv[i]), 0.55f * wetfor * sstep(-0.2f, 0.3f, n2)) * sstep(15.0f, 20.0f, temp) * (1 - alpine) * (1 - nearface);
-        v[TERRA_VEG_HORSETAIL] = (1 - sstep(0.1f, 0.3f, slope)) * sstep(0.4f, 0.9f, riparian) * (wetcell ? 0.3f : 1.0f);
+        // Horsetails: a dense strip at the water's edge (the nearest few metres), patchy brakes over the rest of a
+        // flat bank and floodplain.
+        v[TERRA_VEG_HORSETAIL] = (1 - sstep(0.1f, 0.3f, slope)) * fmaxf(sstep(0.1f, 0.14f, wet[i]), 0.7f * sstep(0.4f, 0.9f, riparian) * sstep(0.1f, 0.4f, n2 + 0.3f * n3)) * (wetcell ? 0.3f : 1.0f);
         v[TERRA_VEG_PALM] = grow * sstep(0.2f, 0.6f, coast[i] * 2) * (1 - sstep(8.0f, 30.0f, h)) * sstep(20.0f, 24.0f, temp) * (0.3f + 0.7f * clump2);
         // The tree line is not an edge: above it a few stunted outlying conifers stand alone or in small
         // clumps for another 60-140 m (more in the hollows), among thickets of scrub.
