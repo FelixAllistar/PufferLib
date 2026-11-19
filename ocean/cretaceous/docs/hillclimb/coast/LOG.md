@@ -38,3 +38,6 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
    lower valley, with no slack-water fringe. Change: a fringe of bank mud and horsetails 3-14 m wide along streams
    behind the front of the beach. Reverted: from the air (`topW`) it drew a pair of dark lines along every stream, new
    stripes, and the big mouth hardly changed.
+7. Fault (from pass 2): the palms of the upper beach went too (`bchS` lost its three): the wet-sand rule refused all sand
+   below 0.9 m over the sea, which on a 1.2 % beach is its front 45 m. Change: 0.6 m. Kept, small: a palm stands on the
+   upper beach in `bchS` again; `coast` and `mouthA` stay clear at the water.
