@@ -25,7 +25,7 @@ const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
 // under a Cretaceous canopy (photo sources are mostly brown leaf litter).
-const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(0.6, 0.61, 0.64), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(2.2, 2.05, 1.7), vec3(0.85, 0.9, 0.8));   // scree: the gravel photo is far paler than the rock it falls from (read as cream bands), so grey it down to near the rock; forest floor: brown litter; fern ground: litter with some green; sand: the photo is damp, dry beach sand is pale
+const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(0.4, 0.41, 0.44), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(2.2, 2.05, 1.7), vec3(0.85, 0.9, 0.8));   // scree: the gravel photo is far paler than the rock it falls from (read as cream bands), so grey it down to near the rock; forest floor: brown litter; fern ground: litter with some green; sand: the photo is damp, dry beach sand is pale
 // Fern and moss photos are khaki; keep only their luminance detail and take
 // the hue from TINT (living fern albedo has green about twice red). The
 // detail is stretched around the photo's mean luminance (RECOLOR_MEAN), so
@@ -250,7 +250,8 @@ void main() {
         if (k == 2) al = mix(al, vec3(dot(al, vec3(0.3, 0.59, 0.11))) * vec3(1.06, 1.0, 0.9), stony);
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
-    albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
+    albedo /= max(wt, 1e-4); n = normalize(n);
+    if (u_splat_debug == 5) { o = vec4(sqrt(albedo), 1.0); return; }   // PROBE (temporary) rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
     // Large-scale tint: drier/redder patches, greener under canopy.
     vec4 misc = texture(t_misc, uv);
     float canopy = misc.a;

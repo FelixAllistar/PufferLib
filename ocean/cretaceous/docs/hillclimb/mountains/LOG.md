@@ -31,3 +31,10 @@ brief's world shots; renders at 960x540 on Mesa llvmpipe.
    (any rock over 40 degrees, 20-55 m, 4 m drop) put scree on 24% of the land and stripped the forest:
    tightened before keeping. Scree tint 0.6 (from 0.7). Kept: grey aprons under the bands in `mtD` and
    `mtE`, the forest kept (213,715 trees).
+8. Fault: cream patches on the high benches. Change: stony soil 22% darker. Reverted: no visible change, the cream is not the soil's colour.
+9. Fault: the same cream patches. Change: the hard beds' pale layering only at 35% on scree and soil. Reverted: no visible change.
+10. Fault: cream patches still all over the high slopes. Found with a throwaway probe (dominant material
+    per pixel, and the albedo before lighting): every one is scree, whose albedo after the ground
+    material build is about 30% above the rock's even at tint 0.48; in the frame it was 171 against the
+    rock's 133. Change: scree tint 0.4 (cool grey). Kept: 153 against 135 in the frame, the high slopes
+    read as one grey stone mass with lighter talus (`mtD`, `alp2`, `skyh`).
