@@ -1,5 +1,5 @@
 {
- "props": ["BC2_PICKUP01", "BC2_VAN01", "BC2_PALM01", "BC2_WAGON01", "BC2_PAYPHONE01", "BC2_NEWSBOX01", "BC2_TYRES01", "BC2_MATTRESS01"],
+ "props": ["BC2_PICKUP01", "BC2_VAN01", "BC2_PALM01", "BC2_WAGON01", "BC2_PAYPHONE01", "BC2_NEWSBOX01", "BC2_TYRES01", "BC2_MATTRESS01", "BC2_TUMBLE01"],
  "placements": [
   ["BC2_PICKUP01", 17.5, -0.08, 15.6, 90, 1.0, true, "front bay row"],
   ["BC2_VAN01", -20.6, -0.08, -6.0, 0, 1.0, true, "west bays, backed in"],
@@ -11,4 +11,10 @@
   ["BC2_PAYPHONE01", -4.6, -0.08, 34.85, -90, 1.0, true, "back edge of the sidewalk west of the driveway"],
   ["BC2_NEWSBOX01", 6.6, -0.08, 34.95, -90, 1.0, true, "sidewalk east of the driveway"],
   ["BC2_TYRES01", -2.2, -0.08, -11.4, 180, 1.0, true, "rear yard, east of the dumpster and clear of the annex door"],
-  ["BC2_MATTRESS01", -2.85, -0.08, -8.4, 180, 1.0, true, "leaning on the east end of the dumpster"]]}
+  ["BC2_MATTRESS01", -2.85, -0.08, -8.4, 180, 1.0, true, "leaning on the east end of the dumpster"],
+  ["BC2_TUMBLE01", -23.2, -0.08, 12.0, 40, 0.9, true, "west lot edge"],
+  ["BC2_TUMBLE01", 23.4, -0.08, -15.0, 130, 1.0, true, "east lot edge"],
+  ["BC2_TUMBLE01", 14.8, -0.08, 23.5, 210, 0.8, true, "south curb"],
+  ["BC2_TUMBLE01", -19.0, -0.08, 23.6, 300, 1.05, true, "south curb west"],
+  ["BC2_TUMBLE01", -5.6, -0.08, 33.2, 75, 0.75, true, "verge by the payphone"],
+  ["BC2_TUMBLE01", 12.0, -0.08, -23.4, 160, 0.95, true, "north lot edge"]]}

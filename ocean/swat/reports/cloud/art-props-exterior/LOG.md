@@ -173,3 +173,19 @@ quilting map is drawn by the script (original).
 8. mattress game 2: moved 0.45 m east so it rests against the dumpster; closer: yes. Stop.
 
 Budget: 1,328 triangles, 2 materials, 256 px quilt PNG + 256 px grain; GLB ~0.1 MB.
+
+## Tumbleweed (BC2_TUMBLE01)
+
+Reference: https://commons.wikimedia.org/wiki/File:Tumbleweed_038.jpg
+by ImperfectTommy / Edmond Meinfelder (CC BY 2.0; copy in refs/tumbleweed_ref.jpg).
+
+1. tumbleweed iter 1: 40 main twigs arcing from the base over a squashed sphere, 3 forks each, 3-sided tubes; too sparse and small; closer: baseline
+2. tumbleweed iter 2: radius 0.45 -> 0.5 m, 55 mains x 4 forks, camera closer; closer: yes
+3. tumbleweed iter 3: twigs 8 -> 5.5 mm, paler straw; closer: yes
+4. tumbleweed iter 4: twig wobble 0.08 -> 0.16 (crooked twigs); closer: yes (small)
+5. tumbleweed iter 5: mains also cover the top (was an open bowl); closer: yes
+6. tumbleweed iter 6: 72 mains x 3 forks (denser shell, same budget); closer: yes (small). Stop.
+7. tumbleweed game 1: six placed against curbs and lot edges, random yaw/scale 0.75-1.05; reads, a little too pale; closer: n/a
+8. tumbleweed game 2: straw (0.76,0.68,0.52); closer: yes. Stop.
+
+Budget: 7,776 triangles, 1 material, 256 px grain; GLB ~0.4 MB. Drawn 6x (~47k tris total, frustum culled).
