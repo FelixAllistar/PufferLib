@@ -22,6 +22,8 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 #define CRET_UNDER_NEAR 0.55
 #endif
 const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
+const float BED_PALE = 1.1;   // brightest the bedrock skin's tones lift the ground before easing (main)
+const float STONY_SOIL = 0.6;   // bare soil above the tree line, darkened (main)
 const float SCREE_COPY = 0.5;   // scale of scree's second copy (sample_mat): stones twice the size
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
@@ -250,7 +252,9 @@ void main() {
         vec3 al = mix(mats[j].albedo, rl * RECOLOR_HUE, RECOLOR[k] * recolor_near);
         // Bare soil above the tree line is stony and grey-brown (weathered rock, little humus), not the
         // orange lowland earth of the photo, which read as yellow-ochre streaks down the high slopes.
-        if (k == 2) al = mix(al, vec3(dot(al, vec3(0.3, 0.59, 0.11))) * vec3(1.06, 1.0, 0.9), stony);
+        // Its photo is pale (a dry lowland track), so where the stony soil wins a spot between rock and scree
+        // it read as cream blotches down the high slopes: darker, the tone of the weathered rock it comes from.
+        if (k == 2) al = mix(al, vec3(dot(al, vec3(0.3, 0.59, 0.11))) * vec3(1.06, 1.0, 0.9) * STONY_SOIL, stony);
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
     albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
@@ -435,6 +439,10 @@ void main() {
                 // Drip lines: narrow vertical streaks on steep rock, longest under the hard beds' lips.
                 float drip = texture(t_noise, vec2(along / 2.3, p.y / 45.0) + 0.38).r * 0.7 + texture(t_noise, vec2(along / 0.9, p.y / 20.0) + 0.12).g * 0.3;
                 al *= 1.0 - smoothstep(0.58, 0.74, drip) * vert * rk * (0.12 + 0.12 * (1.0 - hb)) * fade;
+                // The value, hue and bed terms are independent, and where their pale ends meet the product
+                // reached 1.8x the ground: cream blotches all over the high slopes. Past 1.1x it is eased.
+                float lr = dot(al, vec3(0.3, 0.59, 0.11)) / max(dot(a0, vec3(0.3, 0.59, 0.11)), 1e-4);
+                if (lr > BED_PALE) al *= (BED_PALE + (lr - BED_PALE) * 0.25) / lr;
                 // Jointed blocks: on a face (over about 55 degrees) the rock is drawn as big blocks, a skin over the
                 // heightfield (whose 4 m samples cannot hold them): bed partings every 1.8-5.5 m (the hard beds
                 // massive, the soft ones thinner) that undulate along the face, and joints across each bed every

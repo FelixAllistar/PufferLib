@@ -20,3 +20,10 @@ is at the end of this file.
    so big and small blocks alternate. Kept: `af1` and `p3` read as talus; unchanged from 400 m (`mtS`).
    Also tried for the rock material: `rock_face_03` and `rock_face_04` (no grain, broken). Not kept:
    orange, and blurrier than Rock030 at 2 m; they did not remove the streaks either (pass 1 did).
+3. Fault: cream blotches, 10-30 m long, all over the high slopes (`mtS`, `mtW`). Found by darkening one
+   material at a time: scree (tint 0.1) left them, bare soil (tint 0.1) removed them. They are the stony
+   soil above the tree line winning small spots in the height blend: its photo is a pale lowland track.
+   Change: `terrain.fs` stony soil at 0.6 of its grey (`STONY_SOIL`), and the bedrock skin's value, hue
+   and bed terms, whose pale ends multiplied up to 1.8x, eased past 1.1x (`BED_PALE`; on its own that
+   removed only a few blotches). Kept: the summit slopes read as one stone mass without the blotches;
+   unchanged up close (`tl1`, `af1`).
