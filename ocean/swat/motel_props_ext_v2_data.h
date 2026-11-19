@@ -22,10 +22,10 @@ static const SwatPe2Placement swat_pe2_placements[SWAT_PE2_PLACEMENTS]={
     {0,12.420f,-0.080f,15.280f,0.00000f,1.000f,true}, // BC2_PICKUP01 east row stall, head-in toward the east wing
     {1,-20.600f,-0.080f,-6.000f,0.00000f,1.000f,true}, // BC2_VAN01 service drive behind the west wing
     {2,26.800f,-0.080f,19.500f,0.34907f,1.000f,true}, // BC2_PALM01 east verge by the lot corner
-    {2,10.500f,-0.080f,29.500f,2.44346f,0.880f,true}, // BC2_PALM01 street verge east of driveway, clear of the sign
-    {2,-11.000f,-0.080f,29.500f,4.36332f,1.120f,true}, // BC2_PALM01 street verge west
+    {2,26.000f,-0.080f,31.500f,2.44346f,0.880f,true}, // BC2_PALM01 street verge at the east lot corner, clear of the wing end
+    {2,-25.500f,-0.080f,31.000f,4.36332f,1.120f,true}, // BC2_PALM01 street verge at the west lot corner, clear of the wing end
     {2,-27.500f,-0.080f,-14.000f,1.30900f,0.950f,true}, // BC2_PALM01 west verge
-    {3,-11.420f,-0.080f,17.980f,0.00000f,1.000f,true}, // BC2_WAGON01 west row stall, backed in
+    {3,-11.420f,-0.080f,9.880f,0.00000f,1.000f,true}, // BC2_WAGON01 west row, rear-most stall, backed in
     {4,-4.600f,-0.080f,34.850f,-1.57080f,1.000f,true}, // BC2_PAYPHONE01 back edge of the sidewalk west of the driveway
     {5,6.600f,-0.080f,34.950f,-1.57080f,1.000f,true}, // BC2_NEWSBOX01 sidewalk east of the driveway
     {6,-2.200f,-0.080f,-11.400f,3.14159f,1.000f,true}, // BC2_TYRES01 rear yard, east of the dumpster and clear of the annex door
@@ -35,7 +35,7 @@ static const SwatPe2Placement swat_pe2_placements[SWAT_PE2_PLACEMENTS]={
     {9,6.000f,-0.080f,-29.000f,3.49066f,1.100f,true}, // BC2_JOSHUA01 north verge
     {10,25.000f,-0.080f,34.300f,0.00000f,1.000f,true}, // BC2_SPEEDSIGN01 east verge facing westbound traffic, clear of the streetlight
     {8,-23.200f,-0.080f,12.000f,0.69813f,0.900f,true}, // BC2_TUMBLE01 west lot edge
-    {8,20.000f,-0.080f,27.600f,3.66519f,0.800f,true}, // BC2_TUMBLE01 verge off the east wing's street end
+    {8,24.600f,-0.080f,31.200f,3.66519f,0.800f,true}, // BC2_TUMBLE01 verge past the east wing's street end
     {8,-5.600f,-0.080f,33.200f,1.30900f,0.750f,true}, // BC2_TUMBLE01 verge by the payphone
     {8,12.000f,-0.080f,-23.400f,2.79253f,0.950f,true}, // BC2_TUMBLE01 north lot edge
     {1,12.420f,-0.080f,20.680f,3.14159f,1.000f,true}, // BC2_VAN01 east row stall, backed in

@@ -1731,7 +1731,7 @@ checksum is now d8582c7b at 1 and 4 threads. The Briar Court court layout
 (protocol 55, MOTEL_LAYOUT.md) changes the motel world itself: a build with
 `SWAT_NET_VERSION` 54 still matches both annex traces, so only the motel
 traces and the header byte moved. All five were re-recorded, and the motel
-thread checksum is now aeccbfe4 at 1 and 4 threads.
+thread checksum is now 600dd752 at 1 and 4 threads.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
 no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D

@@ -23,8 +23,8 @@ POST_PITCH_MAX = 3.0
 #   axis 'z': rooms run along z, facade at x=line, rooms behind the facade
 #             (facing=+1: wing faces +x, rooms at x<line; -1: faces -x, rooms x>line)
 REAR_EXT = dict(name='rear wing (105)', axis='x', line=0.0, start=8.0, bays=1, facing=+1, first=105)
-EAST = dict(name='east wing (107-112)', axis='z', line=17.0, start=WALK - 0.23, bays=6, facing=-1, first=107)
-WEST = dict(name='west wing (113-118)', axis='z', line=-16.0, start=WALK - 0.23, bays=6, facing=+1, first=113)
+EAST = dict(name='east wing (107-113)', axis='z', line=17.0, start=WALK - 0.23, bays=7, facing=-1, first=107)
+WEST = dict(name='west wing (114-120)', axis='z', line=-16.0, start=WALK - 0.23, bays=7, facing=+1, first=114)
 WINGS = [REAR_EXT, EAST, WEST]
 
 def wing_rooms(wg):
@@ -92,7 +92,7 @@ def stall_lines():
     return lines
 
 # Moved authoritative objects (motel_instances indices / layer placements).
-SIGN = (6.6, 31.6, -0.13)        # roadside sign at the street, beside the driveway (Luna Lodge: sign at the street)
+SIGN = (6.4, 33.0, 1.4408)       # pole sign at the kerb, perpendicular to the road, x1.35 (Luna Lodge: sign at the street)
 FENCE_X, FENCE_Z0 = 23.2, 4.0    # chain-link run moved to the east property line
 PICNIC = (-12.1, 4.6)            # west corner planter
 WHEEL_STOPS_X = [-8.7, -6.0, -3.3, 2.1, 4.8]   # in rear-row stall centres

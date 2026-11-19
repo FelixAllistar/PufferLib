@@ -489,8 +489,15 @@ int swat_lighting_night_lights(const SwatWorld* world,SwatNightLight* out,int ca
     // Gooseneck floods over the roadside sign (P_sign_flood pair, one light),
     // carried with the sign from its authored (9.7, 8.0) to its street site.
     const SwatMotelInstance* sign=swat_motel_instance(139),*authored=swat_motel_authored_instance(139);
-    Vector3 flood={9.72f+(float)(sign->origin.x-authored->origin.x),4.40f,8.55f+(float)(sign->origin.z-authored->origin.z)};
-    l[n++]=night_spot(flood,(Vector3){0,-.55f,-.83f},.2f,Vector3Scale(halide,3.4f),6,.45f,SWAT_NIGHT_FLOOD);
+    {
+        float c=cosf(-authored->yaw),sn=sinf(-authored->yaw),dx=9.72f-(float)authored->origin.x,dy=4.40f-(float)authored->origin.y,dz=8.55f-(float)authored->origin.z;
+        float lx=(c*dx+sn*dz)*sign->scale.x,ly=dy*sign->scale.y,lz=(-sn*dx+c*dz)*sign->scale.z;
+        float dlx=c*0+sn*-.83f,dlz=-sn*0+c*-.83f;
+        c=cosf(sign->yaw);sn=sinf(sign->yaw);
+        Vector3 flood={(float)sign->origin.x+c*lx+sn*lz,(float)sign->origin.y+ly,(float)sign->origin.z-sn*lx+c*lz};
+        Vector3 aim={c*dlx+sn*dlz,-.55f,-sn*dlx+c*dlz};
+        l[n++]=night_spot(flood,aim,.2f,Vector3Scale(halide,3.4f),6,.45f,SWAT_NIGHT_FLOOD);
+    }
     // Cobra-head streetlights over the highway (heads at y = G+8.81, z 37.7).
     const float street[4]={-44,-20,20,44};
     for(int i=0;i<4;i++)l[n++]=night_spot((Vector3){street[i],8.70f,37.70f},(Vector3){0,-1,-.12f},.16f,Vector3Scale(sodium,190),23,1.3f,SWAT_NIGHT_STREET);

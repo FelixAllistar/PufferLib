@@ -1476,6 +1476,15 @@ static bool motel_court_draw(const SwatEnvironmentArt* art,const SwatWorld* worl
         rlEnableBackfaceCulling();
         return location_mesh_draw(art,o,p,&art->motel_windows[0],&art->motel_windows[0],shadow,cutaway,false,NULL);
     }
+    if(p->asset==14 && art->motel_roadside.meshCount) {
+        // The roadside sign's back-to-back twin: same accepted art and night glow.
+        bool lit_sign=art->lit && art->lighting && art->lighting->night && !shadow;
+        if(lit_sign){art->lighting->glow_source=&art->motel_roadside;art->lighting->glow_materials=3u<<5;
+            art->lighting->glow_tint=(Vector3){.55f,.50f,.42f};}
+        bool drawn=location_draw(art,o,p,&art->motel_roadside,shadow,cutaway,false);
+        if(lit_sign)art->lighting->glow_source=NULL;
+        return drawn;
+    }
     if(!art->motel[p->asset].meshCount)return false;
     return location_draw(art,o,p,&art->motel[p->asset],shadow,cutaway,false);
 }

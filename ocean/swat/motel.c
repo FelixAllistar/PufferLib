@@ -217,7 +217,7 @@ static const SwatMotelMove layout_moves[]={
     {115,{8,{-6.0f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
     {116,{8,{-3.0f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
     {118,{8,{3.0f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
-    {139,{14,{6.6f,-.08f,31.6f},{1,1,1},-.13f,SWAT_STEEL,false,false}},
+    {139,{14,{6.4f,-.08f,33.0f},{1.35f,1.35f,1.35f},1.4407963f,SWAT_STEEL,false,false}},
     {140,{19,{-8.7f,-.08f,4.3f},{1,1,1},0,SWAT_CONCRETE,false,false}},
     {141,{19,{-6.0f,-.08f,4.3f},{1,1,1},0,SWAT_CONCRETE,false,false}},
     {142,{19,{-3.3f,-.08f,4.3f},{1,1,1},0,SWAT_CONCRETE,false,false}},

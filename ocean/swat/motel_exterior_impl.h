@@ -241,6 +241,9 @@ static void arch_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const
 static SwatMotelInstance exterior_remap(const SwatMotelInstance* from,const SwatMotelInstance* to,b3Pos origin,float yaw,b3Vec3 scale,bool roof) {
     b3Vec3 d=b3SubPos(origin,from->origin);float y=-from->yaw,c=cosf(y),s=sinf(y);
     b3Vec3 local=swat_v(c*d.x+s*d.z,d.y,-s*d.x+c*d.z);
+    // A rescaled owner (the roadside sign) carries its pieces at scale.
+    local=swat_v(local.x*to->scale.x/from->scale.x,local.y*to->scale.y/from->scale.y,local.z*to->scale.z/from->scale.z);
+    scale=swat_v(scale.x*to->scale.x/from->scale.x,scale.y*to->scale.y/from->scale.y,scale.z*to->scale.z/from->scale.z);
     c=cosf(to->yaw);s=sinf(to->yaw);
     b3Pos at=b3OffsetPos(to->origin,swat_v(c*local.x+s*local.z,local.y,-s*local.x+c*local.z));
     return (SwatMotelInstance){.origin=at,.scale=scale,.yaw=yaw+to->yaw-from->yaw,.roof=roof};
