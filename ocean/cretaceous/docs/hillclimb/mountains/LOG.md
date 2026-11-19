@@ -46,3 +46,8 @@ brief's world shots; renders at 960x540 on Mesa llvmpipe.
     that reads as a different country from the air and on the ground (trees 213,715 to 187,775).
 12. Fault: the desert read as pale beach dunes (too much sand, whose tint is 2.2x) and even straw. Change:
     sand only in pans on the flats; `terrain.fs` bare earth in dry country is red-brown, not straw. Kept.
+13. Fault: from afar the near-desert is an even beige. Change: `terrain.fs` dark olive-grey dots of dwarf
+    scrub at about 3 m, gathered in loose 30 m stands, on dry bare earth past 25 m. A first version read
+    the plain noise and laid the dots on a visible grid; the quasi-periodic read fixed it. Kept, small:
+    `des2` slopes are speckled like dry scrubland. Cracks in the flat earth were tried in the same pass
+    and dropped: they did not show in `des4`.

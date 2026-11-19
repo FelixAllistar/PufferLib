@@ -366,6 +366,16 @@ void main() {
         float dl = dot(albedo, vec3(0.3, 0.59, 0.11));
         albedo = mix(albedo, max(dl, 0.045) * vec3(1.55, 1.3, 0.72) * 1.25, dryf * 0.85);
     }
+    // Near-desert (bare earth in dry country): from afar the dwarf scrub dots the ground dark olive-grey
+    // at a few metres, gathered in loose stands (the drawn plants end at the cover range).
+    {
+        float de = texture(t_biome, uv).g * clamp(w[2] * 1.4 - 0.2, 0.0, 1.0) * (1.0 - clamp(w[0] + w[1], 0.0, 1.0));
+        if (de > 0.0) {
+            float dots = noise_qp(p.xz, 3.1, 0.17).r * 0.75 + noise_qp(p.xz, 31.0, 0.53).g * 0.25;   // dots, gathered in loose stands
+            float far_ = smoothstep(25.0, 80.0, dist) * (1.0 - smoothstep(1500.0, 3000.0, dist));
+            albedo = mix(albedo, vec3(0.055, 0.058, 0.042) * mix(0.8, 1.2, nz2.x), smoothstep(0.55, 0.65, dots) * de * far_ * 0.6);
+        }
+    }
     float lum = dot(albedo, vec3(0.3, 0.55, 0.15));
     albedo = mix(albedo, vec3(lum) * vec3(1.02, 0.98, 0.93), clamp(0.6 * w[0] + 0.45 * w[1], 0.0, 1.0));
     // Bedrock. Rock ground (w[0]: the bake leaves it where the loose ground is gone) and bare steep ground
