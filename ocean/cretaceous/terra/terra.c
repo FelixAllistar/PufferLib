@@ -1284,7 +1284,12 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         v[TERRA_VEG_TREEFERN] = grow * sstep(0.7f, 0.95f, moist) * sstep(0.0f, 3.0f, curv[i]) * sstep(15.0f, 20.0f, temp) * (1 - alpine) * (1 - nearface);
         v[TERRA_VEG_HORSETAIL] = (1 - sstep(0.1f, 0.3f, slope)) * sstep(0.4f, 0.9f, riparian) * (wetcell ? 0.3f : 1.0f);
         v[TERRA_VEG_PALM] = grow * sstep(0.2f, 0.6f, coast[i] * 2) * (1 - sstep(8.0f, 30.0f, h)) * sstep(20.0f, 24.0f, temp) * (0.3f + 0.7f * clump2);
-        v[TERRA_VEG_SHRUB] = grow * (0.25f + 0.4f * sstep(0.6f, 0.3f, moist) + 0.35f * alpine) * (0.5f + 0.5f * n2) * (1 - sstep(tline + 60, tline + 170, h));
+        // The tree line is not an edge: above it a few stunted outlying conifers stand alone or in small
+        // clumps for another 60-140 m (more in the hollows), among thickets of scrub.
+        float above = sstep(tline - 20, tline + 30, h) * (1 - sstep(tline + 60 + 40 * clampf(hollow, 0, 1), tline + 140, h));
+        float outl = above * grow * (1 - summit) * sstep(-0.1f, 0.25f, n2 + 0.3f * n3) * sstep(0.0f, 8.0f, temp) * (1 - 0.6f * expo[i]);
+        v[TERRA_VEG_CONIFER] = fmaxf(v[TERRA_VEG_CONIFER], 0.5f * outl);
+        v[TERRA_VEG_SHRUB] = grow * (0.25f + 0.4f * sstep(0.6f, 0.3f, moist) + 0.35f * alpine + 0.3f * above * sstep(-0.1f, 0.3f, n2)) * (0.5f + 0.5f * n2) * (1 - sstep(tline + 60, tline + 170, h));
         if (desert > 0) {   // a tree only here and there; cycads and scrub in clumps with bare ground between
             float d = desert, cl = sstep(0.05f, 0.3f, n2 + 0.25f * n3);
             v[TERRA_VEG_CONIFER] *= 1 - 0.93f * d; v[TERRA_VEG_BROADLEAF] *= 1 - 0.95f * d; v[TERRA_VEG_TREEFERN] *= 1 - d; v[TERRA_VEG_PALM] *= 1 - 0.7f * d;

@@ -56,3 +56,8 @@ brief's world shots; renders at 960x540 on Mesa llvmpipe.
     much on spurs; above 160-260 m a gully is a seam of fern and moss, not the lowland's bare erosion
     soil. Kept: `mtD` and `mtE` show the forest climbing the gullies in fingers with bare spurs between,
     as the tree-line photos do.
+15. Fault: where the forest fingers end, they stop. Change: `terra.c` above the tree line, for 60-140 m
+    (more in hollows, less on exposed ground), a few stunted outlying conifers in small clumps and more
+    scrub. The first try (density 0.32 inside a tight clump mask) added 35 trees and nothing visible;
+    loosened to 0.5 it adds about 360. Kept, small: `mtD` has a scatter of lone trees above the finger
+    tops instead of a clean stop.
