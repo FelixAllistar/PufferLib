@@ -802,3 +802,32 @@ lamps do), so a lot light can reach a surface behind a parked car. Fixture
 positions are a fixed list from the authored art; a breached wall hides its
 sconce art but not its light. The pool is bilinear at 0.5 m.
 
+
+## Briar Court interior props, layer v2 (presentation only)
+
+`motel_props_interior_v2_data.h` (included by `environment_art.c`, one draw
+hook and one close hook) dresses the guest rooms, reception and laundry with
+13 props from `assets/environment/motel_props_int_v2/` (see its README for
+references, licences and budgets): pinch-pleat drapes in gold (101/103) and
+avocado (102/104), a baseboard heater under every window, a low dresser with
+mirror (all rooms, two positions), an open closet rod with hangers (102/103),
+a mini fridge with coffee maker (101/104), ashtrays (desks, counter, laundry
+desk), waiting chairs, a snake plant, a water cooler and a brochure rack in
+the lobby, and a canvas laundry cart and linen shelving in the laundry.
+
+Every piece inherits an existing support (floor, desk, counter or wall
+section) and disappears with it; wall pieces follow the surviving skin of
+their wall group. Nothing adds a collider, object, navigation obstacle, AI
+occlusion, wire field or replay state, so the layer can differ per client.
+Big pieces (dresser, fridge, cart, shelf) therefore have no collision; they
+stand in dead space instead: `make props-interior-clearance` builds a tool
+that replays recorded squad, hostile and civilian motel runs and
+`tools/props_interior_clearance.py` checks that every floor footprint keeps a
+0.25 m body radius clear of all actor feet (1.58 M samples over 7 scenarios).
+Doorways, door swings and the routes stay clear.
+
+`SWAT_PROPS_INTERIOR_V2=0` switches the layer off; a missing GLB drops only
+that piece. `make props-interior-capture` builds `props_interior_capture`
+(production view, arbitrary `--cam NAME PX PY PZ TX TY TZ FOV` cameras,
+`--dump` of interior objects) used for the in-game review in
+`reports/cloud/art-props-interior/`.
