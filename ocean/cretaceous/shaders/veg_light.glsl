@@ -43,7 +43,7 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     }
     // Deeper and more olive than the photos graded for an even green cover: against bare soil the leaves
     // read as dark shapes on light ground, not a lime sheet.
-    albedo *= mix(vec3(1.0), mix(vec3(0.77, 0.81, 0.67), vec3(0.7, 0.74, 0.62), u_understory), leaf * (1.0 - 0.8 * veg_dry));   // crowns a little lighter: they drew as dark masses on the hills
+    albedo *= mix(vec3(1.0), mix(vec3(0.77, 0.81, 0.67), vec3(0.7, 0.74, 0.62), u_understory), leaf * (1.0 - 0.6 * veg_dry));   // crowns a little lighter: they drew as dark masses on the hills
     if (u_lk_leaf.xyz != vec3(0.0)) {   // the look: rotated about the grey axis for the hue, then saturation and brightness
         float a = radians(u_lk_leaf.z); const vec3 K = vec3(0.57735);
         vec3 h = albedo * cos(a) + cross(K, albedo) * sin(a) + K * dot(K, albedo) * (1.0 - cos(a));
@@ -89,7 +89,7 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // first, which filters it green (and keeps sunlit ferns from going mint
     // under a blue sky). Gentler with a low sun: in the shade at golden hour
     // the full filter turned crowns a saturated emerald.
-    amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * 0.75 * (1.0 - 0.8 * veg_dry));
+    amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * 0.75 * (1.0 - 0.6 * veg_dry));
     // Ground bounce lights undersides and trunks (forest floor albedo ~0.15).
     // veg_bounce: the trunks of cycads, palms and tree ferns take more (veg.fs; terrain.fs takes about three
     // times as much): standing under their own low crown, the lit ground round them is most of what shows
