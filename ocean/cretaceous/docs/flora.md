@@ -85,8 +85,8 @@ margin beyond); moisture, nearness to river water and canopy shade are 0..1.
 |---|---|---|---|---|---|---|---|---|---|---|
 | araucaria | conifer (0,4) | Araucaria sect. Eutacta (Norfolk-like whorled tiers, big seed cones) | 60-520 m | 0.25-0.75 | 0-0.5 | any | 1 | 0.6 | 0 / 2 / 3 / 0 | cones |
 | podocarp | conifer (1,5) | Podocarpus / Prumnopitys (fleshy seed cups) | < 300 m | > 0.4 | any | any | 1 | 0.5 | 0.5 / 4 / 2 / 0 | seeds in red cups |
-| umbrella araucaria | conifer (2) | Araucaria sect. Araucaria (monkey-puzzle-like dome) | > 220 m | 0-0.55 | 0-0.3 | any | 0.7 | 0.7 | 0 / 1 / 3 / 0 | cones |
-| dawn redwood | conifer (3,7) | Metasequoia / Sequoia-like redwoods of floodplains | < 220 m | > 0.5 | > 0.25 | any | 1 | 0.8 | 0 / 2 / 0.5 / 0 | - |
+| umbrella araucaria | conifer (none: out of the mix) | Araucaria sect. Araucaria (monkey-puzzle-like dome) | > 220 m | 0-0.55 | 0-0.3 | any | 0.7 | 0.7 | 0 / 1 / 3 / 0 | cones |
+| dawn redwood | conifer (2,3,7) | Metasequoia / Sequoia-like redwoods of floodplains | < 220 m | > 0.5 | > 0.25 | any | 1 | 0.8 | 0 / 2 / 0.5 / 0 | - |
 | cheirolep cypress | conifer (6) | Frenelopsis / Pseudofrenelopsis (Cheirolepidiaceae), small cypress-like trees of dry and salty ground | any | 0-0.42 | 0-0.2 | any | 0.8 | 0.6 | 1 / 2 / 0.5 / 0 | - |
 | magnolia | broadleaf (0,4) | Magnoliaceae / Magnoliidae (Archaeanthus: large flowers, cone-like fruit) | < 250 m | > 0.45 | any | any | 1 | 0.5 | 0.5 / 6 / 2 / 0 | cone-like fruit |
 | laurel | broadleaf (1,5) | Lauraceae (Mauldinia, small dark drupes), evergreen | < 400 m | > 0.3 | any | any | 1.2 | 0.4 | 0.5 / 5 / 2 / 0 | dark drupes |

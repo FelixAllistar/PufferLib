@@ -383,7 +383,14 @@ static void photos_load(Photos* P) {
     load_sprites(&P->fern, "fern_02", 5, 0.7f, 1);
     load_sprites(&P->blade, "Foliage001", 9, 0.2f, 2); load_sprites(&P->blade, "Foliage006", 6, 0.2f, 2);
     // Metasequoia sprays: fir twigs (flat two-ranked needles, as on Metasequoia), the older scale-leaf spray without them.
-    load_sprites(&P->spray, "fir_tree_01", 6, 1.0f, 1); if (!P->spray.n) load_sprites(&P->spray, "LeafSet019", 3, 1.0f, 1);
+    load_sprites(&P->spray, "fir_tree_01", 6, 1.0f, 1);
+    // The fir set's first cut is a strip of the trunk's bark (a fifth as wide as tall), not a twig: it stamped
+    // flat brown-green bars into every spray. Keep only the twigs (about as wide as tall).
+    for (int k = 0; k < P->spray.n;) {
+        if (P->spray.s[k].aspect >= 0.45f) { k++; continue; }
+        free(P->spray.s[k].p); free(P->spray.s[k].m); P->spray.s[k] = P->spray.s[--P->spray.n];
+    }
+    if (!P->spray.n) load_sprites(&P->spray, "LeafSet019", 3, 1.0f, 1);
     load_sprites(&P->grass, "grass_medium_02", 9, 0.25f, 2);
     load_sprites(&P->pinna, "jacaranda_tree", 1, 0.7f, 1); load_sprites(&P->pinna, "fern_02", 5, 0.7f, 1);
     load_sprites(&P->strap, "LeafSet013", 6, 1.0f, 1); load_sprites(&P->strap, "LeafSet020", 5, 1.0f, 1);
@@ -460,7 +467,7 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
     Canvas c = {img}; VRng r = {(uint32_t)layer * 104729u + 7};
     static const float T[L_COUNT][3] = {   // mean linear albedo per layer
         [L_FERN] = {0.045f, 0.10f, 0.028f}, [L_FERN2] = {0.05f, 0.105f, 0.03f}, [L_TFERN] = {0.038f, 0.086f, 0.027f},
-        [L_CYCAD] = {0.026f, 0.066f, 0.028f}, [L_ARAU] = {0.03f, 0.072f, 0.034f}, [L_SPRAY] = {0.045f, 0.098f, 0.036f},
+        [L_CYCAD] = {0.026f, 0.066f, 0.028f}, [L_ARAU] = {0.03f, 0.072f, 0.034f}, [L_SPRAY] = {0.08f, 0.16f, 0.036f},
         [L_PODO] = {0.024f, 0.056f, 0.026f}, [L_LEAF] = {0.045f, 0.095f, 0.03f}, [L_LEAF2] = {0.032f, 0.075f, 0.026f},
         [L_LEAF3] = {0.048f, 0.1f, 0.034f}, [L_PALM] = {0.05f, 0.098f, 0.04f}, [L_SHRUB] = {0.036f, 0.08f, 0.028f},
         [L_BARK] = {0.085f, 0.068f, 0.052f}, [L_BARK_CON] = {0.11f, 0.062f, 0.042f}, [L_BARK_PALM] = {0.09f, 0.076f, 0.058f},
@@ -930,7 +937,7 @@ static void new_layer(int layer, Px* img, const Photos* P) {
     VRng r = {(uint32_t)layer * 7907u + 101};
     static const float T[L_COUNT][3] = {
         [L_CL_MAGN] = {0.045f, 0.095f, 0.03f}, [L_CL_LAUREL] = {0.032f, 0.075f, 0.026f}, [L_CL_HEART] = {0.048f, 0.1f, 0.034f},
-        [L_CL_PODO] = {0.024f, 0.056f, 0.026f}, [L_CL_SPRAY] = {0.045f, 0.098f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f}, [L_CL_ROPE] = {0.03f, 0.072f, 0.034f},
+        [L_CL_PODO] = {0.024f, 0.056f, 0.026f}, [L_CL_SPRAY] = {0.08f, 0.16f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f}, [L_CL_ROPE] = {0.03f, 0.072f, 0.034f},
         [L_LEAFLET] = {0.026f, 0.066f, 0.028f}, [L_PSEG] = {0.05f, 0.098f, 0.04f}, [L_FPINNA] = {0.038f, 0.086f, 0.027f},
         [L_ROPE] = {0.03f, 0.072f, 0.034f}, [L_SCALES] = {0.03f, 0.072f, 0.034f}, [L_HSTEM] = {0.05f, 0.09f, 0.03f},
         [L_CL_GINKGO] = {0.058f, 0.11f, 0.03f}, [L_CL_PLANE] = {0.05f, 0.1f, 0.034f}, [L_CL_BERRY] = {0.04f, 0.085f, 0.03f},
