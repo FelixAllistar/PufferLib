@@ -53,3 +53,5 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
 11. Fault: from 230 m (`airW`) the strand's palm groves read as a thin scatter. Change: wider groves (palm layer
     0.12-1 over a wider band of the grove noise). Reverted: 122 more palms on the island, no visible difference in
     `airW`, `airN` or `strD12`.
+12. Fault: suspected low ridges along the streams at the front of the beach (the ground held above a stream rose 4 %
+    from it). Change: 2 %. Reverted: no visible difference in `topW`, `mouthA`, `mouth_high` or `strW30`.
