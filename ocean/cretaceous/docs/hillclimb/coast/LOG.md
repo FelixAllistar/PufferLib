@@ -31,3 +31,6 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
    that runs high the beach floor was held above its water out to 60 m and then dropped to the beach profile at once.
    Change: the held floor blends into the beach profile from 15 to 70 m from the stream. Kept: the wall is gone, the
    back of the beach is a smooth rise into the strand.
+5. Fault: where a stream crosses a big beach its bed is the bake's bank mud, which the terrain shader darkens as wet
+   ground: from the air every stream drew a black gash across the sand (`topW`, `mouthA`, `strW30`). Change: `world.c`
+   lays sand (85 %) on the stream cells on the beach as well. Kept: the streams read as damp lines in the sand.

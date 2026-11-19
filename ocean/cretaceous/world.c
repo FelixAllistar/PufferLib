@@ -374,10 +374,17 @@ static void beaches_build(CretWorld* w) {
     #pragma omp parallel for schedule(static)
     for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
         size_t i = (size_t)z * n + x; float di = d[i];
-        if (di <= 0 || di > BEACH_W * 1.9f || m->water_kind[i] != TERRA_WATER_NONE) continue;
+        if (di <= 0 || di > BEACH_W * 1.9f || m->water_kind[i] == TERRA_WATER_SEA) continue;
         float px = x * c, pz = z * c;
         float pick = (grass_noise(px, pz, BEACH_CELL, 0xbeac4u) - 0.56f) / 0.08f; pick = pick < 0 ? 0 : pick > 1 ? 1 : pick * pick * (3 - 2 * pick);
         if (pick <= 0) continue;
+        if (m->water_kind[i] != TERRA_WATER_NONE) {   // a stream's bed across the beach is sand, not bank mud (it drew a dark gash)
+            float sb = 0.85f * pick * (1 - sstepf(0.9f * BEACH_W, 1.3f * BEACH_W, di));
+            uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; int tot = 0;
+            for (int k = 0; k < TERRA_MAT_COUNT; k++) { int nw = k == TERRA_MAT_SAND ? 255 : 0; int val = (int)(sp[k] + (nw - sp[k]) * sb + 0.5f); sp[k] = (uint8_t)val; tot += val; }
+            sp[TERRA_MAT_SAND] = (uint8_t)(sp[TERRA_MAT_SAND] + 255 - tot);
+            continue;
+        }
         float W = BEACH_W * (0.8f + 0.5f * grass_noise(px, pz, 380.0f, 0x5a4du));
         float du = (di / W - 0.5f) / 0.5f; du = du < 0 ? 0 : du > 1 ? 1 : du * du * (3 - 2 * du);   // smooth: a kinked ramp drew a crease along the beach
         float dune = 1.6f * grass_noise(px, pz, 22.0f, 0xd00e5u) * du;
