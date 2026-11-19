@@ -412,7 +412,9 @@ def cellar_trim(m):
 def palette():
     ph = C.polyhaven
     return {
-        "leaves": mat("forest_floor", (1, 1, 1), .95, image=ph("dry_decay_leaves", "diff", "1k", 1024), normal=ph("dry_decay_leaves", "nor_gl", "1k", 512)),
+        # Woods v2: wet, decaying late-autumn litter is dull brown at dusk, not
+        # the scan's bright orange (which also read as an orange band at the bank toe).
+        "leaves": mat("forest_floor", (1, 1, 1), .95, image=C.tint_image(ph("dry_decay_leaves", "diff", "1k", 1024), "litter_dull", (.45, .5, .56), (.035, .03, .022)), normal=ph("dry_decay_leaves", "nor_gl", "1k", 512)),
         "gravel": mat("gravel", (1, 1, 1), .9, image=C.tint_image(ph("gravel_floor_02", "diff", "1k", 1024), "gravel_graded", (.5, .5, .48)), normal=ph("gravel_floor_02", "nor_gl", "1k", 512)),
         "water": mat("creek", (.015, .02, .02), .08, .0),
         "straw": mat("dead_grass", (.13, .11, .065), .95),

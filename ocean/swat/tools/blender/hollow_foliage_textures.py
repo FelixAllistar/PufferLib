@@ -50,7 +50,7 @@ class Pen:
         self.d.polygon(pts, fill=col)
 
 # --------------------------------------------------------------- deciduous twigs
-def twig_spray(rng, pen, x, y, ang, length, width, depth, col, leaf=None, leaf_p=0.0, spread=(.35, .65), droop=0.0, out=None):
+def twig_spray(rng, pen, x, y, ang, length, width, depth, col, leaf=None, leaf_p=0.0, spread=(.35, .65), droop=0.0, out=None, apical=False):
     """Recursive sympodial twig spray. ang 0 = up (screen -y)."""
     steps = 3
     px, py = x, y
@@ -66,13 +66,13 @@ def twig_spray(rng, pen, x, y, ang, length, width, depth, col, leaf=None, leaf_p
             leaf(rng, pen, px, py, ang)
         if out is not None: out.append((px, py))
         return
-    n = 2 if rng.random() < .7 else 3
+    n = (3 if rng.random() < .75 else 2) if apical else (2 if rng.random() < .7 else 3)
     for k in range(n):
         side = -1 if k % 2 == 0 else 1
         if n == 3 and k == 2: side = 0
         a = ang + side * rng.uniform(*spread) + rng.normal(0, .08)
-        lr = rng.uniform(.62, .82) if side else rng.uniform(.75, .9)
-        twig_spray(rng, pen, px, py, a, length * lr, width * .68, depth - 1, jitter_rgb(rng, col, 6), leaf, leaf_p, spread, droop, out)
+        lr = (rng.uniform(.45, .62) if side else rng.uniform(.8, .92)) if apical else (rng.uniform(.62, .82) if side else rng.uniform(.75, .9))
+        twig_spray(rng, pen, px, py, a, length * lr, width * .68, depth - 1, jitter_rgb(rng, col, 6), leaf, leaf_p, spread, droop, out, apical)
     # small lateral spurs along the segment
     if depth >= 2 and rng.random() < .6:
         t = rng.uniform(.3, .7)
@@ -102,15 +102,17 @@ def poplar_leaf(rng, pen, x, y, ang):
 
 def draw_twigs(rng, kind):
     img = new_cell(); pen = Pen(img)
-    bark = {"bare_a": (78, 72, 66), "bare_b": (70, 66, 62), "oak": (74, 66, 58), "poplar": (84, 80, 72), "syc": (150, 146, 134)}[kind]
+    bark = {"bare_a": (112, 106, 98), "bare_b": (104, 100, 94), "oak": (104, 96, 86), "poplar": (112, 108, 100), "syc": (168, 164, 150)}[kind]
     leaf = {"oak": oak_leaf((104, 70, 42)), "poplar": poplar_leaf}.get(kind)
     leaf_p = {"oak": .16, "poplar": .07}.get(kind, 0)
     depth = 6 if kind != "poplar" else 5
-    spread = (.30, .55) if kind == "poplar" else (.35, .7)
+    spread = (.30, .5) if kind == "poplar" else (.32, .6)
     # Two or three sprays from the base so the card is filled, not one stick.
-    for k in range(3 if kind != "syc" else 2):
-        x = N / 2 + rng.normal(0, N * .05); a = rng.normal(0, .25) + (k - 1) * .3
-        twig_spray(rng, pen, x, N * .995, a, N * rng.uniform(.15, .19), 7 * SS, depth, bark, leaf, leaf_p, spread)
+    # One leading shoot with a sympodial spray: long and directional, so a
+    # crown of cards reads as fine twigs, not as round puffs.
+    for k in range(2):
+        x = N / 2 + rng.normal(0, N * .03); a = rng.normal(0, .12) + (k - .5) * .25
+        twig_spray(rng, pen, x, N * .995, a, N * rng.uniform(.2, .24), 7 * SS, depth, bark, leaf, leaf_p, spread, apical=True)
     return img
 
 def draw_big_branch(rng, variant):

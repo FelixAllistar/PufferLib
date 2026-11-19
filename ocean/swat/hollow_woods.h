@@ -22,10 +22,10 @@
 #define HW_MAX_INSTANCES 6144
 #define HW_TEXTURES 10
 // LOD distances (metres from the eye, per unit instance scale).
-#define HW_LOD0 16.0f
-#define HW_LOD1 34.0f
+#define HW_LOD0 14.0f
+#define HW_LOD1 30.0f
 enum { HW_FLAG_SHADOW=1, HW_FLAG_EDGE=2 };
-static const char* const hw_texture_names[HW_TEXTURES]={"oak","poplar","sycamore","hemlock","pine","laurel","rock","log","impostor",NULL};
+static const char* const hw_texture_names[HW_TEXTURES]={"oak","poplar","sycamore","hemlock","pine","laurel","rock","log","impostor","wall"};
 typedef struct HwMesh {
     Model model; int texture; int bark,card; // mesh indices in model, -1 none
     float radius,height; int tris;
@@ -95,6 +95,7 @@ static SwatHollowWoods* hollow_woods_load(void) {
     for(int i=0;i<HW_TEXTURES && hw_texture_names[i];i++) {
         char file[160];
         if(!strcmp(hw_texture_names[i],"impostor")) { w->color[i]=hw_texture("hollow_woods/impostor_atlas.png",false); continue; }
+        if(!strcmp(hw_texture_names[i],"wall")) { w->color[i]=hw_texture("hollow_woods/forest_wall.png",false); SetTextureWrap(w->color[i],TEXTURE_WRAP_REPEAT); continue; }
         const char* name=strcmp(hw_texture_names[i],"log")?hw_texture_names[i]:"oak"; // logs reuse the oak bark
         snprintf(file,sizeof(file),"hollow_woods/textures/bark_%s_color.jpg",name); w->color[i]=hw_texture(file,true);
         snprintf(file,sizeof(file),"hollow_woods/textures/bark_%s_normal.jpg",name); w->normal[i]=hw_texture(file,true);
@@ -221,7 +222,7 @@ static void hollow_woods_draw(const SwatEnvironmentArt* art,SwatHollowWoods* w,b
         int n=w->list_count[i],trunks=w->trunk_count[i];
         if(!n && !trunks) continue;
         const HwMesh* m=&w->meshes[i];
-        bool impostor=!strcmp(hw_texture_names[m->texture],"impostor");
+        bool impostor=!strcmp(hw_texture_names[m->texture],"impostor") || !strcmp(hw_texture_names[m->texture],"wall");
         for(int part=0;part<2;part++) {
             int k=part?m->card:m->bark; if(k<0) continue;
             MaterialMap maps[SWAT_MATERIAL_MAPS]; memset(maps,0,sizeof(maps));

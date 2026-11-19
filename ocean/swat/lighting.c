@@ -42,6 +42,7 @@ static const char* vertex_source=
 // Hollow dusk horizon radiance; its fog colour is the same value (hollow_apply).
 #define HOLLOW_HORIZON_C .215f,.215f,.222f
 #define HOLLOW_BULB .42f
+#define HOLLOW_FOG_START 12.0f // metres; valley fog between the trees (woods v2)
 #define HOLLOW_HORIZON "vec3(0.215,0.215,0.222)"
 #define SWAT_SKY_GLSL \
     "uniform float night; uniform vec3 moonDirection;" \
@@ -92,7 +93,7 @@ static const char* fragment_source=
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform int groundBlend,decalSurface;\n"
     "uniform vec2 uvScale; uniform vec4 macroVariation,macroDetail;\n"
-    "uniform sampler2D decalMap; uniform int useDecal; uniform vec3 fogColor; uniform float fogDensity,grading;\n"
+    "uniform sampler2D decalMap; uniform int useDecal; uniform vec3 fogColor; uniform float fogDensity,fogStart,grading;\n"
     "uniform int doorScorchCount; uniform vec4 doorScorches[33]; uniform vec3 doorOrigin,doorUp,doorSide;\n"
     "uniform mat4 sunMatrix,lampMatrix[6]; uniform vec3 camera;\n"
     "uniform sampler2D iblAtlas,occlusionMap,contactMap,contactDepth; uniform int useIbl,useOcclusion,useContact;"
@@ -281,7 +282,9 @@ static const char* fragment_source=
     "float bounce=insideRoom?mix(1.0,contact,0.55):1.0;"
     "vec3 radiance=albedo*(illumination*contact+punctual*bounce)*diffuseEnergy+reflection+indirect*contact+emission;"
     // Aerial perspective: beyond 35 m the scene fades towards the horizon sky.
-    "if(fogDensity>0.0){float f=1.0-exp(-max(length(position-camera)-35.0,0.0)*fogDensity);radiance=mix(radiance,fogColor,f*0.92);}"
+    // fogStart: 35 m everywhere except The Hollow, whose valley fog starts
+    // close and thickens between the trees (HOLLOW_FOG_START).
+    "if(fogDensity>0.0){float f=1.0-exp(-max(length(position-camera)-fogStart,0.0)*fogDensity);radiance=mix(radiance,fogColor,f*0.92);}"
     "vec3 color=tone(radiance*exposure);"
     "finalColor=vec4(grade(pow(color,vec3(1.0/2.2)),grading),surface.a); }\n";
 
@@ -328,7 +331,7 @@ static SwatLightingProgram program(void) {
     p.occlusion=GetShaderLocation(p.shader,"useOcclusion");p.occlusion_strength=GetShaderLocation(p.shader,"occlusionStrength");
     p.shader.locs[SHADER_LOC_MAP_OCCLUSION]=GetShaderLocation(p.shader,"occlusionMap");
     p.decal=GetShaderLocation(p.shader,"useDecal");p.decal_map=GetShaderLocation(p.shader,"decalMap");
-    p.fog_color=GetShaderLocation(p.shader,"fogColor");p.fog_density=GetShaderLocation(p.shader,"fogDensity");p.grading=GetShaderLocation(p.shader,"grading");
+    p.fog_color=GetShaderLocation(p.shader,"fogColor");p.fog_density=GetShaderLocation(p.shader,"fogDensity");p.fog_start=GetShaderLocation(p.shader,"fogStart");p.grading=GetShaderLocation(p.shader,"grading");
     p.night=GetShaderLocation(p.shader,"night");p.moon_direction=GetShaderLocation(p.shader,"moonDirection");
     p.night_count=GetShaderLocation(p.shader,"nightCount");p.night_position=GetShaderLocation(p.shader,"nightPosition[0]");
     p.night_color=GetShaderLocation(p.shader,"nightColor[0]");p.night_direction=GetShaderLocation(p.shader,"nightDirection[0]");
@@ -1381,6 +1384,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         float fog=rlGetMatrixProjection().m15==1.0f ? 0 : light->fog_density;
         int decal=world->motel && art && art->motel_decals.id,decal_slot=11;
         SetShaderValue(s,p->fog_density,&fog,SHADER_UNIFORM_FLOAT);
+        float fog_start=light->hollow?HOLLOW_FOG_START:35.0f;SetShaderValue(s,p->fog_start,&fog_start,SHADER_UNIFORM_FLOAT);
         SetShaderValue(s,p->fog_color,&light->fog_color,SHADER_UNIFORM_VEC3);
         SetShaderValue(s,p->grading,&light->grading,SHADER_UNIFORM_FLOAT);
         SetShaderValue(s,p->decal,&decal,SHADER_UNIFORM_INT);SetShaderValue(s,p->decal_map,&decal_slot,SHADER_UNIFORM_INT);

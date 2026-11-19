@@ -55,6 +55,10 @@ BARK = {  # Poly Haven CC0 scans (1K colour + normal), see README.md.
     "rock": "mossy_rock", "log": "jolcham_oak_bark_01",
 }
 
+# (saturation kept, value) applied to each bark colour map at export.
+BARK_GRADE = {"oak": (.35, 1.1), "poplar": (.35, 1.15), "sycamore": (.4, 1.25), "hemlock": (.6, .95),
+              "pine": (.5, 1.0), "laurel": (.5, 1.0), "rock": (.5, 1.0)}
+
 # ------------------------------------------------------------------ mesh builder
 class MeshB:
     """Engine-space (x, y up, z) triangles with uv, colour and normal per corner."""
@@ -123,9 +127,9 @@ def card(mb, base, up, side, w, h, cellname, col, nfn, bend=0.0):
 # ------------------------------------------------------------------ species
 SPECIES = {
     #            H range      r base      crown  n1  ang1  len1  up1  n2 ang2 len2 n3 ang3 len3 wig  twigs                      card m
-    "oak":      dict(H=(19, 25), R=(.30, .40), crown=.40, n1=12, a1=50, l1=.40, up1=.22, n2=5, a2=42, l2=.55, n3=3, a3=40, l3=.6, wig=.2, cards=("twig_bare_a", "twig_oak", "twig_bare_b"), cs=2.0, forks=2),
-    "poplar":   dict(H=(25, 31), R=(.30, .40), crown=.58, n1=11, a1=40, l1=.26, up1=.38, n2=4, a2=38, l2=.55, n3=3, a3=36, l3=.6, wig=.1, cards=("twig_poplar", "twig_bare_b"), cs=1.9, forks=0),
-    "sycamore": dict(H=(19, 24), R=(.34, .46), crown=.32, n1=8,  a1=56, l1=.46, up1=.14, n2=5, a2=46, l2=.58, n3=3, a3=40, l3=.55, wig=.26, cards=("twig_syc", "twig_bare_a"), cs=2.0, forks=2),
+    "oak":      dict(H=(16, 26), R=(.30, .40), crown=.40, n1=12, a1=40, l1=.36, up1=.30, n2=5, a2=42, l2=.55, n3=3, a3=40, l3=.6, wig=.28, cards=("twig_bare_a", "twig_bare_b", "twig_bare_a", "twig_oak"), cs=1.7, forks=2),
+    "poplar":   dict(H=(25, 31), R=(.34, .46), crown=.55, n1=13, a1=40, l1=.30, up1=.38, lean=.03, n2=4, a2=38, l2=.55, n3=3, a3=36, l3=.6, wig=.1, cards=("twig_poplar", "twig_bare_b"), cs=1.9, forks=0),
+    "sycamore": dict(H=(18, 24), R=(.45, .6), crown=.26, n1=8,  a1=60, l1=.52, up1=.12, lean=.16, n2=5, a2=46, l2=.58, n3=3, a3=40, l3=.55, wig=.26, cards=("twig_syc", "twig_bare_a"), cs=2.0, forks=2),
 }
 VARIANTS = {"oak": 3, "poplar": 2, "sycamore": 2, "hemlock": 3, "pine": 2, "laurel": 3}
 
@@ -146,14 +150,14 @@ def deciduous(sp, variant, lod):
     P = SPECIES[sp]; rng = np.random.default_rng({"oak": 11, "poplar": 23, "sycamore": 37}[sp] * 100 + variant)
     H = rng.uniform(*P["H"]); R = rng.uniform(*P["R"])
     mb = MeshB(); cards = []
-    lean = rng.normal(0, .07, 2)
+    lean = rng.normal(0, P.get("lean", .11), 2)
     P = dict(P); P["crown"] = float(np.clip(P["crown"] + rng.normal(0, .07), .25, .7))
     def bark_col(base_dark):
         def f(t, p):
             # wet, darker base; sycamore pales sharply above the lower bole
             y = p[1]
             if sp == "sycamore":
-                k = .55 + .45 * min(1, max(0, (y - 3.5) / 5))
+                k = .42 + .58 * min(1, max(0, (y - 2.5) / 4))
                 return (k, k, k * .97, 1)
             k = base_dark + (1 - base_dark) * min(1, y / 2.5)
             return (k, k * .98, k * .96, 1)
@@ -170,7 +174,7 @@ def deciduous(sp, variant, lod):
         trunk_r.append(R * (1 - .82 * t ** 1.1) * flare + .02)
         d = nrm(d + rng.normal(0, wig0 * .25, 3) * (1 if t > .3 else .3) + np.array([0, .05, 0]))
         p = p + d * H / segs0
-    tube(mb, trunk_pts, trunk_r, sides0, bark_col(.78))
+    tube(mb, trunk_pts, trunk_r, sides0, bark_col(.95))
     # dead lower limbs: shade-killed stubs and snags below the crown
     if lod == 0:
         for k in range(int(rng.integers(3, 7))):
@@ -197,10 +201,10 @@ def deciduous(sp, variant, lod):
         d1 = nrm(np.array([0, math.cos(ang), 0]) + out * math.sin(ang))
         L1 = H * P["l1"] * (1.15 - .6 * (t - P["crown"]) / (1 - P["crown"])) * rng.uniform(.8, 1.15)
         if fork: L1 = H * (1 - t) * rng.uniform(.85, 1.0)
-        r1 = min(rb * .62, .55 * R * (L1 / (H * P["l1"])) ** 1.2 + .03)
+        r1 = min(rb * .66, .62 * R * (L1 / (H * P["l1"])) ** 1.2 + .035)
         if fork: r1 = rb * .7
         pts, radii, dirs = grow(rng, base, d1, L1, r1, 0, 6 if lod == 0 else 3, P["wig"], P["up1"] * .2)
-        tube(mb, pts, radii, 4, bark_col(.9))
+        tube(mb, pts, radii, 4, bark_col(1.0))
         # second order
         n2 = P["n2"] + int(rng.integers(-1, 2))
         for j in range(n2):
@@ -223,21 +227,22 @@ def deciduous(sp, variant, lod):
             # third order as twig cards only: sprays along the outer limb
             n3 = P["n3"] + int(rng.integers(-1, 2))
             for m in range(max(1, n3)):
-                w = .35 + .6 * (m + rng.uniform(.2, .8)) / max(1, n3)
+                w = .12 + .8 * (m + rng.uniform(.2, .8)) / max(1, n3)
                 q = min(int(w * (len(pts2) - 1)), len(pts2) - 2); g = w * (len(pts2) - 1) - q
                 b3 = pts2[q] * (1 - g) + pts2[q + 1] * g; pd = dirs2[q]
                 d3 = rot_about(pd, frame(pd)[0], math.radians(P["a3"] + rng.normal(0, 12)))
                 d3 = nrm(rot_about(d3, pd, rng.uniform(0, 2 * math.pi)) + np.array([0, .1, 0]))
                 side = nrm(np.cross(d3, np.array([0, 1, 0])) + rng.normal(0, .5, 3))
-                cs = P["cs"] * rng.uniform(.75, 1.2)
+                cs = P["cs"] * rng.uniform(.6, .95)
                 cards.append((b3, d3, side, cs * 1.05, cs, P["cards"][int(rng.integers(len(P["cards"])))]))
             # twig card from the second-order tip too
             side = nrm(np.cross(dirs2[-1], np.array([0, 1, 0])) + rng.normal(0, .5, 3))
-            cs = P["cs"] * rng.uniform(.9, 1.3)
+            cs = P["cs"] * rng.uniform(.75, 1.05)
             cards.append((pts2[-1] - dirs2[-1] * .2, dirs2[-1], side, cs, cs, P["cards"][int(rng.integers(len(P["cards"])))]))
-        # first-order tip spray
-        cs = P["cs"] * 1.3
-        cards.append((pts[-1] - dirs[-1] * .3, dirs[-1], nrm(np.cross(dirs[-1], [0, 1, 0]) + rng.normal(0, .4, 3)), cs, cs, P["cards"][0] if lod == 0 else "branch_big"))
+        # first-order tip: a limb card only at lod1 (lod0 tips carry their own sprays)
+        if lod == 1:
+            cs = P["cs"] * 1.3
+            cards.append((pts[-1] - dirs[-1] * .3, dirs[-1], nrm(np.cross(dirs[-1], [0, 1, 0]) + rng.normal(0, .4, 3)), cs, cs, "branch_big"))
     # leader
     pts, radii, dirs = grow(rng, trunk_pts[-1], [0, 1, 0], H * .12, trunk_r[-1], 0, 3, P["wig"], .1)
     tube(mb, pts, radii, 3, bark_col(.9))
@@ -488,6 +493,12 @@ def textures():
             # 1K, re-encoded at JPEG q82 (raw pixels: no view transform).
             img = bpy.data.images.load(os.path.join(C.CACHE, f"{asset}_{kind}_1k.jpg"))
             if kind != "diff": img.colorspace_settings.name = "Non-Color"
+            else:   # grey the warm scans toward lichen-grey Appalachian bark
+                px = np.array(img.pixels[:], np.float32).reshape(-1, 4)
+                lum = px[:, :3] @ np.array([.3, .59, .11], np.float32)
+                keep, val = BARK_GRADE.get(k, (.5, 1.0))
+                px[:, :3] = (lum[:, None] + (px[:, :3] - lum[:, None]) * keep) * val
+                img.pixels.foreach_set(px.ravel())
             img.file_format = 'JPEG'
             img.save(filepath=os.path.join(OUT, "textures", f"bark_{k}_{suffix}.jpg"), quality=82)
             bpy.data.images.remove(img)
@@ -631,7 +642,77 @@ def bake_impostors(objs, heights):
         ob = to_object(f"{key}_lod2", mb, [material("bark_" + sp), material("impostor", imp_img, alpha=True)])
         export_glb(ob, f"trees/{key}_lod2")
         extra.append((f"trees/{key}_lod2", "impostor", "c", round(H / 4, 2), round(H, 2), mb.count()))
+    extra += forest_walls(out, order, meta)
     return meta, extra
+
+# ------------------------------------------------------------------ far woods
+WALL_D = (46.0, 70.0)        # ring offsets from the clearing rectangle (m)
+WALL_W, WALL_H = 80.0, 32.0  # metres of forest per strip repeat, strip height
+def forest_walls(atlas_out, order, meta):
+    """The woods beyond ~40 m: two rings around the clearing, each a strip of
+    impostor trees composed side by side (forest_wall.png, two 2048 x 1024
+    strips). One alpha-tested layer per ring instead of hundreds of
+    overlapping billboards. Rings follow the valley walls (hollow_scene.height)."""
+    import hollow_scene as HS
+    SW, SH = 2048, 1024; ppm = SW / WALL_W
+    strips = np.zeros((2 * SH, SW, 4), np.float32)
+    for k in range(2):
+        rng = np.random.default_rng(900 + k)
+        layer = np.zeros((SH, SW, 4), np.float32)
+        x = -40.0
+        while x < SW + 40:
+            key = order[int(rng.integers(len(order)))]; i = order.index(key); view = int(rng.integers(2))
+            cell = 2 * i + view; r, c = cell // 8, cell % 8
+            src = atlas_out[r * IMP_H:(r + 1) * IMP_H, c * IMP_W:(c + 1) * IMP_W]
+            H = meta[key] * rng.uniform(.8, 1.12)
+            th = int(H * ppm); tw = int(H / 2 * ppm)
+            ys = (np.arange(th) * IMP_H / th).astype(int); xs = (np.arange(tw) * IMP_W / tw).astype(int)
+            spr = src[ys][:, xs]
+            if rng.random() < .5: spr = spr[:, ::-1]
+            y0 = SH - th - int(rng.uniform(0, .04) * SH)
+            x0 = int(x - tw / 2)
+            for dx in (-SW, 0, SW):   # wrap so the strip tiles
+                a0, a1 = max(0, x0 + dx), min(SW, x0 + dx + tw)
+                if a1 <= a0: continue
+                sp = spr[max(0, -y0):, a0 - (x0 + dx):a1 - (x0 + dx)]
+                dst = layer[max(0, y0):max(0, y0) + sp.shape[0], a0:a1]
+                al = sp[:, :, 3:4]
+                dst[:, :, :3] = sp[:, :, :3] * al + dst[:, :, :3] * (1 - al)
+                dst[:, :, 3:4] = al + dst[:, :, 3:4] * (1 - al)
+            x += rng.uniform(2.6, 5.2) * ppm
+        strips[k * SH:(k + 1) * SH] = layer
+    a = strips[:, :, 3:4]; rgb = strips[:, :, :3] / np.maximum(a, 1e-4)
+    rgb = np.where(a > 1e-3, rgb, .2)
+    img = bpy.data.images.new("forest_wall", SW, 2 * SH, alpha=True)
+    img.pixels.foreach_set(np.dstack([np.clip(rgb, 0, 1), a])[::-1].ravel()); img.filepath_raw = os.path.join(OUT, "forest_wall.png")
+    img.file_format = 'PNG'; img.save()
+    wall_img = bpy.data.images.load(os.path.join(OUT, "forest_wall.png"))
+    x0, x1, z0, z1 = HS.RECT; extra = []
+    for k, d in enumerate(WALL_D):
+        mb = MeshB(); pts = []
+        # rounded rectangle at offset d, sampled every ~3 m
+        cx, cz = (x0 + x1) / 2, (z0 + z1) / 2; hx, hz = (x1 - x0) / 2, (z1 - z0) / 2
+        n = int(2 * (2 * hx + 2 * hz + 2 * math.pi * d) / 6)
+        for j in range(n + 1):
+            t = 2 * math.pi * j / n
+            dx, dz = math.cos(t), math.sin(t)
+            # support point of the rectangle in direction (dx, dz), pushed out by d
+            px = cx + hx * (1 if dx > 0 else -1) * min(1, abs(dx) * 4) + d * dx
+            pz = cz + hz * (1 if dz > 0 else -1) * min(1, abs(dz) * 4) + d * dz
+            pts.append((px, pz))
+        u = 0.0; prev = None; v0 = 1 - (k + 1) / 2; v1 = 1 - k / 2
+        for j, (px, pz) in enumerate(pts):
+            if j: u += math.hypot(px - pts[j - 1][0], pz - pts[j - 1][1]) / WALL_W
+            y = HS.height(px, pz) - .6
+            inward = nrm(np.array([cx - px, 0, cz - pz]))
+            nn = nrm(inward + np.array([0, .9, 0]))
+            ids = [mb.vert((px, y, pz), nn, (u, v0 + .5 / 2048), (1, 1, 1, 1)), mb.vert((px, y + WALL_H, pz), nn, (u, v1 - .5 / 2048), (1, 1, 1, 1))]
+            if prev: mb.face(prev[0], ids[0], ids[1], 1); mb.face(prev[0], ids[1], prev[1], 1)
+            prev = ids
+        ob = to_object(f"wall_{k}", mb, [material("bark_oak"), material("wall", wall_img, alpha=True)])
+        export_glb(ob, f"trees/wall_{k}")
+        extra.append((f"trees/wall_{k}", "wall", "c", round(max(hx, hz) * 1.5 + d, 1), WALL_H + 40, mb.count()))
+    return extra
 
 # ------------------------------------------------------------------ placement
 def placement(heights):
@@ -654,6 +735,8 @@ def placement(heights):
         for v in range(nv):
             l2 = f"trees/{sp}_{v}_lod2" if sp != "laurel" else "-"
             S[f"{sp}_{v}"] = add_set(f"{sp}_{v}", f"trees/{sp}_{v}_lod0", f"trees/{sp}_{v}_lod1", l2)
+    for k in range(len(WALL_D)):
+        S[f"wall_{k}"] = add_set(f"wall_{k}", f"trees/wall_{k}", f"trees/wall_{k}", f"trees/wall_{k}")
     for name in ("log_0", "log_1", "stump_0", "stump_1", "rock_0", "rock_1", "rock_2", "limbs_0", "limbs_1", "fern_0", "goldenrod_0", "grass_0"):
         S[name] = add_set(name, f"scatter/{name}", "-", "-")
     inst = []
@@ -679,11 +762,10 @@ def placement(heights):
             # wooded bank top behind the cellar, kept off the cellar mound
             if not (z > HS.BANK_Z + 2.5 and not (13 < x < 23 and z < 21)): continue
         elif d < 1.6: continue
-        if d > 105: continue
+        if d > 40: continue          # beyond: the forest walls
         if HS.seg_dist(x, z, HS.LANE) < 4.2 + .02 * d: continue
         if x < x0 and abs(x - HS.CREEK_X) < 2.2: continue
         r = 3.3 + .045 * d + (.0006 * d * d)
-        if rng.random() < .25 * HS.smooth(40, 100, d): continue
         if not ok(x, z, r): continue
         grid.setdefault((int(math.floor(x / cell)), int(math.floor(z / cell))), []).append((x, z, r))
         pts.append((x, z, d))
@@ -699,6 +781,8 @@ def placement(heights):
         s = rng.uniform(.82, 1.15) * (1 - .12 * HS.smooth(2, 12, -d + 12) if d < 6 else 1)
         flags = (1 if d < 9 else 0) | (2 if d < 6 else 0)
         put(f"{sp}_{v}", x, z, rng.uniform(0, 2 * math.pi), s, flags)
+    for k in range(len(WALL_D)):
+        inst.append((S[f"wall_{k}"], 0.0, 0.0, 0.0, 0.0, 1.0, 0))
     # --- laurel / rhododendron thicket along the edge, thick in the coves.
     n_l = 0
     for k in range(5000):
@@ -706,7 +790,7 @@ def placement(heights):
         if d < .8 or d > 26: continue
         if d == 0: continue
         if HS.seg_dist(x, z, HS.LANE) < 3.3: continue
-        p = .9 * math.exp(-(d - 2.5) ** 2 / 18) + .25 * math.exp(-d / 12)
+        p = .7 * math.exp(-(d - 2.5) ** 2 / 18) + .15 * math.exp(-d / 12)
         if rng.random() > p: continue
         put(f"laurel_{int(rng.integers(3))}", x, z, rng.uniform(0, 6.3), rng.uniform(.75, 1.3), 2 if d < 4 else 0); n_l += 1
     print("laurel", n_l)
@@ -731,7 +815,7 @@ def placement(heights):
     scatter("stump_0", 20, 1, 30, .8, 1.2); scatter("stump_1", 20, 1, 30, .8, 1.2)
     scatter("rock_0", 40, .5, 34, .5, 1.3); scatter("rock_1", 40, .5, 34, .5, 1.3); scatter("rock_2", 30, .5, 34, .6, 1.6)
     scatter("limbs_0", 70, .5, 30, .8, 1.3); scatter("limbs_1", 70, .5, 30, .8, 1.3)
-    scatter("fern_0", 420, .5, 30, .7, 1.3)
+    scatter("fern_0", 300, .5, 26, .7, 1.3)
     scatter("goldenrod_0", 260, 0, 5, .8, 1.3, inside_edge=3.0, lane=2.8)
     scatter("grass_0", 520, 0, 6, .7, 1.3, inside_edge=4.5, lane=2.4)
     print("scatter", counts)
@@ -793,6 +877,12 @@ def main():
         lineup(objs); return
     if IMPOSTORS and not ONLY:
         meshes += bake_impostors(objs, heights)[1]
+    elif not ONLY:   # keep the previously baked impostors and walls listed
+        prev = os.path.join(OUT, "woods_meshes.txt")
+        for line in (open(prev).read().splitlines() if os.path.exists(prev) else []):
+            f = line.split()
+            if f and f[0] == "mesh" and f[2] in ("impostor", "wall"):
+                meshes.append((f[1], f[2], f[3], float(f[4]), float(f[5]), int(f[6])))
     if not ONLY:
         with open(os.path.join(OUT, "woods_meshes.txt"), "w") as f:
             f.write("# Generated by tools/blender/hollow_trees.py. Do not edit.\n# mesh PATH BARK PARTS RADIUS HEIGHT TRIS   (PARTS: b = bark primitive, c = card primitive, in that order)\n")
