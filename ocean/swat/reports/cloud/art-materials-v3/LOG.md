@@ -122,3 +122,14 @@ Reference: "Day 125 of 365 - Popcorn Ceiling", jesse?, https://www.flickr.com/ph
 - iter 6: contrast 1.4. closer: no -> reverted. Stop.
 - engine 1: room, ceiling-up and reception views. Diffs: guest-room ceilings now clean off-white; the reception ceiling under its close lamp shows strong grazing relief (like the ref) but a bit dark.
 - engine 2: normal 3.0 -> 2.0. closer: yes. Final.
+
+## 10. Bathroom floor (hex mosaic) and wall tile (wainscot)
+Reference: "Motel Bathroom 004", cygnus921, https://www.flickr.com/photos/11726702@N07/2465590593 (CC BY 2.0): cream floor with grime, white fixtures. (A second candidate, "Bathroom tiles", turned out to be a shop front and was dropped.)
+
+- iter 1: Tiles071 hex mosaic (204,202,194), Tiles036 square wall tile (200,206,200). Diffs: 1 stand-in ok; 2 floor cold grey vs ref warm cream; wall tile greenish; 3 no grime. closer: n/a
+- iter 2: floor (206,194,164), wall tile (220,218,208). closer: yes
+- iter 3: floor contrast 1.3, flatten 0.15, macro 0.12 (grime). closer: marginal yes
+- iter 4: wall tile repeat 1.0 -> 0.8 m. closer: no -> reverted
+- iter 5: floor flatten 0, target (196,184,154). closer: marginal. Stop.
+- engine 1: rooms 102/104 bathrooms. Diffs: 2 floor reads darker brown under the lamp; walls above the wainscot are the room's painted drywall (beige where the ref is white); 3 a large square grime grid from the existing bathroom grout decals sits over the hex.
+- engine 2: floor (214,204,178). closer: yes. Final.
