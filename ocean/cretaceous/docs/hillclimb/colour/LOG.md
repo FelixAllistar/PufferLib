@@ -62,3 +62,7 @@ green under it, and the teal is mostly the haze.
    katsura's a little darker and cooler (x0.86/0.9/0.98). Kept: the ginkgos read yellow-olive inside the
    stand instead of mint-lime; the gallery's katsura and laurel a shade darker; lime share in `mid` hardly
    moves (19%: it counts the sunlit grass too).
+9. Fault: after pass 4, the stands 2-4 km off in `skyh` are near-black grey blotches on hills that haze blue
+   (the terrain keeps the haze's full colour). Change: the foliage haze keeps a fifth of the sky's colour to
+   600 m, rising to 70% by 3 km. Kept: the far stands sit in the blue of their hills again while the teal
+   at 100-600 m (`canopy`, `hill`) stays gone; canopy 172, hill 160 unchanged.

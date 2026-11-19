@@ -142,5 +142,7 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // distance. Its brightness is kept, so the depth cue stays. (The two calls share their lookups.)
     vec3 ins = aerial(vec3(0.0), t_skyview, u_cam, p, L);
     vec3 hz = aerial(col, t_skyview, u_cam, p, L) - ins;
-    return hz + mix(vec3(dot(ins, vec3(0.3, 0.59, 0.11))), ins, 0.2);
+    // Past 0.6-3 km the colour comes back (to 70%): there the stands are small marks on hills hazed by the
+    // terrain's own (full colour) haze, and grey they drew as near-black blotches on blue hills.
+    return hz + mix(vec3(dot(ins, vec3(0.3, 0.59, 0.11))), ins, mix(0.2, 0.7, smoothstep(600.0, 3000.0, dcam)));
 }
