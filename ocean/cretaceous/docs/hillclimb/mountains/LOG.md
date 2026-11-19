@@ -51,3 +51,8 @@ brief's world shots; renders at 960x540 on Mesa llvmpipe.
     the plain noise and laid the dots on a visible grid; the quasi-periodic read fixed it. Kept, small:
     `des2` slopes are speckled like dry scrubland. Cracks in the flat earth were tried in the same pass
     and dropped: they did not show in `des4`.
+14. Fault: mountain gullies are bare soil streaks and the tree line runs level across gullies and spurs
+    alike. Change: `terra.c` the tree line rises up to 45 m in hollows and 40 m in gullies and falls as
+    much on spurs; above 160-260 m a gully is a seam of fern and moss, not the lowland's bare erosion
+    soil. Kept: `mtD` and `mtE` show the forest climbing the gullies in fingers with bare spurs between,
+    as the tree-line photos do.

@@ -1205,7 +1205,10 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float n3 = fbm(wx / 14.0f, wz / 14.0f, s + 6, 2, 2, 0.5f);
         // And wherever the loose ground is gone (regolith: steep, convex, high, windward ground) the
         // bedrock shows, on anything but flat ground (more of it above the tree line).
-        float tline = TREELINE + 30.0f * n1 - 70.0f * expo[i], alpine = sstep(tline - 50, tline + 40, h);
+        // Mountain gullies and hollows: wetter and sheltered, so the forest climbs higher up them and
+        // stops lower on the spurs between.
+        float hollow = clampf(curv[i] / 5.0f, -1, 1), mgully = sstep(0.25f, 0.5f, flowlog) * sstep(160.0f, 260.0f, h) * (1 - riparian);
+        float tline = TREELINE + 30.0f * n1 - 70.0f * expo[i] + 45.0f * hollow + 40.0f * mgully, alpine = sstep(tline - 50, tline + 40, h);
         float nearface = clampf(face[i] * 2.5f, 0, 1);
         // The high ground above the tree line: from about 60 m over it the living fern turf thins to a
         // brown-green alpine turf of scattered tufts in the hollows, and none is left within about 200 m of
@@ -1236,9 +1239,11 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         // without standing water). Edges are broken by fine noise, not blobs.
         float gully = sstep(0.3f, 0.55f, flowlog) * (1 - riparian) * sstep(0.12f, 0.4f, slope);
         float crest = sstep(0.6f, 1.4f, -cv + 0.4f * n3) * sstep(0.35f, 0.8f, slope);
-        w[TERRA_MAT_DIRT] = open * (0.03f + sstep(0.12f, 0.0f, moist) * 0.5f + 0.35f * crest + 0.35f * gully + 0.1f * alpine + 0.2f * summit) * (0.75f + 0.5f * n3);
+        w[TERRA_MAT_DIRT] = open * (0.03f + sstep(0.12f, 0.0f, moist) * 0.5f + 0.35f * crest + 0.35f * gully * (1 - sstep(160.0f, 260.0f, h)) + 0.1f * alpine + 0.2f * summit) * (0.75f + 0.5f * n3);
         // Moss on damp, shaded hollows and around rock, not on every steep slope.
-        w[TERRA_MAT_MOSS] = sstep(0.4f, 0.85f, moist) * sstep(0.2f, 0.6f, slope) * (0.4f + 0.6f * rockiness) * (0.6f + 0.8f * n3) * (0.5f + 0.5f * sstep(-0.2f, 0.6f, cv))
+        // Up in the mountains a gully is a green seam of moss and fern, not bare soil (as it is lower down).
+        w[TERRA_MAT_FERN] += open * 0.7f * mgully * sstep(-0.2f, 0.4f, hollow + 0.3f * n3) * (1 - 0.7f * summit);
+        w[TERRA_MAT_MOSS] = 0.6f * open * mgully * (1 - sstep(0.7f, 1.1f, slope)) * (0.6f + 0.8f * n3) + sstep(0.4f, 0.85f, moist) * sstep(0.2f, 0.6f, slope) * (0.4f + 0.6f * rockiness) * (0.6f + 0.8f * n3) * (0.5f + 0.5f * sstep(-0.2f, 0.6f, cv))
                           + open * sstep(0.6f, 1.1f, slope) * (0.3f + 0.6f * moist) * sstep(0.0f, 0.8f, cv) * (0.8f + 0.4f * n3)
                           + (1 - rockiness) * (nearface + 0.6f * alpine * (1 - 0.7f * summit)) * (1 - sstep(0.4f, 0.8f, slope)) * (0.5f + 0.5f * moist) * (0.8f + 0.4f * n3);
         if (desert > 0) {
