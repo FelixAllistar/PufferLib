@@ -901,7 +901,7 @@ static void gen_broadleaf(Gen* g, int s) {
     crown_scale(&C, s == 0 ? 10.5f : s == 2 ? 11.5f : s == 3 ? 5.5f : 9.0f); crown_full(&C, 1.5f);
     if (s == 2) { C.lod_div = (int)(C.lod_div * 1.35f + 0.5f); C.lod_size *= 1.12f; }   // the katsura's extra cards on the full mesh only
     if (s == 0) { C.lod_div = (int)(C.lod_div * 1.12f * 1.6f + 0.5f); C.lod_size *= 1.05f; }   // and the magnolia's (and its smaller round-2 cards)
-    if (s == 3) { C.lod_div = (int)(C.lod_div * 980.0f / 520.0f + 0.5f) + 1; C.lod_size *= 1.1f; }   // the chloranth's stems cost the reduced mesh some cards; its extra full-mesh cards none
+    if (s == 3) { C.lod_div = (int)(C.lod_div * 980.0f / 520.0f + 0.5f) + 8; C.lod_size *= 1.28f; }   // the chloranth's stems cost the reduced mesh some cards; its extra full-mesh cards none
     Env E; float rx = H * 0.44f * spread * grr(g, 0.9f, 1.1f), rz = H * 0.44f * spread * grr(g, 0.9f, 1.1f);
     env_init(g, &E, v3(grr(g, -0.06f, 0.06f) * H, H * cy, grr(g, -0.06f, 0.06f) * H), v3(rx, H * ry, rz), 6, 0.16f);
     crown_tree(g, &C, &E);
