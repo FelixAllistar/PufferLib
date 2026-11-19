@@ -1081,9 +1081,11 @@ static void gen_araucaria(Gen* g, bool umbrella) {
             if (!umbrella && g->lod) {   // reduced: the tier as fronds (L_ARAU is a whole pinnate spray) along the branch, 1.2 m each
                 VRng s2 = fork_in(g);
                 int fi = 0;
-                for (float s = 0.1f * bl; s < bl * 0.95f; s += 1.15f, fi++) {
+                for (float s = 0.1f * bl; s < bl * 0.95f; s += 1.0f, fi++) {
                     float t = s / bl; V3 p, dp; float hw; path_at(&P, t, &p, &dp, NULL, &hw, NULL);
-                    float L1 = fminf(1.25f, bl * 0.97f - s + 0.3f), wd = 2.0f * lerpf(0.75f, 0.42f, t) * fminf(1, 0.45f + bl / 4);
+                    // (1 m apart and 2.7 times the sprays' width: at 1.15 m and 2 times the reduced tiers drew as
+                    // broken dashes with sky between, 70% of the full crown's cover at 30 m.)
+                    float L1 = fminf(1.25f, bl * 0.97f - s + 0.3f), wd = 2.7f * lerpf(0.75f, 0.42f, t) * fminf(1, 0.45f + bl / 4);
                     V3 flat = vnorm(vcross(dp, v3(0, 1, 0)));
                     card(g, vsub(p, vmul(dp, 0.1f)), dp, vrot(flat, dp, grr(g, -0.15f, 0.15f) + ((fi + b) & 1 ? 0.42f : -0.42f)), L1, wd, L_ARAU, 0, 0, 1, 1, 1, 0, (Wnd){hw, ph, 0, gr(g), 0});
                 }

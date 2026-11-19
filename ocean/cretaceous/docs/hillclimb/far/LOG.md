@@ -28,3 +28,8 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
    height up the plant, which veg.vs and the impostor card now pass to the lighting), and past the cascades it
    also takes up to 70% of the sun from the lower crowns and trunks. Kept: in `canopy` the crowns separate with
    darker skirts between them, `val3` and `skyh` show shade at the foot of the far stands; a modest change.
+4. Fault: the Norfolk araucaria's reduced tiers were broken dashes with sky between (70% of the full crown's
+   cover at 30 m, the old tree 70%): its whole fronds lay 1.15 m apart and twice the sprays' width. Change:
+   fronds 1 m apart and 2.7 times as wide on the reduced mesh. Kept: 87% and 84% of the full cover, tone
+   unchanged (0.99 and 1.01 of the full mesh), tiers read as shelves; reduced triangles 3594 -> 3712 and
+   3376 -> 3494.
