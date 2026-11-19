@@ -22,3 +22,9 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
    (`IMP_TONE`, a uniform per variant), fitted in two rounds of lodmatch. Kept: reduced crowns within 5% of the
    full mesh at 30 m for 16 of 20 trees measured (was 6 of 13), impostors within 5% at 150 m for 18 of 20 (was
    8 of 13); in `mid` and `hill` the reduced broadleaf crowns lost their lime glare and the stand reads as one.
+3. Fault: a forest at 50 m-2 km was lit as evenly as a lawn: every crown fully lit to its foot, no shade
+   between crowns (`canopy`, `val3`, `skyh`), and past the shadow cascades (800 m) nothing shades anything.
+   Change: the stand shade of pass 1 extends to the lower crown (falling to nothing at the crown's top, by the
+   height up the plant, which veg.vs and the impostor card now pass to the lighting), and past the cascades it
+   also takes up to 70% of the sun from the lower crowns and trunks. Kept: in `canopy` the crowns separate with
+   darker skirts between them, `val3` and `skyh` show shade at the foot of the far stands; a modest change.

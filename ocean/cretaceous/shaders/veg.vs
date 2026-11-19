@@ -21,7 +21,7 @@ uniform vec4 u_trample;
 out vec3 v_world, v_normal, v_base;
 out vec3 v_rel;    // position relative to the camera: card normals from its screen derivatives (common.glsl veg_card_normal)
 out vec2 v_uv;
-out float v_ao, v_leaf, v_hue, v_fade, v_w, v_var, v_tone;
+out float v_ao, v_leaf, v_hue, v_fade, v_w, v_var, v_tone, v_relh;
 out vec3 v_cell;   // the fade key's lattice: 12.5 cm cells of the plant's own mesh, offset per plant (veg.fs veg_fade_key)
 flat out float v_bark;
 flat out float v_layer;
@@ -97,6 +97,7 @@ void main() {
     v_normal = n;
     v_world = wp; v_rel = wp - u_cam; v_base = i_ps.xyz; v_uv = a_uv; v_layer = a_attr.x;
     v_ao = a_normal.w; v_leaf = a_attr.z; v_bark = a_attr.w; v_hue = i_rot.z; v_fade = i_extra.x; v_tone = u_bake == 1 ? 1.0 : 1.0 + i_extra.y;
+    v_relh = clamp(lp.y / max(i_extra.w, 0.5), 0.0, 1.0);   // up the plant (veg_light.glsl veg_relh)
     // Per-leaf variation: a hash of the mesh-space cell (about 40 cm), so
     // neighbouring leaves and fronds differ a little and no two plants match.
     vec3 hc = floor(a_pos * 2.5) + i_rot.w * 7.0;

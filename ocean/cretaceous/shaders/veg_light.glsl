@@ -19,6 +19,9 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 // How much of the light behind a leaf this pixel lets through, relative to the leaf's mean (veg.fs sets
 // it from the material atlas; 1 elsewhere): scales the transmission below.
 float veg_trans = 1.0;
+// Height of the point up its plant, 0 at the foot .. 1 at the top (veg.fs, veg_imp.fs; trees only): the stand
+// shade below darkens the lower crown, which the neighbouring crowns hide.
+float veg_relh = 1.0;
 // albedo, N (bent toward the crown's outside), ao (baked crown occlusion:
 // low deep inside and underneath), leaf 0 bark .. 1 leaf, p world position,
 // base the plant's foot, card 1 for an impostor (0 for a mesh), thru how squarely the sun lights the
@@ -51,7 +54,17 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     float shadow = terrain_sun(map_uv(base.xz), p, L);
     // Sun shadow maps: leaves get the softer, sun-biased lookup. Light that
     // passes through leaves is only partly blocked by other leaves.
-    float cs = csm_shadow(p, N, L, length(u_cam - p), leaf);
+    float dcam = length(u_cam - p);
+    float cs = csm_shadow(p, N, L, dcam, leaf);
+    // Stand shade (trees, past 15-40 m): in a forest the neighbouring crowns hide the sky from a trunk and from
+    // the lower part of each crown. stand_low is 1 for a trunk and the foot of a crown under a full canopy and
+    // falls to 0 at the crown's top. Past the shadow cascades (800 m on high) the crowns cast no shadows on
+    // each other at all, so there it also takes most of the sun from the lower crowns and the trunks: a far
+    // forest was lit as evenly as a lawn, one flat green with no shade between its crowns.
+    float stand_low = u_understory > 0.0 ? 0.0 : clamp(texture(t_misc, map_uv(base.xz)).a, 0.0, 1.0) * smoothstep(15.0, 40.0, dcam)
+                      * mix(1.0, pow(1.0 - clamp(veg_relh, 0.0, 1.0), 1.5), leaf);
+    float no_csm = u_csm_count > 0 ? smoothstep(u_csm_split[u_csm_count - 1] * 0.8, u_csm_split[u_csm_count - 1], dcam) : 1.0;
+    cs *= 1.0 - 0.7 * stand_low * no_csm;
     if (u_csm_debug == 1) return csm_debug_tint(p) * (0.15 + cs * 2.0) * (leaf > 0.5 ? vec3(0.6, 1.0, 0.6) : vec3(1.0));
     vec3 sun = sun_transmittance(t_trans, p.y, L) * SUN_INTENSITY;
     float nl = dot(N, L);
@@ -82,10 +95,11 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // than one plant's baked occlusion), so a sunlit sward keeps dark gaps.
     if (u_understory > 0.0) amb *= canopy_sky(texture(t_misc, map_uv(base.xz)).a * u_understory) * mix(1.0, 1.15, u_understory);   // lit like the ground it stands on (terrain.fs uses 1.5x sky)
     // A trunk in a stand sees the horizon through the other trunks and crowns, not open sky: its sky light
-    // falls with the stand's canopy, as on the ground, the props and the animals beside it. Without it the
-    // bare trunks under a forest's crowns were lit by the full horizon sky and stood out of far slopes as
-    // pale grey poles. Faded in from 15 to 40 m, so the trunks you stand beside keep their near shading.
-    else amb *= mix(vec3(1.0), vec3(0.42, 0.5, 0.36), clamp(texture(t_misc, map_uv(base.xz)).a, 0.0, 1.0) * (1.0 - leaf) * smoothstep(15.0, 40.0, length(u_cam - p)));
+    // falls with the stand's canopy, as on the ground, the props and the animals beside it, and so does the
+    // lower crown's (stand_low above). Without it the bare trunks under a forest's crowns were lit by the full
+    // horizon sky and stood out of far slopes as pale grey poles. Faded in from 15 to 40 m, so the trunks you
+    // stand beside keep their near shading.
+    else amb *= mix(vec3(1.0), vec3(0.42, 0.5, 0.36), stand_low);
     // Sky light reaching a leaf has mostly bounced through other leaves
     // first, which filters it green (and keeps sunlit ferns from going mint
     // under a blue sky). Gentler with a low sun: in the shade at golden hour

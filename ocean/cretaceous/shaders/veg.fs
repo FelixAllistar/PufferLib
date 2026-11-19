@@ -3,7 +3,7 @@
 #include "veg_light.glsl"
 in vec3 v_world, v_normal, v_base, v_rel;
 in vec2 v_uv;
-in float v_ao, v_leaf, v_hue, v_fade, v_w, v_var, v_tone;
+in float v_ao, v_leaf, v_hue, v_fade, v_w, v_var, v_tone, v_relh;
 in vec3 v_cell;
 flat in float v_layer;
 flat in float v_bark;
@@ -141,7 +141,8 @@ void main() {
         albedo *= 1.0 - 0.5 * smoothstep(0.12, 0.7, tn) * mix(0.35, 1.0, v_leaf);   // bark scans carry their furrow shade already
     }
     if (bump != vec2(0.0)) N = detail_normal(N, clamp(bump, -0.75, 0.75), dpx, dpy, dux, duy);
-    veg_trans = u_leaf_detail.y > 0.0 ? mt.b : 1.0;   // a thin blade lets all of it through, as before; veins and stems less
+    veg_trans = u_leaf_detail.y > 0.0 ? mt.b : 1.0;
+    veg_relh = v_relh;   // a thin blade lets all of it through, as before; veins and stems less
     if (u_bake == 1) {
         o = vec4(albedo, 1.0); o_n = vec4(N * 0.5 + 0.5, v_ao);
         return;
