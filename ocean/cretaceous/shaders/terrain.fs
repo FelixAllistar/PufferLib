@@ -22,6 +22,10 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 #define CRET_UNDER_NEAR 0.55
 #endif
 const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
+const float BED_PALE = 1.1;   // brightest the bedrock skin's tones lift the ground before easing (main)
+const float STONY_SOIL = 0.6;   // bare soil above the tree line, darkened (main)
+const float FR_CELL = 0.9;   // fractured rock: mean plate size (m)
+const float SCREE_COPY = 0.5;   // scale of scree's second copy (sample_mat): stones twice the size
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
 // under a Cretaceous canopy (photo sources are mostly brown leaf litter).
@@ -70,8 +74,9 @@ Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
         // steep ground take the planar branch's scheme (below): the same
         // tile, rotated, under the noise mask, since magnified litter and
         // soil photos read as brush strokes.
+        // Scree's copy is twice the size: talus mixes big blocks and small ones (SCREE_COPY).
         bool rock = k == 0;
-        float s2 = rock ? s * 0.27 : s, wm = rock ? 0.45 : g_mix; bool macro = u_detail > 0 && wm > 0.0;
+        float s2 = rock ? s * 0.27 : (k == 1 ? s * SCREE_COPY : s), wm = rock ? 0.45 : g_mix; bool macro = u_detail > 0 && wm > 0.0;
         const mat2 R = mat2(0.8, -0.6, 0.6, 0.8);
         vec4 a = vec4(0.0), a2 = vec4(0.0), bx = vec4(0.0), by = vec4(0.0), bz = vec4(0.0);
         if (w.x > 0.0) {
@@ -106,7 +111,8 @@ Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
         vec4 a = textureGrad(t_mat_a, vec3(uv, k), gx, gy), b = textureGrad(t_mat_b, vec3(uv, k), gx, gy);
         if (g_mix > 0.0) {
             const mat2 R = mat2(0.8, -0.6, 0.6, 0.8);
-            vec4 a2 = textureGrad(t_mat_a, vec3(R * (p.xz + g_warp) * s + 0.37, k), R * gx, R * gy);
+            float s2 = k == 1 ? s * SCREE_COPY : s;
+            vec4 a2 = textureGrad(t_mat_a, vec3(R * (p.xz + g_warp) * s2 + 0.37, k), R * g_dx * s2, R * g_dy * s2);
             a = mix(a, a2, g_mix);
         }
         m.albedo = a.rgb; m.height = a.a;
@@ -118,6 +124,30 @@ Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
         m.rough = b.x; m.ao = b.z;
     }
     return m;
+}
+
+// Fractured rock: a Voronoi pattern of plates (jittered cells), giving per point the distance to the
+// nearest crack (half the gap between the nearest two cell centres, along the line joining them) and
+// the nearest plate's own random values. q in cell units.
+vec2 fr_hash(vec2 c) {
+    uvec2 u = uvec2(ivec2(c) + 65536);
+    uint h = u.x * 1597334677u ^ u.y * 3812015801u; h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16;
+    return vec2(float(h & 0xffffu), float(h >> 16)) / 65535.0;
+}
+vec4 fracture(vec2 q) {
+    vec2 ic = floor(q), fq = q - ic;
+    vec2 best = vec2(0.0), bc = vec2(0.0); float d1 = 1e9;
+    for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+        vec2 c = vec2(x, y), o = c + 0.1 + 0.8 * fr_hash(ic + c) - fq; float d = dot(o, o);
+        if (d < d1) { d1 = d; best = o; bc = ic + c; }
+    }
+    float edge = 1e9;
+    for (int y = -2; y <= 2; y++) for (int x = -2; x <= 2; x++) {
+        vec2 c = vec2(x, y), o = c + 0.1 + 0.8 * fr_hash(ic + c) - fq;
+        vec2 dd = o - best; if (dot(dd, dd) < 1e-5) continue;
+        edge = min(edge, dot(0.5 * (best + o), normalize(dd)));
+    }
+    return vec4(edge, fr_hash(bc + 17.0), fr_hash(bc + 41.0).x);
 }
 
 #include "shadow.glsl"
@@ -247,7 +277,12 @@ void main() {
         vec3 al = mix(mats[j].albedo, rl * RECOLOR_HUE, RECOLOR[k] * recolor_near);
         // Bare soil above the tree line is stony and grey-brown (weathered rock, little humus), not the
         // orange lowland earth of the photo, which read as yellow-ochre streaks down the high slopes.
-        if (k == 2) al = mix(al, vec3(dot(al, vec3(0.3, 0.59, 0.11))) * vec3(1.06, 1.0, 0.9), stony);
+        // Its photo is pale (a dry lowland track), so where the stony soil wins a spot between rock and scree
+        // it read as cream blotches down the high slopes: darker, the tone of the weathered rock it comes from.
+        if (k == 2) al = mix(al, vec3(dot(al, vec3(0.3, 0.59, 0.11))) * vec3(1.06, 1.0, 0.9) * STONY_SOIL, stony);
+        // Talus: the voids between the blocks are deep and dark (the photo's gaps are mid-grey fines).
+        // From its height map, near only; past 60-150 m the mips average it away.
+        if (k == 1) al *= mix(mix(0.4, 1.0, smoothstep(0.2, 0.42, mats[j].height)), 1.0, smoothstep(60.0, 150.0, dist));
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
     albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
@@ -380,7 +415,8 @@ void main() {
     albedo = mix(albedo, vec3(lum) * vec3(1.02, 0.98, 0.93), clamp(0.6 * w[0] + 0.45 * w[1], 0.0, 1.0));
     // Bedrock. Rock ground (w[0]: the bake leaves it where the loose ground is gone) and bare steep ground
     // draw as one continuous mass of rock, not a tiled photo: on a face the noise is read in the face's own
-    // plane (along it and up it), so it is not smeared down the fall line.
+    // plane (along it and up it: the vertical planes facing x and z, blended), so it is not smeared down
+    // the fall line.
     // - Value and colour vary at 15-80 m (cool grey to ochre), so a 30 m face does not repeat.
     // - The beds: the bake's hardness is the bed at each point (terra.c strata), so the hard beds that cap
     //   the shelves read as pale, massive bands and the soft beds under them darker and redder, with finer
@@ -393,65 +429,126 @@ void main() {
         float bed_w = max(rk, steep);
         if (bed_w > 0.0) {
             float fade = 1.0 - smoothstep(300.0, 1500.0, dist);
-            vec2 tg = N.xz / max(length(N.xz), 1e-3); tg = vec2(-tg.y, tg.x);
             float vert = 1.0 - smoothstep(0.55, 0.85, N.y);
-            vec2 fp = mix(p.xz, vec2(dot(p.xz, tg), p.y * 1.4), vert);   // the face's own plane on steep ground
-            float big = noise_qp(fp, 70.0, 0.21).r * 0.65 + noise_qp(fp, 23.0, 0.66).g * 0.35;
-            float val = mix(0.7, 1.25, smoothstep(0.3, 0.7, big));
-            vec3 hue = mix(vec3(0.93, 0.97, 1.05), vec3(1.12, 0.98, 0.82), smoothstep(0.35, 0.65, texture(t_noise, fp / 110.0 + 0.43).g));
-            albedo *= mix(vec3(1.0), val * hue, rk);
-            float along = dot(p.xz, tg);
-            float sy = p.y + 3.0 * (texture(t_noise, p.xz / 230.0 + 0.53).r - 0.5) + 0.8 * (texture(t_noise, p.xz / 37.0 + 0.11).g - 0.5);
-            float b1 = texture(t_noise, vec2(along / 900.0, sy / 9.0) + 0.27).r, b2 = texture(t_noise, vec2(along / 400.0, sy / 2.6) + 0.64).g;
-            float fine = b1 * 0.6 + b2 * 0.4;
-            float hb = smoothstep(0.45, 0.7, hard);   // 1 in a hard bed
-            vec3 layer = mix(vec3(0.7, 0.68, 0.66), vec3(1.18, 1.12, 1.04), smoothstep(0.4, 0.6, fine));
-            layer = mix(layer, layer * vec3(1.14, 0.93, 0.78), smoothstep(0.55, 0.68, b1));
-            layer *= mix(vec3(0.82, 0.76, 0.7), vec3(1.12, 1.1, 1.06), hb);   // soft beds dark and red, hard beds pale
-            layer = mix(layer, mix(vec3(1.0), layer, 0.45), hb);               // and massive: fewer fine layers
-            albedo *= mix(vec3(1.0), layer, bed_w * 0.85 * fade);
+            // The face's own plane is read in two fixed vertical planes, the one facing x (along it: z) and
+            // the one facing z (along it: x), blended by the normal as a triplanar lookup is. (A coordinate
+            // along the normal's own tangent, dot(p.xz, tangent), turns with the normal: a few degrees of turn
+            // moved it by tens of metres at the island's scale, which drew the face as swirls and as sawtooth
+            // stripes across the terrain mesh's triangles.) Most faces read one plane.
+            vec2 pw = pow(abs(N.xz) + 1e-4, vec2(4.0)); pw /= pw.x + pw.y;
+            pw = max(pw - 0.05, 0.0); pw /= pw.x + pw.y;
             float mz = texture(t_noise, p.xz / 5.0 + 0.91).r;
-            // Drip lines: narrow vertical streaks on steep rock, longest under the hard beds' lips.
-            float drip = texture(t_noise, vec2(along / 2.3, p.y / 45.0) + 0.38).r * 0.7 + texture(t_noise, vec2(along / 0.9, p.y / 20.0) + 0.12).g * 0.3;
-            albedo *= 1.0 - smoothstep(0.58, 0.74, drip) * vert * rk * (0.12 + 0.12 * (1.0 - hb)) * fade;
-            // Jointed blocks: on a face (over about 55 degrees) the rock is drawn as big blocks, a skin over the
-            // heightfield (whose 4 m samples cannot hold them): bed partings every 1.8-5.5 m (the hard beds
-            // massive, the soft ones thinner) that undulate along the face, and joints across each bed every
-            // 4-12 m, offset from bed to bed as in real strata. Each block has its own tone and a gently
-            // rounded face (its normal tilts toward its edges), the cracks are dark and hold moss where it is
-            // damp, and the top of each block, under the overhang of the one above, is in shadow. Fades out
-            // by 600 m, where it is under a pixel.
+            float hb = smoothstep(0.45, 0.7, hard);   // 1 in a hard bed
+            float sy = p.y + 3.0 * (texture(t_noise, p.xz / 230.0 + 0.53).r - 0.5) + 0.8 * (texture(t_noise, p.xz / 37.0 + 0.11).g - 0.5);
             float blk = float(u_detail > 0) * (1.0 - smoothstep(0.38, 0.6, N.y)) * rk * (1.0 - smoothstep(250.0, 600.0, dist));   // not on the low preset
-            if (blk > 0.0) {
-                float sp = mix(1.8, 5.5, hb);
-                float yy = p.y + 5.0 * (textureLod(t_noise, vec2(along / 170.0, 0.37), 0.0).r - 0.5);
-                float bi = floor(yy / sp), fy = fract(yy / sp);
-                // Per bed and per block values: the noise read at points far apart, its narrow spread stretched to 0..1.
-                vec2 hsh = clamp((textureLod(t_noise, vec2(bi * 0.173 + 0.05, 0.811), 0.0).rg - 0.5) * 3.0 + 0.5, 0.0, 1.0);
-                float jw = mix(4.0, 12.0, hsh.y), ja = along + hsh.x * 37.0;
-                float bj = floor(ja / jw), fx = fract(ja / jw);
-                vec2 bh = clamp((textureLod(t_noise, vec2(bi * 0.173 + 0.05, bj * 0.291 + 0.37), 0.0).rg - 0.5) * 3.0 + 0.5, 0.0, 1.0);
-                float tone = bh.x;
-                // Each block's parting sits a little higher or lower than its neighbours', so the beds break
-                // in steps instead of running on as brick courses.
-                fy = fract(fy + (bh.y - 0.5) * 0.35);
-                float px = max(0.05, dist * 0.0018);   // about a pixel at this distance (m)
-                float ex = min(fx, 1.0 - fx) * jw, eb = fy * sp, et = (1.0 - fy) * sp;
-                float crack = 1.0 - smoothstep(0.04, 0.04 + 1.5 * px, min(ex, eb));
-                float shade = 1.0 - 0.45 * smoothstep(min(0.45 * sp, 0.9), 0.0, et) * (1.0 - smoothstep(0.0, 0.05 + px, et) * 0.3);   // under the overhang
-                vec3 bcol = albedo * mix(0.85, 1.12, tone) * shade;
-                bcol = mix(bcol, mix(vec3(0.03, 0.028, 0.025), vec3(0.045, 0.06, 0.025), smoothstep(0.4, 0.7, cov.b + mz * 0.3)), crack * 0.7);
-                albedo = mix(albedo, bcol, blk);
-                // The block's rounded face: the normal tilts out toward the joints and up toward its top.
-                float sx = (fx - 0.5) * 2.0, sy2 = (fy - 0.5) * 2.0;
-                vec3 out_ = normalize(vec3(N.x, 0.0, N.z) + vec3(1e-4, 0.0, 0.0));
-                vec3 tilt = vec3(tg.x, 0.0, tg.y) * (sx * sx * sx) * 0.35 + vec3(0.0, 1.0, 0.0) * max(sy2, 0.0) * max(sy2, 0.0) * 0.5 - vec3(0.0, 1.0, 0.0) * max(-sy2, 0.0) * 0.2;
-                n = normalize(n + (tilt + out_ * 0.15) * blk * (1.0 - smoothstep(80.0, 400.0, dist) * 0.6));
+            // Value and colour at 15-110 m: on gentle ground read in plan, on a face in its plane (the two
+            // results are mixed, not the coordinates, so nothing swirls where the slope changes).
+            float big_g = noise_qp(p.xz, 70.0, 0.21).r * 0.65 + noise_qp(p.xz, 23.0, 0.66).g * 0.35;
+            float hue_g = texture(t_noise, p.xz / 110.0 + 0.43).g;
+            vec3 a0 = albedo, asum = vec3(0.0), nsum = vec3(0.0);
+            for (int j = 0; j < 2; j++) {
+                float wj = pw[j];
+                if (wj <= 0.0) continue;
+                float along = j == 0 ? p.z : p.x;
+                vec2 tg = j == 0 ? vec2(0.0, 1.0) : vec2(1.0, 0.0);
+                vec3 al = a0, nn = n;
+                vec2 fp = vec2(along, p.y * 1.4);
+                float big = mix(big_g, noise_qp(fp, 70.0, 0.21).r * 0.65 + noise_qp(fp, 23.0, 0.66).g * 0.35, vert);
+                float val = mix(0.7, 1.25, smoothstep(0.3, 0.7, big));
+                vec3 hue = mix(vec3(0.93, 0.97, 1.05), vec3(1.12, 0.98, 0.82), smoothstep(0.35, 0.65, mix(hue_g, texture(t_noise, fp / 110.0 + 0.43).g, vert)));
+                al *= mix(vec3(1.0), val * hue, rk);
+                float b1 = texture(t_noise, vec2(along / 900.0, sy / 9.0) + 0.27).r, b2 = texture(t_noise, vec2(along / 400.0, sy / 2.6) + 0.64).g;
+                float fine = b1 * 0.6 + b2 * 0.4;
+                vec3 layer = mix(vec3(0.7, 0.68, 0.66), vec3(1.18, 1.12, 1.04), smoothstep(0.4, 0.6, fine));
+                layer = mix(layer, layer * vec3(1.14, 0.93, 0.78), smoothstep(0.55, 0.68, b1));
+                layer *= mix(vec3(0.82, 0.76, 0.7), vec3(1.12, 1.1, 1.06), hb);   // soft beds dark and red, hard beds pale
+                layer = mix(layer, mix(vec3(1.0), layer, 0.45), hb);               // and massive: fewer fine layers
+                al *= mix(vec3(1.0), layer, bed_w * 0.85 * fade);
+                // Drip lines: narrow vertical streaks on steep rock, longest under the hard beds' lips.
+                float drip = texture(t_noise, vec2(along / 2.3, p.y / 45.0) + 0.38).r * 0.7 + texture(t_noise, vec2(along / 0.9, p.y / 20.0) + 0.12).g * 0.3;
+                al *= 1.0 - smoothstep(0.58, 0.74, drip) * vert * rk * (0.12 + 0.12 * (1.0 - hb)) * fade;
+                // The value, hue and bed terms are independent, and where their pale ends meet the product
+                // reached 1.8x the ground: cream blotches all over the high slopes. Past 1.1x it is eased.
+                float lr = dot(al, vec3(0.3, 0.59, 0.11)) / max(dot(a0, vec3(0.3, 0.59, 0.11)), 1e-4);
+                if (lr > BED_PALE) al *= (BED_PALE + (lr - BED_PALE) * 0.25) / lr;
+                // Jointed blocks: on a face (over about 55 degrees) the rock is drawn as big blocks, a skin over the
+                // heightfield (whose 4 m samples cannot hold them): bed partings every 1.8-5.5 m (the hard beds
+                // massive, the soft ones thinner) that undulate along the face, and joints across each bed every
+                // 4-12 m, offset from bed to bed as in real strata. Each block has its own tone and a gently
+                // rounded face (its normal tilts toward its edges), the cracks are dark and hold moss where it is
+                // damp, and the top of each block, under the overhang of the one above, is in shadow. Fades out
+                // by 600 m, where it is under a pixel.
+                if (blk > 0.0) {
+                    float sp = mix(1.8, 5.5, hb);
+                    float yy = p.y + 5.0 * (textureLod(t_noise, vec2(along / 170.0, 0.37), 0.0).r - 0.5);
+                    float bi = floor(yy / sp), fy = fract(yy / sp);
+                    // Per bed and per block values: the noise read at points far apart, its narrow spread stretched to 0..1.
+                    vec2 hsh = clamp((textureLod(t_noise, vec2(bi * 0.173 + 0.05, 0.811), 0.0).rg - 0.5) * 3.0 + 0.5, 0.0, 1.0);
+                    float jw = mix(4.0, 12.0, hsh.y), ja = along + hsh.x * 37.0;
+                    float bj = floor(ja / jw), fx = fract(ja / jw);
+                    vec2 bh = clamp((textureLod(t_noise, vec2(bi * 0.173 + 0.05, bj * 0.291 + 0.37), 0.0).rg - 0.5) * 3.0 + 0.5, 0.0, 1.0);
+                    float tone = bh.x;
+                    // Each block's parting sits a little higher or lower than its neighbours', so the beds break
+                    // in steps instead of running on as brick courses.
+                    fy = fract(fy + (bh.y - 0.5) * 0.35);
+                    float px = max(0.05, dist * 0.0018);   // about a pixel at this distance (m)
+                    float ex = min(fx, 1.0 - fx) * jw, eb = fy * sp, et = (1.0 - fy) * sp;
+                    float crack = 1.0 - smoothstep(0.04, 0.04 + 1.5 * px, min(ex, eb));
+                    float shade = 1.0 - 0.45 * smoothstep(min(0.45 * sp, 0.9), 0.0, et) * (1.0 - smoothstep(0.0, 0.05 + px, et) * 0.3);   // under the overhang
+                    vec3 bcol = al * mix(0.85, 1.12, tone) * shade;
+                    bcol = mix(bcol, mix(vec3(0.03, 0.028, 0.025), vec3(0.045, 0.06, 0.025), smoothstep(0.4, 0.7, cov.b + mz * 0.3)), crack * 0.7);
+                    al = mix(al, bcol, blk);
+                    // The block's rounded face: the normal tilts out toward the joints and up toward its top.
+                    float sx = (fx - 0.5) * 2.0, sy2 = (fy - 0.5) * 2.0;
+                    vec3 out_ = normalize(vec3(N.x, 0.0, N.z) + vec3(1e-4, 0.0, 0.0));
+                    vec3 tilt = vec3(tg.x, 0.0, tg.y) * (sx * sx * sx) * 0.35 + vec3(0.0, 1.0, 0.0) * max(sy2, 0.0) * max(sy2, 0.0) * 0.5 - vec3(0.0, 1.0, 0.0) * max(-sy2, 0.0) * 0.2;
+                    nn = normalize(nn + (tilt + out_ * 0.15) * blk * (1.0 - smoothstep(80.0, 400.0, dist) * 0.6));
+                }
+                asum += al * wj; nsum += nn * wj;
             }
+            albedo = asum; n = normalize(nsum);
             // Ledges and benches: up-facing rock catches soil and moss.
-            float ledge = smoothstep(0.7, 0.9, n.y) * (1.0 - smoothstep(0.92, 0.98, N.y)) * rk;
+            // Up high (from about 420 m) the ledges are windswept: grey lichen and grit, not moss, which
+            // tinted the summits' gentle rock olive-green.
+            float ledge = smoothstep(0.7, 0.9, n.y) * (1.0 - smoothstep(0.92, 0.98, N.y)) * rk * (1.0 - 0.85 * smoothstep(420.0, 540.0, p.y + 50.0 * (mz - 0.5)));
             vec3 moss = mix(vec3(0.07, 0.085, 0.04), vec3(0.11, 0.1, 0.06), mz);
             albedo = mix(albedo, moss, ledge * smoothstep(0.35, 0.6, mz + 0.15 * cov.b) * 0.75);
+        }
+    }
+    // Fractured rock, near (under about 120 m): the rock is broken into slabs of 1.5-4 m, most split into
+    // plates of 0.4-1.5 m within 30 m and some of those again, each plate its own tone and tilted a little on its own, the
+    // cracks dark. Read triplanar (the planes facing x, y and z), so it holds on faces and flats alike.
+    // The heightfield (4 m) and the photo alone drew high rock as flat paint at a hatchling's eye.
+    {
+        float fr = float(u_detail > 0) * clamp(w[0] * 1.3, 0.0, 1.0) * (1.0 - smoothstep(40.0, 120.0, dist));
+        if (fr > 0.0) {
+            vec3 tw = pow(abs(N), vec3(4.0)); tw /= dot(tw, vec3(1.0)); tw = max(tw - 0.05, 0.0); tw /= dot(tw, vec3(1.0));
+            float px = max(0.004, dist * 0.0012);   // about a pixel (m)
+            vec3 fa = vec3(0.0), fn = vec3(0.0);
+            for (int j = 0; j < 3; j++) {
+                if (tw[j] <= 0.0) continue;
+                vec2 q = j == 0 ? p.zy : (j == 1 ? p.xz : p.xy);
+                vec3 au = j == 0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0), av = j == 1 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+                // Cracks wander (the cell space is warped) and some die out, so the plates are not a net.
+                vec2 qw = q / FR_CELL + (texture(t_noise, q / 2.3 + 0.31).rg - 0.5) * 0.9;
+                // Big plates (3x) carry the pattern to 60 m; the smaller splits inside them fade out by 30 m, so
+                // at mid distance the rock is not an even mosaic of small scales.
+                vec4 cb = fracture(qw / 3.0 + 3.1), c1 = fracture(qw), c2 = fracture(qw / 0.37 + 7.3);
+                float small = 1.0 - smoothstep(12.0, 30.0, dist);
+                float eb = cb.x * FR_CELL * 3.0, e1 = c1.x * FR_CELL, e2 = c2.x * FR_CELL * 0.37;
+                float wander = mix(0.35, 1.0, smoothstep(0.38, 0.55, texture(t_noise, q / 3.7 + 0.77).b));
+                float crackb = (1.0 - smoothstep(0.02, 0.02 + 1.5 * px, eb)) * mix(0.6, 1.0, wander);
+                float crack = (1.0 - smoothstep(0.012, 0.012 + 1.5 * px, e1)) * wander * step(0.3, cb.w) * small;   // most big plates are split
+                float crack2 = (1.0 - smoothstep(0.006, 0.006 + 1.5 * px, e2)) * step(0.45, c1.w) * small;   // only some plates are split again
+                float tone = mix(0.76, 1.2, cb.y) * mix(1.0, mix(0.86, 1.12, c1.y) * mix(0.94, 1.06, c2.y), small);
+                vec3 a = albedo * tone * (1.0 - 0.65 * max(crack, crackb)) * (1.0 - 0.45 * crack2);
+                // The plate's face tilts its own way.
+                vec3 tilt = (au * (cb.z - 0.5) + av * (cb.w - 0.5)) * 0.7 + ((au * (c1.z - 0.5) + av * (c1.w - 0.5)) * 0.5 + (au * (c2.z - 0.5) + av * (c2.w - 0.5)) * 0.2) * small;
+                crack = max(crack, crackb);
+                fa += a * tw[j]; fn += tilt * tw[j] * (1.0 - crack);
+            }
+            albedo = mix(albedo, fa, fr);
+            n = normalize(n + fn * fr * (1.0 - smoothstep(10.0, 60.0, dist) * 0.5));
         }
     }
     // Wet banks near water.

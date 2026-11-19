@@ -16,7 +16,7 @@ DL = "build/cretaceous/dl"
 # slot -> (library, asset id)
 SLOTS = {
     "rock":   ("acg", "Rock030"),
-    "scree":  ("ph", "rocks_ground_01"),
+    "scree":  ("ph", "gray_rocks"),    # angular talus blocks (was rocks_ground_01, pale pebbles in soil)
     "dirt":   ("acg", "Ground067"),
     "forest": ("ph", "forest_leaves_04"),
     "fern":   ("ph", "forest_leaves_02"),

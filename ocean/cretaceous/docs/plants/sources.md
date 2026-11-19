@@ -41,6 +41,7 @@ T translucency (ambientCG calls it Scattering).
 | ambientCG LeafSet001, 002, 004, 010, 013, 014, 018, 019, 020, 024; Foliage001, 006 | ambientcg.com/view?id=<id> | CC0 | 2K (4K-8K) | C A N | were 1K C A: the same uses as before (`assets/foliage/SOURCES.md`) | **use**, upgraded to 2K with normals |
 | Poly Haven metasequoia_bark, palm_bark, bark_brown_02, japanese_cedar_bark | polyhaven.com/a/<id> | CC0 | 2k (8k), packed to 512 | C N AO D | were C only: trunk bark | **use**, with normal maps; AO and furrows (D) baked into the colour |
 | Poly Haven pine_bark, bark_platanus, chinese_hackberry_bark | polyhaven.com/a/<id> | CC0 | 2k (8k), packed to 512 | C N AO D | araucaria plates, plane, smooth grey broadleaf bark | **use** (trunks hill-climb, 2026-11-19) |
+| Poly Haven gray_rocks | https://polyhaven.com/a/gray_rocks | CC0 | 2k (8k) | C N R AO D | was Poly Haven rocks_ground_01 (pale pebbles in soil): the scree ground material, `tools/fetch_textures.py` | **use** (alpine hill-climb, 2026-11-19): angular grey blocks read as talus at 2 m; the shader mixes a second copy at twice the size so the blocks vary |
 
 Why 2K and not 4K for most: the atlas layer is 512 texels and a leaf stamps
 into it at 40-500 texels, so a 2K scan already gives every sprite at least
