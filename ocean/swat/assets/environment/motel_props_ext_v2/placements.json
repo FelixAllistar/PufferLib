@@ -1,5 +1,5 @@
 {
- "props": ["BC2_PICKUP01", "BC2_VAN01", "BC2_PALM01", "BC2_WAGON01", "BC2_PAYPHONE01", "BC2_NEWSBOX01", "BC2_TYRES01", "BC2_MATTRESS01", "BC2_TUMBLE01", "BC2_JOSHUA01"],
+ "props": ["BC2_PICKUP01", "BC2_VAN01", "BC2_PALM01", "BC2_WAGON01", "BC2_PAYPHONE01", "BC2_NEWSBOX01", "BC2_TYRES01", "BC2_MATTRESS01", "BC2_TUMBLE01", "BC2_JOSHUA01", "BC2_SPEEDSIGN01"],
  "placements": [
   ["BC2_PICKUP01", 17.5, -0.08, 15.6, 90, 1.0, true, "front bay row"],
   ["BC2_VAN01", -20.6, -0.08, -6.0, 0, 1.0, true, "west bays, backed in"],
@@ -20,4 +20,5 @@
   ["BC2_TUMBLE01", 12.0, -0.08, -23.4, 160, 0.95, true, "north lot edge"],
   ["BC2_JOSHUA01", -29.5, -0.08, 4.0, 30, 1.0, true, "west verge"],
   ["BC2_JOSHUA01", 28.5, -0.08, 10.5, 120, 0.85, true, "east verge"],
-  ["BC2_JOSHUA01", 6.0, -0.08, -29.0, 200, 1.1, true, "north verge"]]}
+  ["BC2_JOSHUA01", 6.0, -0.08, -29.0, 200, 1.1, true, "north verge"],
+  ["BC2_SPEEDSIGN01", 25.0, -0.08, 34.3, 0, 1.0, true, "east verge facing westbound traffic, clear of the streetlight"]]}

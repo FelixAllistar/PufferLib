@@ -206,3 +206,20 @@ by Joshua Tree National Park (public domain; copy in refs/joshua_ref.jpg).
 9. joshua game 2: dead leaves (0.46,0.40,0.31), leaves yellower (0.56,0.60,0.28); closer: yes. Stop.
 
 Budget: 4,962 triangles, 3 materials, palm_tree_bark + grain; GLB ~0.6 MB.
+
+## Speed-limit sign (BC2_SPEEDSIGN01)
+
+Reference: https://commons.wikimedia.org/wiki/File:HGV-Bus_Speed_Limit_Sign.jpg
+by CharlieDueckPlett (CC0; copy in refs/speedsign_ref.jpg). Generic US
+regulatory text; lettering is Blender's built-in font converted to mesh.
+
+1. speedsign iter 1: galvanised post with sleeve and cap, 0.6 x 1.1 m panel, inset border, mesh lettering; panel too high, post sticks out above; closer: baseline
+2. speedsign iter 2: panel bottom 2.05 -> 1.6 m, post ends at the panel top; closer: yes
+3. speedsign iter 3: lettering 1.32 -> 1.6x, border 22 -> 30 mm; closer: yes (bolder like the ref)
+4. speedsign iter 4: cleaner, whiter sheeting (grain 0.35 -> 0.12); closer: yes (small)
+5. speedsign iter 5: blank spacer between the two groups; closer: no (letters now overlapped)
+6. speedsign iter 6: lettering 1.3x with the spacer: evenly spaced groups as in the ref; closer: yes. Stop.
+7. speedsign game 1: east verge facing westbound traffic: reads at road distance, but beside a streetlight pole; closer: n/a
+8. speedsign game 2: moved to x = 25 m, clear of the streetlight; final capture. Stop.
+
+Budget: 2,652 triangles (lettering ~2k), 3 materials, 256 px grain; GLB ~0.12 MB.

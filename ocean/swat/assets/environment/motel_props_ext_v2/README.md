@@ -25,6 +25,7 @@ photos guided proportions only; nothing from them is in the assets.
 | BC2_MATTRESS01.glb | discarded quilted single mattress | 1,328 | own quilt map (CC0), dirty_concrete (grain) | Commons "Discarded mattress by trash bin (18822330575).jpg" by Eric Fischer (CC BY 2.0) |
 | BC2_TUMBLE01.glb | dry tumbleweed, ~1 m | 7,776 | dirty_concrete (grain) | Commons "Tumbleweed 038.jpg" by ImperfectTommy / Edmond Meinfelder (CC BY 2.0) |
 | BC2_JOSHUA01.glb | Joshua tree, ~7.5 m | 4,962 | palm_tree_bark, dirty_concrete (grain) | Commons "Joshua Tree (Yucca brevifolia) (51632975337).jpg" by Joshua Tree National Park (public domain) |
+| BC2_SPEEDSIGN01.glb | speed-limit sign on a galvanised post | 2,652 | dirty_concrete (grain); lettering: Blender built-in font as mesh | Commons "HGV-Bus Speed Limit Sign.jpg" by CharlieDueckPlett (CC0) |
 
 Licence of the generated files: CC0 1.0 (original work; Poly Haven inputs are
 CC0). No brand logos, badges or real names.
