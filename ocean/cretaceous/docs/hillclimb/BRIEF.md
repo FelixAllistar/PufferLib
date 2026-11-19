@@ -1,6 +1,6 @@
 # Look hill-climb: trees, mountains, biomes
 
-A brief for the cloud workers of the long look pass (started 2026-11-19; this is round 2).
+A brief for the cloud workers of the long look pass (started 2026-11-19; this is round 3, the last).
 Each worker takes one track below, on its own branch, and climbs: render,
 look, fix the worst thing, render again, keep it only if it is better.
 
@@ -13,32 +13,34 @@ look, fix the worst thing, render again, keep it only if it is better.
 - He wants realistic mountains, realistic near-desert biomes, many biomes,
   and the trees fixed in the same pass, because the mountains need trees.
 
-## Where it stands (round 2)
+## Where it stands (round 3, the last)
 
-Round 1 (four tracks, 65 passes, all merged on branch `cret/hc`) gave: real
-tree sizes and fuller crowns, dense conifers with young and old forms, bark
-by species with root flares, a lowered grass line, scree fans, forest
-climbing the gullies, and a first near-desert. Their logs and sheets are in
-`docs/hillclimb/{trunks,conifers,broadleaf,mountains}/`: read the "still
-bad" list of the one nearest your track.
+Rounds 1 and 2 (eight tracks, 127 passes, all merged on branch `cret/hc`)
+gave: real tree sizes, dense conifers with ages, bark by species, trunks
+that sit in the forest's tone, matched far trees with shade between the
+crowns, fuller cycads and shrubs, a lowered grass line, scree, forest up the
+gullies, fractured rock up close, a broken-up near-desert of fixed share,
+river banks with horsetails, stands with clearings, grassland and fern
+prairie. Their logs and sheets are in `docs/hillclimb/<track>/`: read the
+"still bad" list of the tracks nearest yours before you start.
 
 What is still wrong, seen on the merged build:
-- **Far trees.** Past about 30 m the game shows the reduced mesh, and that
-  is what most of any view is made of. Reduced crowns are thinner and more
-  see-through than the full ones; redwood and araucaria come out 6 to 18%
-  brighter reduced and as impostors; distant forest is one flat saturated
-  green; pale trunks stand out of far slopes as grey poles.
-- **Near trees.** Leaf cards look blocky from under the crown; twigs and
-  araucaria branches are plain tubes; cycad and tree-fern trunks go near
-  black under their crowns; palm and tree-fern trunks are pale and smooth at
-  10 to 30 m; the plane's mottling is a cold teal-white; no trunk leans or
-  bows; cycads and small woody plants (shrubs, understorey, saplings) still
-  look scrappy.
-- **Biomes.** The near-desert is an even beige with abrupt edges and no
-  cracked earth; wet conifer forest, fern prairie, riverside, wetland and
-  coast were not worked; stands do not mix ages or leave clearings.
-- **High ground up close.** Steep ground is smeared down the fall line;
-  pale talus patches remain on the highest slopes.
+- **Dry country.** From the air the near-desert and the dry grassland are
+  one straw-cream tone (the terrain shader recolours bare earth by its
+  luminance); there is no cracked earth; the desert scrub is 1 to 2 m green
+  bushes where it wants a low grey dwarf shrub.
+- **Forest colour.** Far stands are a saturated teal (hue about 199,
+  saturation 0.45 in the canopy shot). Ground ferns and some broadleaf crowns
+  are a neon lime. Species differ too little in green.
+- **Coast.** The big beaches show dark stripes from the air: old fern ground
+  between the strips of sand the beach builder lays (`world.c`). The strand
+  belt is narrow. Plants stand on wet sand at the water's edge by river
+  mouths.
+- **Trees.** Araucaria branches and all twigs are plain tubes. The last
+  trees at the tree line are full-height straight conifers: nothing is
+  stunted or wind-shaped. Leaf cards still look blocky from under some
+  crowns. Podocarp and araucaria trunks are lighter than the forest at 20 to
+  60 m.
 
 ## The loop
 
@@ -115,6 +117,10 @@ cd ocean/cretaceous && make test                      # the fast suite
 - Cost: the gallery labels print each tree's triangle counts (full,
   reduced). The full mesh may grow to twice today's count, the reduced mesh
   to 1.25 times. Put the counts before and after in your report.
+- The player's graphics card is a GTX 1060 with 3 GB. Do not add per-pixel
+  work without need: prefer what can be baked into a texture or a vertex, and
+  keep new shader work behind the high preset if it is not cheap. Say in
+  the report what you added per pixel.
 - The Windows build is clang under mingw: no identifier named `near` or
   `far`, and no implicit function declarations.
 - A switch a player should try goes in Settings. Environment variables are
@@ -129,7 +135,7 @@ cd ocean/cretaceous && make test                      # the fast suite
 
 ## Handing in
 
-- Branch: `cret/hc2-<track>` off `cret/hc` (the merged round 1; not `5.0`).
+- Branch: `cret/hc3-<track>` off `cret/hc` (the merged rounds 1 and 2; not `5.0`).
 - Before and after sheets as JPEGs under
   `ocean/cretaceous/docs/hillclimb/<track>/` (side-by-side pairs, at most 12
   files, at most 400 KB each).
@@ -139,69 +145,69 @@ cd ocean/cretaceous && make test                      # the fast suite
 
 ## Tracks
 
-### far: the trees you see past 30 m
+### dry: near-desert and dry grassland
 
-**Owns:** the reduced-mesh paths in `render/veg_gen.h` (the `lod` branches),
-the impostor and level-of-detail code in `render/veg.c`, the distance terms
-of the plant shaders, and the switch distances. Not the full meshes.
+**Owns:** the dry-country parts of `shaders/terrain.fs` (the dry tint and
+anything new for dry ground), the near-desert and grassland rules in
+`terra/terra.c`, the material set in `tools/fetch_textures.py`, and one new
+small shrub in `render/veg_gen.h` (shrub kind only). Not the tree meshes,
+the plant shaders, the coast or `world.c`.
 
-**Goal:** a forest at 50 m, 300 m and 2 km looks like the same forest you
-stand in.
-- The reduced mesh and the impostor of every tree match its full mesh in
-  outline, crown density and tone (`tools/lodmatch.py` and `lodpop.py`
-  measure it; aim within 5% luma and no visible pop at the switch).
-- Reduced crowns are not see-through where the full crown is solid.
-- Far forest has variety: tone and hue differ by species, age and slope,
-  with shadow between crowns, not one flat saturated green.
-- Trunks at distance sit in the tone of the forest, not pale poles.
-- Judge mostly in world shots: slopes across a valley, the canopy from
-  above, a ridge from the shore. Use the gallery's forced LOD pages too.
+**Goal:** dry country that reads as dry country from 300 m up and from a
+hatchling's eye.
+- From the air: pans, washes, stony flats and bare earth differ in tone and
+  colour; dry grassland is not the same cream as desert.
+- Cracked earth on the pans (fetch a CC0 cracked-mud material) and sun-baked
+  ground that looks hard, with stones.
+- A low grey dwarf shrub (0.2 to 0.6 m, Karoo or saltbush-like) speckling the
+  flats in the hundreds, with the bigger scrub in clumps along washes.
 
-### near: the trees you stand under
+### colour: the greens of the forest
 
-**Owns:** the full-mesh paths in `render/veg_gen.h` (leaves, twigs, limbs,
-trunks), the near shading of bark and leaves in the plant shaders, and the
-small woody plants. Not the `lod` branches or the impostors.
+**Owns:** the plant shaders' colour terms (`shaders/veg_light.glsl`, the
+colour parts of `veg.fs` and the impostor shaders) and the tone and tint
+tables in `render/veg.c`. Not the meshes, the terrain shader or the bake.
 
-**Goal:** from a hatchling's eye, within 15 m, every tree and shrub holds up.
-- Leaves: no blocky cards from under the crown; sprays and leaf clusters
-  with depth, light through them.
-- Twigs and araucaria branches carry bark and taper; no plain tubes.
-- Trunks under their own crown keep visible form (cycads, tree ferns),
-  palm and tree-fern trunks are not pale smooth columns, the plane's
-  mottling is warm, and trunks lean or bow a little (do it without
-  reshuffling the crowns' random draws).
-- Cycads and the small woody plants (shrubs, understorey, saplings): each
-  should look like a real young or small plant, not a scrap. Felix hates the
-  "short lil" ones most.
+**Goal:** the forest's colour looks photographed, not painted.
+- Far stands: natural dark green that greys and blues gently with haze, not
+  teal. Compare with photos of conifer and mixed forest across a valley.
+- No neon lime: ground ferns, fern prairie and broadleaf crowns in sun.
+- Species differ: blue-black araucaria, fresh green dawn redwood, dark
+  glossy laurel, yellow-green ginkgo and plane, olive cycads, and so on,
+  within a palette that holds together.
+- The same tree keeps its colour through every level of detail (the far
+  track's tone tables did this for brightness; keep them fitted,
+  `tools/lodmatch.py`).
 
-### biomes: places that differ
+### coast: beaches, strand and river mouths
 
-**Owns:** the lowland rules of `terra/terra.c` (materials and plant layers
-below the tree line) and the plant placement code. Not the tree meshes, the
-terrain shader, or the rules above the tree line.
+**Owns:** `world.c` (the beach and open-country builders), the coast and
+river-mouth rules of `terra/terra.c`, and plant placement near the shore in
+`render/veg_place.h`. Not the dry-country rules, the shaders or the meshes.
 
-**Goal:** several biomes that read as different places from the air and on
-the ground, with real-looking edges.
-- Near-desert: broken up, not an even beige: bare cracked pans, stony
-  flats, dry washes, clumps of scrub and cycads, soft edges into the forest.
-  Its size should not depend on the world's size (a quarter of the small
-  test world is desert today).
-- Wet conifer forest, fern prairie, riverside and wetland, coast: each with
-  its own mix of plants and ground.
-- Stands and clearings: trees clump, thin out and mix ages (the conifers
-  now have young, mature and old variants; use them), with gaps and edges.
-- Time the bake and say how the world-dependent test budgets moved.
+**Goal:** a coast that looks like one.
+- No stripes on the beaches: from the air a big beach is continuous sand
+  that grades into dune grass and scrub, then strand forest.
+- A strand belt you can see: palms in groves, scrub, driftwood line, with
+  the forest behind.
+- River mouths: no plants standing in the wet sand at the waterline; mud,
+  sand bars and reeds or horsetails where the water slows.
+- Check what the open-country redraw did to the coast plains (palms fell
+  from 1,088 to 798).
 
-### alpine: high ground up close
+### crowns: the last tree faults
 
-**Owns:** `shaders/terrain.fs` and the rules above the tree line in
-`terra/terra.c`. Not the lowland rules or the placement code.
+**Owns:** the tree meshes in `render/veg_gen.h` (full and reduced paths) and
+the species tables. Not the shaders, the bark atlas or the bake.
 
-**Goal:** the mountains hold up from the ground, not only from the air.
-- Steep ground is not smeared down the fall line (project the textures so
-  cliffs and steep slopes keep their grain).
-- Rock, scree and talus look like stone at 2 m: broken, layered, varied in
-  size; no pale flat patches on the highest slopes.
-- The tree line's last shrubs and stunted trees read as wind-shaped.
-- Keep the cliff bands and the lowered grass line as they are now.
+**Goal:**
+- Araucaria branches and the twigs of every tree: tapered, bark-covered,
+  not plain tubes (keep the triangle budget: taper and shade, do not just add
+  sides).
+- Leaves from under the crown: no blocky cards on any species; check each.
+- A wind-shaped, stunted form for the last trees at the tree line
+  (krummholz: low, flagged to one side, dense), chosen by height above the
+  tree line; the alpine track left the clumps for it.
+- Podocarp and araucaria trunks no lighter than the forest at 20 to 60 m.
+- Dead standing trees and fallen trunks that look like the species around
+  them.
