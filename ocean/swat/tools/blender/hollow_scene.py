@@ -205,16 +205,6 @@ def wall_battens(p, mm, x0, z0, x1, z1, y, h, out_sign, openings=(), board=.30):
         mb = mm if rng.random() < .6 else M2["batten_dark"]
         if along_x: p.add(bm_box((pos, cy, z0 + out_sign * off), (bw, hy, BATTEN_T / 2)), mb)
         else: p.add(bm_box((x0 + out_sign * off, cy, pos), (BATTEN_T / 2, hy, bw)), mb)
-    # Splash/rot band: the board feet darken unevenly where rain splashes and
-    # the wood rots (each board its own height), only where boards reach the sill.
-    if y < .5:
-        n = max(1, int((b - a) / board))
-        for k in range(n):
-            t0 = a + (b - a) * k / n; t1 = a + (b - a) * (k + 1) / n; c = (t0 + t1) / 2
-            if any(o[2] <= .1 and abs(c - o[0]) < o[1] / 2 + .05 for o in ops): continue
-            hh = rng.uniform(.04, .26) / 2
-            if along_x: p.add(bm_box((c, y + hh, z0 + out_sign * (.0125 + .004)), ((t1 - t0) / 2 - .004, hh, .003)), M2["rot"])
-            else: p.add(bm_box((x0 + out_sign * (.0125 + .004), y + hh, c), (.003, hh, (t1 - t0) / 2 - .004)), M2["rot"])
     # Corner boards at both ends.
     for e in (a, b):
         if along_x: p.add(bm_box((e, y + h / 2, z0 + out_sign * (off + .005)), (.07, h / 2, .015)), mm)
@@ -440,8 +430,8 @@ def palette():
         "rust": mat("rust", (1, 1, 1), .8, .3, image=ph("rusty_metal_02", "diff", "1k", 512)),
         "soot": mat("soot", (.02, .02, .02), .9),
         "lime": mat("limewash", (.78, .76, .70), .95, image=C.tint_image(ph("old_stone_wall", "diff", "1k", 512), "limewash_tex", (.5, .5, .48), (.45, .44, .41))),
-        "rot": mat("board_rot", (1, 1, 1), .95, image=C.tint_image(ph("wood_planks_grey", "diff", "1k", 512), "planks_rot", (.68, .62, .54))),
-        "batten_dark": mat("batten_dark", (.62, .6, .56), .9, image=ph("wood_planks_grey", "diff", "1k", 512)),
+        "rot": mat("board_rot", (1, 1, 1), .95, image=C.tint_image(ph("wood_planks_grey", "diff", "1k", 512), "planks_rot", (.8, .75, .68))),
+        "batten_dark": mat("batten_dark", (1, 1, 1), .9, image=C.tint_image(ph("wood_planks_grey", "diff", "1k", 512), "planks_dark", (.72, .7, .66))),
     }
 
 if __name__ == "__main__":

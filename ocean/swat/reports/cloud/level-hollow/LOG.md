@@ -205,3 +205,14 @@ After that it costs the same as Cedar House and less than the motel.
 | 03 | 2. Red roof inside | Barn tin graded darker and less saturated; it keeps a muted red outside (barn_06 checks the exterior) | Yes |
 | 04 | 3. Gates | Stall sides with a slatted, round-topped gate hanging open | Yes |
 | 05 | Daylight through the board joints | Emissive slivers | **No** (no visible effect: this mesh path does not render emission). Reverted; stopped. |
+
+## Final pass
+- The real client was launched with `swat --mission hollow`, capturing the
+  game and planning screens. It runs, and the planning cutaway shows the three
+  overwatch posts.
+- The board rot band was removed. The colour-multiply material path loses its
+  texture on glTF export and rendered black blocks. The dark battens now use a
+  pre-tinted texture.
+- `make test -j4` passes: exit 0, 642 PASS lines (the baseline had 637), and
+  the 4 new hollow checks pass. The determinism traces are unchanged.
+- In-game overview: `overview.jpg`. Contact sheets: `contact/`.
