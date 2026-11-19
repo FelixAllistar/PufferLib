@@ -1,0 +1,2 @@
+all=0.06 Q_corner=0.04 R_corner=0.08 Q_edge=0.05 R_edge=0.08 step=0 secs=0
+all=1.00 Q_corner=1.00 R_corner=1.00 Q_edge=0.99 R_edge=1.00 step=250 secs=143

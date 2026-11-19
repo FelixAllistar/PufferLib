@@ -1,0 +1,4 @@
+stockfish as strong side KRPPKPP: n=60 mate=56 got_mated=3 lost_material=1
+stockfish as strong side KQRKR: n=60 mate=59 fifty=1
+stockfish as strong side KQNPPKRPP: n=60 mate=58 got_mated=1 lost_material=1
+stockfish as strong side KQPPKPP: n=60 mate=59 fifty=1

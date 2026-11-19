@@ -37,6 +37,8 @@ typedef struct SwatLightingProgram {
     int decal,decal_map,fog_color,fog_density,grading;
     int decal_surface;
     int night,moon_direction,night_count,night_position,night_color,night_direction,night_pool,night_pool_bounds,emission_tint;
+    int fog_start;
+    int instancing,instance_transform; // Instanced foliage (hollow_woods.h): uniform flag, mat4 attribute.
 } SwatLightingProgram;
 typedef struct SwatLighting {
     bool initialized,enabled,prepared;

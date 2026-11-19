@@ -11,6 +11,7 @@
 // Nothing here touches simulation, navigation, protocol or determinism.
 // SWAT_HOLLOW_ART=0 falls back to the default box materials.
 #include "hollow_data.h"
+#include "hollow_woods.h" // Woods v2 (SWAT_HOLLOW_WOODS).
 
 enum { HOLLOW_MAT_PLANKS, HOLLOW_MAT_DOOR, HOLLOW_MAT_FLOOR, HOLLOW_MAT_ROOF, HOLLOW_MAT_STONE,
        HOLLOW_MAT_GROUND, HOLLOW_MAT_DIRT, HOLLOW_MAT_ROOF_DARK, HOLLOW_MAT_LIMEWASH, HOLLOW_MAT_COUNT };
@@ -42,6 +43,7 @@ typedef struct SwatHollowArt {
     int model_count;
     signed char prop_model[SWAT_HOLLOW_PROPS]; // model slot per placement row, -1 none
     bool stand_model; // the lane tree stand replaces its overwatch plinth
+    SwatHollowWoods* woods; // instanced woods v2; NULL draws the old hollow_woods GLB
 } SwatHollowArt;
 
 static bool hollow_art_enabled(void) {
@@ -56,6 +58,7 @@ static void hollow_art_close(SwatEnvironmentArt* art) {
     }
     for(int i=0;i<HOLLOW_SCENE_FILES;i++) swat_art_model_close(h->scene[i]);
     for(int i=0;i<h->model_count;i++) swat_art_model_close(h->models[i]);
+    hollow_woods_close(h->woods);
     free(h); art->hollow=NULL;
 }
 static void hollow_art_load(SwatEnvironmentArt* art) {
@@ -76,7 +79,9 @@ static void hollow_art_load(SwatEnvironmentArt* art) {
         }
         m->tile=(Vector2){hollow_mat_defs[i].tile,hollow_mat_defs[i].tile};
     }
+    h->woods=hollow_woods_load();
     for(int i=0;i<HOLLOW_SCENE_FILES;i++) {
+        if(h->woods && !strcmp(hollow_scene_files[i],"hollow_woods")) continue; // replaced by woods v2
         char file[160]; snprintf(file,sizeof(file),"hollow_v1/%s.glb",hollow_scene_files[i]);
         if(!room101_model_load(&h->scene[i],h->scene_scales[i],file)) { swat_art_model_close(h->scene[i]); h->scene[i]=(Model){0}; continue; }
         h->scene_bounds[i]=GetModelBoundingBox(h->scene[i]);
@@ -160,7 +165,12 @@ static bool hollow_box_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
     if(id<0 || !h->maps[id].color.id) return false;
     const SwatSurfaceMaps* m=&h->maps[id];
     swat_lighting_surface(art->lighting,m->normal,m->roughness,(Vector3){0},(Vector2){0},false);
+    // Woods v2: the yard's one mud-and-leaves scan gets world-space macro
+    // variation (value, roughness) and a second rotated repeat, so it no
+    // longer reads as one uniform tile; the decals add paths, ruts and drifts.
+    if(id==HOLLOW_MAT_GROUND && h->woods) swat_lighting_surface_variation(art->lighting,false,(Vector2){0},(Vector4){.3f,.11f,.12f,0},(Vector4){.5f,.37f,0,0});
     textured_box(m->color,o,art->lit,m->tile,grain,true);
+    if(id==HOLLOW_MAT_GROUND && h->woods) swat_lighting_surface_variation(art->lighting,false,(Vector2){0},(Vector4){0},(Vector4){0});
     return true;
 }
 static Matrix hollow_prop_transform(const SwatHollowProp* p) {
@@ -198,6 +208,7 @@ static void hollow_scene_draw(const SwatEnvironmentArt* art,bool shadow) {
         int slot=h->prop_model[i]; if(slot<0) continue;
         hollow_model_draw(art,&h->models[slot],h->scales[slot],h->bounds[slot],hollow_prop_transform(&swat_hollow_props[i]),shadow,lit,scene);
     }
+    hollow_woods_draw(art,h->woods,shadow,lit,scene);
     rlDrawRenderBatchActive();
     rlEnableBackfaceCulling();
     if(lit) swat_lighting_material(art->lighting,(Material){0},false);

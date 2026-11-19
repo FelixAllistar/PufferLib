@@ -360,6 +360,28 @@ adds the per-move logit bias `sum_f bit_f (mf_w[f] + h . mf_u[f])` and its gradi
 `tools/mf_to_native.py` reorders BC checkpoints. Check: the converted 2048 Stockfish-BC net beat itself with zeroed
 move-feature weights 95.8% (582 sampled native games).
 
+## 2026-11-18: bot-ladder sweep score can include the EMAgnet copy (src/pufferl.cu, config/default.ini)
+
+- What: new `[selfplay] eval_bot_magnet` (default 0 = unchanged). When 1 and `<final>.magnet` exists, the end-of-trial
+  bot ladder also plays the magnet copy and the trial score is max(policy, magnet); both go to the log
+  (`selfplay/bot_ladder_perf_policy`, `selfplay/bot_ladder_perf_magnet`) and to stdout.
+- Why: chess sweep (reports/chess_selfplay1500_20261116) was scoring only the policy, while the magnet copy is often
+  the checkpoint we ship (main2 at 2.36B: magnet .882 vs policy .856). Felix's rule: every pick scores both.
+- Cost: doubled eval time when on. The magnet pass reloads weights into the same eval trainer (pufferl_load_policy);
+  a first version built a second eval trainer and ran out of memory on a 16 GB 5070 Ti after a 1024x2 trial. Off by default for every other env.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).
+
+## 2026-11-19: bot-ladder sweep score without selfplay mode (src/pufferl.cu)
+- Felix wants exactly 0 past-version games in chess. selfplay.enabled = 1 asserts hist_policy_percent > 0 and a
+  0-row frozen policy trips "policy has no agents", so the zero-past-version setup is selfplay.enabled = 0 (one policy;
+  CHESS_PAIRED games are the learner against itself). The end-of-train bot ladder (selfplay.eval_bot_games) was only
+  read when selfplay or a league was on; it is now read always, and a run that scores with it reports one point
+  (like selfplay) instead of sweep.downsample points.
+- Opt-in (revised before going public, 2026-11-19): the ladder runs without selfplay / a league only when
+  selfplay.eval_bot_mirror = 1 (default.ini 0; config/chess.ini 1). Without the flag, pokemon3/pokemon9 (selfplay
+  off, eval_bot_games 2000) would have started scoring their sweeps on the ladder. With eval_bot_mirror = 0 behaviour
+  is exactly upstream's. (The box sweep binary puffer_chess_sweep3 was built before the flag and reads the ladder
+  always.)

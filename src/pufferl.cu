@@ -4425,7 +4425,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     DictItem* target = dict_find(&last_log, target_key);
     result.score = target ? (float)target->value : 0;
 
-    int points = use_selfplay || league ? 1 : puf_ini_get(ini, "sweep", "downsample");
+    // selfplay.eval_bot_mirror = 1: the bot ladder also scores pure mirror self-play (selfplay.enabled = 0: one
+    // policy, no past versions). Default 0 keeps the ladder to selfplay / league runs only, as upstream.
+    long bot_games = use_selfplay || league || puf_ini_get(ini, "selfplay", "eval_bot_mirror") > 0
+        ? puf_ini_get(ini, "selfplay", "eval_bot_games") : 0;
+    int points = use_selfplay || league || bot_games > 0 ? 1 : puf_ini_get(ini, "sweep", "downsample");
     assert(points >= 1 && points <= TRAIN_RESULT_MAX_POINTS
         && "sweep.downsample must be in [1, TRAIN_RESULT_MAX_POINTS]");
     result.points = points;
@@ -4453,7 +4457,6 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         result.step_points[points - 1] = result.steps;
     }
 
-    long bot_games = use_selfplay || league ? puf_ini_get(ini, "selfplay", "eval_bot_games") : 0;
     int max_opp = use_selfplay ? puf_ini_get(ini, "selfplay", "eval_pool_size") : 0;
     long pool_games = use_selfplay ? puf_ini_get(ini, "selfplay", "eval_games") : 0;
     int bot_ladder = bot_games > 0 && final_checkpoint[0];
@@ -4528,29 +4531,50 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         double ladder[SELFPLAY_MAX_LADDER];
         int rungs = puf_ini_get_list(ini, "selfplay", "eval_bots", ladder,
             SELFPLAY_MAX_LADDER);
-        // One PuffeRL for the whole ladder. close_pufferl frees nothing, so a
-        // trainer per rung is a leak. Swap bot_policy and restart instead.
+        // eval_bot_magnet = 1 (2026-11-18): also score the EMAgnet copy saved
+        // beside the final checkpoint (<final>.magnet) on the same ladder; the
+        // trial's score is the better of the two, since that is the one a run
+        // would ship. 0 (default) = the policy only, as before.
+        char magnet_ckpt[4096 + 8];
+        snprintf(magnet_ckpt, sizeof(magnet_ckpt), "%s.magnet", final_checkpoint);
+        int n_ckpt = puf_ini_get(ini, "selfplay", "eval_bot_magnet") > 0
+            && access(magnet_ckpt, R_OK) == 0 ? 2 : 1;
+        float ladder_perf[2] = {0, 0};
+        // One PuffeRL for the whole ladder and both checkpoints. close_pufferl
+        // frees nothing, so a trainer per rung (or per checkpoint: OOM on 16 GB
+        // after a 1024x2 trial) is a leak. Swap bot_policy / weights and restart.
+        // Async rollouts copy param -> actor_param every rollout, so reloaded
+        // weights are the ones that play.
         PuffeRL* ep = eval_make(ini, ctx, EVAL_SCORE, 0);
-        float sum = 0;
-        for (int i = 0; i < rungs; i++) {
-            if (PUF_BACKEND != PUF_GPU) {
-                for (int e = 0; e < ep->vec->size; e++) {
-                    puf_set_bot_policy(&ep->vec->envs[e], (int)ladder[i]);
+        for (int c = 0; c < n_ckpt; c++) {
+            if (c == 1) pufferl_load_policy(ep, 0, magnet_ckpt);
+            float sum = 0;
+            for (int i = 0; i < rungs; i++) {
+                if (PUF_BACKEND != PUF_GPU) {
+                    for (int e = 0; e < ep->vec->size; e++) {
+                        puf_set_bot_policy(&ep->vec->envs[e], (int)ladder[i]);
+                    }
                 }
+                env_restart(ep);
+                EvalResult r = eval_loop(ini, ep, EVAL_SCORE, 0, 0, bot_games, NULL, 0);
+                sum += r.perf;
+                printf("bot_eval%s policy=%d games=%d perf=%.4f\n", c ? " magnet" : "",
+                    (int)ladder[i], r.games, r.perf);
             }
-            env_restart(ep);
-            EvalResult r = eval_loop(ini, ep, EVAL_SCORE, 0, 0, bot_games, NULL, 0);
-            sum += r.perf;
-            printf("bot_eval policy=%d games=%d perf=%.4f\n",
-                (int)ladder[i], r.games, r.perf);
+            ladder_perf[c] = sum / rungs;
         }
         close_pufferl(ep);
-        result.score = result.scores[0] = sum / rungs;
+        float best = n_ckpt == 2 && ladder_perf[1] > ladder_perf[0] ? ladder_perf[1] : ladder_perf[0];
+        result.score = result.scores[0] = best;
         result.points = 1;
         result.costs[0] = result.cost;
         result.step_points[0] = result.steps;
         dict_set(&last_log, "selfplay/bot_ladder_perf", result.score);
-        printf("bot_eval mean_perf=%.4f\n", result.score);
+        dict_set(&last_log, "selfplay/bot_ladder_perf_policy", ladder_perf[0]);
+        if (n_ckpt == 2) dict_set(&last_log, "selfplay/bot_ladder_perf_magnet", ladder_perf[1]);
+        if (n_ckpt == 2) printf("bot_eval mean_perf=%.4f (policy %.4f, magnet %.4f)\n", result.score,
+            ladder_perf[0], ladder_perf[1]);
+        else printf("bot_eval mean_perf=%.4f\n", result.score);
     } else if (pool_eval && ctx->artifact_owner) {
         puf_ini_put(ini, "base.load_model_path", final_checkpoint);
         TrainContext eval_ctx = {.world_size = 1, .artifact_owner = 1};

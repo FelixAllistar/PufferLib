@@ -1,0 +1,17 @@
+a256c_a256_feat_teach_52428800.magnet maia1100-top perf=0.099558 draw=0.101770 
+a256c_a256_feat_teach_52428800 maia1100-top perf=0.419903 draw=0.296117 
+a256c_a256_feat_teach_104857600.magnet maia1100-top perf=0.405340 draw=0.247573 
+a256c_a256_feat_teach_104857600 maia1100-top perf=0.605634 draw=0.206573 
+a256c_a256_feat_teach_157286400.magnet maia1100-top perf=0.590047 draw=0.241706 
+a256c_a256_feat_teach_157286400 maia1100-top perf=0.589623 draw=0.216981 
+a256c_a256_feat_teach_199753728.magnet maia1100-top perf=0.611364 draw=0.204545 
+a256c_a256_feat_teach_199753728 maia1100-top perf=0.654412 draw=0.210784 
+a256c_a256_feat_base_52428800.magnet maia1100-top perf=0.085648 draw=0.097222 
+a256c_a256_feat_base_52428800 maia1100-top perf=0.497674 draw=0.241860 
+a256c_a256_feat_base_104857600.magnet maia1100-top perf=0.449761 draw=0.248804 
+a256c_a256_feat_base_104857600 maia1100-top perf=0.582160 draw=0.272300 
+a256c_a256_feat_base_157286400.magnet maia1100-top perf=0.577670 draw=0.213592 
+a256c_a256_feat_base_157286400 maia1100-top perf=0.668246 draw=0.218009 
+a256c_a256_feat_base_199753728.magnet maia1100-top perf=0.592040 draw=0.218905 
+a256c_a256_feat_base_199753728 maia1100-top perf=0.659524 draw=0.195238 
+done

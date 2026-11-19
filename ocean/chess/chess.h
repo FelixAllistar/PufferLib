@@ -374,6 +374,9 @@ enum {
 // mates << 4, 255 = empty slot (all slots for the side not to move). These are small integers, not 0/1: only
 // chess_decoder.cu reads them (a per-move logit bias); chess_prefix_encoder.cu feeds the encoder the base part.
 #define CHESS_MF_SLOTS 128
+#if defined(CHESS_MOVE_FEATS2) && !defined(CHESS_MOVE_FEATS)
+#error "CHESS_MOVE_FEATS2 needs CHESS_MOVE_FEATS"
+#endif
 #define O_MOVE_FEATS CHESS_OBS_END
 #define OBS_SIZE (CHESS_OBS_END + 3 * CHESS_MF_SLOTS)
 #else
@@ -438,6 +441,13 @@ struct Log {
     // a book position (env.book_penalty).
     float book_moves;
     float book_exits;
+    // State-group teacher (chess_teacher.h, 2026-11-16), sums over finished self-play games: teach_n games started
+    // from the teacher pool and teach_win of them won by the side ahead at the start; lead_n natural games in which a
+    // side reached a stable 5+ point lead and lead_win of them that side won (1 - lead_win / lead_n = thrown wins).
+    float teach_n;
+    float teach_win;
+    float lead_n;
+    float lead_win;
 };
 
 typedef struct {
@@ -489,6 +499,21 @@ struct Env {
     float fen_curric_pct;
     int num_fens;
     int random_fen;
+    // State-group teacher (chess_teacher.h): share of resets from the teacher pool, this game's group (-1 = not a
+    // teacher game) and the color ahead at its start (-1 none), and the first stable lead of a natural game.
+    float teacher_pct;
+    int teach_group, favored;
+    int teach_stm;      // practice game from an "stm" bank: favored = side to move, a draw also counts as success
+    int lead_run[2];
+    int snap_class, snap_color;
+    char snap_fen[128];
+    // Swing harvest (chess_teacher.h): recent plies' material and positions, the side that lost material in this
+    // game's first stable drop (-1 none yet, 2 none to harvest) and the positions before it (drop ladder).
+    int swing_n, swing_color, swing_mask[2];  // swing_color: bit per side whose drop was found
+    int16_t swing_d[48];      // CHESS_SWING_BACK
+    uint8_t swing_ok[48];
+    char swing_fens[48][96];
+    char swing_fen[2][8][96];  // per side x CHESS_DROP_MAX: the harvested position per ladder depth (bit k of swing_mask[x])
     
     UndoInfo undo_stack[MAX_GAME_PLIES];
     int undo_stack_ptr;
@@ -1650,7 +1675,11 @@ static inline void chess_write_plane(uint8_t* dst, Bitboard bb, int flip) {
 #endif
 #ifdef CHESS_MOVE_FEATS
 #include "chess_tactics.h"
+#ifdef CHESS_MOVE_FEATS2
+typedef char chess_mf_slots_check[(CT_MAX_MOVES == CHESS_MF_SLOTS && CT_FEATS == 9) ? 1 : -1];  // C and C++
+#else
 typedef char chess_mf_slots_check[(CT_MAX_MOVES == CHESS_MF_SLOTS && CT_FEATS == 7) ? 1 : -1];  // C and C++
+#endif
 #endif
 void populate_observations(Chess* env) {
     Position* pos = &env->pos;
@@ -1770,7 +1799,11 @@ void populate_observations(Chess* env) {
                 while (b < 4 && !f[b]) b++;  // swing bucket (one-hot over f[0..4])
                 mfo[3 * i] = (uint8_t)(mf_act[i] / 64);
                 mfo[3 * i + 1] = (uint8_t)(mf_act[i] % 64);
+#ifdef CHESS_MOVE_FEATS2
+                mfo[3 * i + 2] = (uint8_t)(b | f[5] << 3 | f[6] << 4 | f[7] << 5 | f[8] << 6);  // allows mate 1, check-led loss
+#else
                 mfo[3 * i + 2] = (uint8_t)(b | f[5] << 3 | f[6] << 4);
+#endif
             } else {
                 mfo[3 * i + 2] = 255;
             }
@@ -1920,6 +1953,31 @@ static int move_to_san(Position* pos, Move m, char* buf, UndoInfo* undo_stack, i
     return ptr - buf;
 }
 
+#include <fcntl.h>
+// Failure analysis (2026-11-17): with CHESS_GAMES_OUT set, every finished Maia-mode game appends one line
+// "learner_color(w|b)\tresult\tstart_fen\tuci moves..." to that file. One write() per line on an O_APPEND file, so
+// envs on several threads don't interleave. Off (and free) when the variable is unset.
+static void chess_log_game_line(Chess* env) {
+    const char* path = getenv("CHESS_GAMES_OUT");
+    if (!path || !path[0]) return;
+    static thread_local char line[512 + MAX_GAME_PLIES * 6];
+    int n = snprintf(line, 512, "%c\t%s\t%s\t", env->learner_color == CHESS_WHITE ? 'w' : 'b', env->last_result,
+                     env->game_start_fen);
+    for (int i = 0; i < env->pgn_move_count; i++) {
+        Move m = env->pgn_moves[i];
+        Square f = from_sq(m), t = to_sq(m);
+        if (i) line[n++] = ' ';
+        line[n++] = 'a' + (int)file_of(f); line[n++] = '1' + (int)rank_of(f);
+        line[n++] = 'a' + (int)file_of(t); line[n++] = '1' + (int)rank_of(t);
+        if (type_of_m(m) == PROMOTION) line[n++] = " pnbrqk"[promotion_type(m)];
+    }
+    line[n++] = '\n';
+    int fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (fd < 0) return;
+    ssize_t w = write(fd, line, n); (void)w;
+    close(fd);
+}
+
 static void export_pgn_append(Chess* env, const char* filename, int append) {
     FILE* f = fopen(filename, append ? "a" : "w");
     if (!f) return;
@@ -2038,6 +2096,8 @@ static void generate_random_fen(Chess* env, char* fen_out) {
     strcpy(ptr, " w - - 0 1");
 }
 
+#include "chess_teacher.h"
+
 static inline int apply_move_to_env(Chess* env, Move chosen, int* is_timeout) {
     env->chess_moves++;
     env->last_move_from = from_sq(chosen);
@@ -2089,6 +2149,8 @@ static inline int apply_move_to_env(Chess* env, Move chosen, int* is_timeout) {
     }
     
     rebuild_legal_state(env);
+    chess_track_lead(env);
+    chess_track_swing(env);
 
     int game_result = 0;
     *is_timeout = 0;
@@ -2510,7 +2572,25 @@ void puf_reset(Chess* env) {
     }
 #endif
     env->maia_phase = 0;
-    
+    env->teach_group = -1;
+    env->favored = -1;
+    env->teach_stm = 0;
+    env->lead_run[0] = env->lead_run[1] = 0;
+    env->snap_class = -1;
+
+#ifdef __cplusplus
+    // Teacher pool first (chess_teacher.h); otherwise the old rule below, untouched.
+    char teach_fen[128];
+    if (env->teacher_pct > 0.0f && env->mode == CHESS_MODE_SELFPLAY && env->tag == 0
+            && (float)rand_r(&env->rng) / (float)(RAND_MAX) < env->teacher_pct
+            && cteach_pick(&env->rng, teach_fen, (int)sizeof(teach_fen), &env->teach_group)) {
+        pos_set(&env->pos, teach_fen);
+        int lead = chess_material_cp(&env->pos, CHESS_WHITE, 1) - chess_material_cp(&env->pos, CHESS_BLACK, 1);
+        env->favored = lead >= CHESS_FAVORED_CP ? CHESS_WHITE : lead <= -CHESS_FAVORED_CP ? CHESS_BLACK : -1;
+        env->teach_stm = cteach_group_stm(env->teach_group);
+        if (env->teach_stm) env->favored = env->pos.sideToMove;
+    } else
+#endif
     if (env->fen_curriculum != NULL && env->num_fens > 0) {
         float randvalue = (float)rand_r(&env->rng) / (float)(RAND_MAX);
         if(env->fen_curric_pct >= randvalue){
@@ -2531,6 +2611,10 @@ void puf_reset(Chess* env) {
     
     position_to_fen(&env->pos, env->game_start_fen);
     rebuild_legal_state(env);
+    env->swing_n = 0;
+    env->swing_color = 0;
+    env->swing_mask[0] = env->swing_mask[1] = 0;
+    chess_track_swing(env);
     populate_observations(env);
 
 }
@@ -2569,6 +2653,9 @@ void puf_step(Chess* env) {
     }
     
     env->tick++;
+#ifdef __cplusplus
+    cteach_tick(env->num_agents);
+#endif
     int move_completed = 0;
     ChessColor mover = env->pos.sideToMove;
     int mover_idx = (int)mover;
@@ -2585,7 +2672,13 @@ void puf_step(Chess* env) {
         }
     } else if (env->mode == CHESS_MODE_MAIA && env->pos.sideToMove != env->learner_color) {
         if (env->legal_moves.count > 0) {
-            if (env->maia_phase == 0) {
+            // CHESS_MAIA_ONE_STEP=1 (2026-11-17): Maia moves in one step, as an opponent does in self-play since the
+            // one-action-per-move space (from * 64 + to). The two-step wait below dates from pick+place actions; with
+            // one action per move it shows the learner's recurrent state every Maia move twice, a cadence it never
+            // trained on. Default unchanged so old numbers stay comparable.
+            const char* one = getenv("CHESS_MAIA_ONE_STEP");  // per Maia step; the engine call dominates
+            int maia_one_step = one && atoi(one);
+            if (env->maia_phase == 0 && !maia_one_step) {
                 // First c_step of Maia's "move": no-op so the learner's LSTM
                 // sees a 2-step opponent wait (matches selfplay's pick+place
                 // cadence the policy was trained on).
@@ -2794,6 +2887,36 @@ void puf_step(Chess* env) {
 
         env->log.n += 1.0f;
 
+        // State-group teacher: practice result of a teacher game, or the fate of a natural game's first stable lead.
+        if (env->mode == CHESS_MODE_SELFPLAY && env->tag == 0) {
+            int white_won = game_result == 2, black_won = game_result == 1;
+            if (env->teach_group >= 0) {
+                if (env->favored >= 0) {
+                    int won = env->favored == CHESS_WHITE ? white_won : black_won;
+                    if (env->teach_stm) won = env->favored == CHESS_WHITE ? !black_won : !white_won;  // not lost
+                    env->log.teach_n += 1.0f;
+                    env->log.teach_win += won;
+#ifdef __cplusplus
+                    cteach_practice(env->teach_group, won);
+#endif
+                }
+            } else if (env->snap_class >= 0) {
+                int won = env->snap_color == CHESS_WHITE ? white_won : black_won;
+                env->log.lead_n += 1.0f;
+                env->log.lead_win += won;
+#ifdef __cplusplus
+                cteach_natural(env->snap_class, won, env->snap_fen);
+#endif
+            }
+            for (int x = 0; env->teach_group < 0 && x < 2; x++) {
+                int won = x == CHESS_WHITE ? white_won : black_won;
+#ifdef __cplusplus
+                for (int k = 0; !won && k < 8; k++) if (env->swing_mask[x] >> k & 1) cteach_drop(k, env->swing_fen[x][k]);
+#endif
+                (void)won;
+            }
+        }
+
         // Per-color split for non-selfplay eval. learner_color is the color the
         // learner just played; win_value already accounts for whether it won.
         // A lopsided split (e.g. high white win rate, near-zero black) is the
@@ -2837,6 +2960,7 @@ void puf_step(Chess* env) {
                 env->pgn_game_number++;
                 export_pgn_append(env, env->pgn_filename, 1);
             }
+            if (env->mode == CHESS_MODE_MAIA) chess_log_game_line(env);
             puf_reset(env);
         }
     } else {
@@ -3382,6 +3506,11 @@ static void apply_kwargs(Env* env, Dict* kwargs) {
     env->enable_threefold_repetition = dict_get(kwargs, "enable_threefold_repetition");
     env->random_fen = dict_get(kwargs, "random_fen");
     env->fen_curric_pct = dict_get(kwargs, "fen_curric_pct");
+    DictItem* teacher_pct = dict_find(kwargs, "teacher_pct");  // optional: older configs do not have it
+    env->teacher_pct = teacher_pct ? (float)teacher_pct->value : 0.0f;
+    env->teach_group = -1;
+    env->favored = -1;
+    env->snap_class = -1;
 
     env->client = NULL;
     env->legal_dirty = 1;
@@ -3436,6 +3565,11 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "perf", log->perf);
     dict_set(out, "score", log->score);
     dict_set(out, "draw_rate", log->draw_rate);
+    // teacher values early in the list: the dashboard shows only the first rows
+    dict_set(out, "teach_n", log->teach_n);
+    dict_set(out, "teach_win", log->teach_win);
+    dict_set(out, "lead_n", log->lead_n);
+    dict_set(out, "lead_win", log->lead_win);
     dict_set(out, "book_moves", log->book_moves);
     dict_set(out, "book_exits", log->book_exits);
     dict_set(out, "timeout_rate", log->timeout_rate);
@@ -3482,6 +3616,10 @@ Env* my_vec_init(int* num_envs_out, int* buffer_env_starts, int* buffer_env_coun
 
     float curric_pct = dict_get(env_kwargs, "fen_curric_pct");
     chess_book_build();
+#ifdef __cplusplus
+    DictItem* teacher_pct = dict_find(env_kwargs, "teacher_pct");
+    if (teacher_pct && teacher_pct->value > 0 && (int)dict_get(env_kwargs, "mode") == CHESS_MODE_SELFPLAY) cteach_init();
+#endif
     if (curric_pct > 0.0f && SHARED_FEN_CURRICULUM == NULL) {
         SHARED_FEN_CURRICULUM = load_fen_file(FEN_CURRICULUM_PATH, &SHARED_NUM_FENS);
         if (SHARED_FEN_CURRICULUM != NULL) {
@@ -3537,6 +3675,9 @@ Env* my_vec_init(int* num_envs_out, int* buffer_env_starts, int* buffer_env_coun
 }
 
 void my_vec_close(Env* envs) {
+#ifdef __cplusplus
+    if (envs && envs[0].teacher_pct > 0.0f && envs[0].mode == CHESS_MODE_SELFPLAY) cteach_close();
+#endif
     if (SHARED_FEN_CURRICULUM != NULL) {
         for (int i = 0; i < SHARED_NUM_FENS; i++) {
             free(SHARED_FEN_CURRICULUM[i]);

@@ -1,0 +1,14 @@
+mate1 KQK corner: n=150 top-move mates 0.71 p(mate) 0.62 value +0.94
+mate1 KQK edge: n=150 top-move mates 0.67 p(mate) 0.60 value +0.95
+mate1 KRK corner: n=150 top-move mates 0.55 p(mate) 0.49 value +0.87
+mate1 KRK edge: n=150 top-move mates 0.89 p(mate) 0.82 value +0.91
+mate1 KRRK corner: n=150 top-move mates 0.68 p(mate) 0.60 value +0.96
+mate1 KRRK edge: n=150 top-move mates 0.67 p(mate) 0.62 value +0.95
+mate1 KRRK inner: n=150 top-move mates 0.65 p(mate) 0.55 value +0.92
+convert KQK: n=60 mate=60 | plies to mate median 15 | start value +0.91
+convert KRK: n=60 mate=60 | plies to mate median 21 | start value +0.80
+convert KRRK: n=60 mate=60 | plies to mate median 17 | start value +0.91
+convert KQPPKPP: n=60 mate=58 got_mated=1 stalemate=1 | plies to mate median 19 | start value +0.81
+convert KRPPKPP: n=60 mate=48 got_mated=8 threefold=2 stalemate=1 fifty=1 | plies to mate median 23 | start value +0.69
+convert KQRKR: n=60 mate=53 stalemate=6 lost_material=1 | plies to mate median 19 | start value +0.83
+convert KQNPPKRPP: n=60 mate=37 got_mated=13 stalemate=5 lost_material=2 threefold=2 fifty=1 | plies to mate median 25 | start value +0.63
