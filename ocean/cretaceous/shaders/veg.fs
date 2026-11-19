@@ -69,6 +69,16 @@ void main() {
         albedo *= BARK[clamp(tone, 0, 12)];
         // Dead wood: bark weathers grey and pale, with dark checks along the grain.
         if (tone == 11) albedo = mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 0.3) * vec3(1.18, 1.14, 1.08) * (0.8 + 0.2 * smoothstep(0.1, 0.3, abs(fract(v_uv.x * 9.0 + sin(v_uv.y * 3.0) * 0.3) - 0.5)));
+        // Macro bark: the same scan at about a quarter of its frequency (rotated off the tile grid) scales the
+        // brightness, relative to the scan's mean (its last mip). Broad strips and plates then survive the mips
+        // of a trunk 20-60 m away, which otherwise drew as a smooth flat column, and up close the tile no
+        // longer repeats. Tree bark only (not twigs, rachises, cones, fruit or the patterned trunks).
+        if (tone == 0 || tone == 3 || tone == 5 || tone == 12) {
+            vec2 mu = mat2(0.27, 0.07, -0.05, 0.22) * v_uv + vec2(0.37, 0.61);
+            float lm = dot(texture(t_atlas, vec3(mu, v_layer)).rgb, vec3(0.3, 0.59, 0.11));
+            float l0 = dot(textureLod(t_atlas, vec3(0.5, 0.5, v_layer), 12.0).rgb, vec3(0.3, 0.59, 0.11));
+            albedo *= clamp(mix(1.0, lm / max(l0, 1e-3), 0.55), 0.55, 1.5);
+        }
         // Trunk surface patterns from the tube uv (u around, v along, in m).
         vec2 q = v_uv;
         if (tone == 4) {            // cycad: spiral armour of diamond leaf bases
