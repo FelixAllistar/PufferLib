@@ -85,3 +85,19 @@ green under it, and the teal is mostly the haze.
    green filter at full weight. Change: ground cover takes the filter at 0.4 instead of 0.75 (trees
    unchanged). Kept: the shaded ferns sit in the floor's shade as a muted green, sunlit fronds unchanged;
    ground lime share 10.6% -> 5.5%, ga0 10% -> 8%.
+
+## Sheets (left `cret/hc`, right this branch; llvmpipe, high preset, 960x540)
+
+- `01`-`07`: world shots `canopy`, `hill`, `skyh`, `val3`, `mid`, `ground`, `ga0`.
+- `08`-`12`: the tree gallery, pages 1, 3, 4, 5 and 7 (conifers; magnolia, cypress, dawn redwood; katsura,
+  laurel, ginkgo; plane, laurel, magnolia; cycads).
+
+Cameras (`CRET_SHOT_CAM`): `val3:2104:1670:35:6.06:0.06:55`, `mid:2322:1684:20:1.24:0.18:60`,
+`hill:2278:3958:150:1.13:-0.12:55`, `skyh:2896:2432:4:0.6:0.12:70`, `ga0:2620:1344:2.5:0:0.08:70`,
+`redwood:4610:1765:3.0:0.72:-0.03:65`.
+
+## Final numbers (before -> after)
+
+canopy hue 180 -> 172, teal share 81% -> 66%; hill 170 -> 160, 56% -> 50%; skyh 189 -> 188, 91% -> 84%;
+aerial unchanged (188, 98%: from 6 km up the island is the terrain's painted canopy); lime share ground
+25% -> 5%, ga0 24% -> 8%, mid 28% -> 16%; val3 hue 106 -> 103.
