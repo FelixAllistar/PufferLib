@@ -383,7 +383,14 @@ static void photos_load(Photos* P) {
     load_sprites(&P->fern, "fern_02", 5, 0.7f, 1);
     load_sprites(&P->blade, "Foliage001", 9, 0.2f, 2); load_sprites(&P->blade, "Foliage006", 6, 0.2f, 2);
     // Metasequoia sprays: fir twigs (flat two-ranked needles, as on Metasequoia), the older scale-leaf spray without them.
-    load_sprites(&P->spray, "fir_tree_01", 6, 1.0f, 1); if (!P->spray.n) load_sprites(&P->spray, "LeafSet019", 3, 1.0f, 1);
+    load_sprites(&P->spray, "fir_tree_01", 6, 1.0f, 1);
+    // The fir set's first cut is a strip of the trunk's bark (a fifth as wide as tall), not a twig: it stamped
+    // flat brown-green bars into every spray. Keep only the twigs (about as wide as tall).
+    for (int k = 0; k < P->spray.n;) {
+        if (P->spray.s[k].aspect >= 0.45f) { k++; continue; }
+        free(P->spray.s[k].p); free(P->spray.s[k].m); P->spray.s[k] = P->spray.s[--P->spray.n];
+    }
+    if (!P->spray.n) load_sprites(&P->spray, "LeafSet019", 3, 1.0f, 1);
     load_sprites(&P->grass, "grass_medium_02", 9, 0.25f, 2);
     load_sprites(&P->pinna, "jacaranda_tree", 1, 0.7f, 1); load_sprites(&P->pinna, "fern_02", 5, 0.7f, 1);
     load_sprites(&P->strap, "LeafSet013", 6, 1.0f, 1); load_sprites(&P->strap, "LeafSet020", 5, 1.0f, 1);
