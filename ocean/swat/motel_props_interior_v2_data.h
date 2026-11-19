@@ -23,12 +23,12 @@
 enum {
     PIV2_DRAPES,PIV2_DRESSER,PIV2_FRIDGE,PIV2_COFFEE,PIV2_ASHTRAY,PIV2_HEATER,
     PIV2_CLOSET,PIV2_SMOKE,PIV2_WAITING,PIV2_PLANT,PIV2_COOLER,PIV2_BROCHURE,
-    PIV2_CART,PIV2_SHELF,SWAT_PROPS_V2_ASSETS
+    PIV2_CART,PIV2_SHELF,PIV2_DRAPES_B,SWAT_PROPS_V2_ASSETS
 };
 static const char* const props_v2_files[SWAT_PROPS_V2_ASSETS]={
     "drapes.glb","dresser.glb","mini_fridge.glb","coffee_maker.glb","ashtray.glb","wall_heater.glb",
     "closet_rod.glb","smoke_detector.glb","waiting_chairs.glb","potted_plant.glb","water_cooler.glb",
-    "brochure_rack.glb","laundry_cart.glb","linen_shelf.glb"};
+    "brochure_rack.glb","laundry_cart.glb","linen_shelf.glb","drapes_avocado.glb"};
 
 // World-space mount (metres, engine yaw; model front faces local +Z).
 // `owner` is the supporting motel object; `wall` mounts follow the surviving
@@ -36,7 +36,17 @@ static const char* const props_v2_files[SWAT_PROPS_V2_ASSETS]={
 typedef struct SwatPropV2Piece {int asset,owner;float x,y,z,yaw;bool wall;} SwatPropV2Piece;
 #define PIV2_ROOM(r) (-6.f+4.f*(r))
 static const SwatPropV2Piece props_v2_pieces[]={
-    {PIV2_SMOKE,10,-6.0f,2.8f,-1.2f,0,false},
+    // Guest rooms 101-104: drapes on the facade above the window (wall
+    // mount, origin on the interior plane, local +x = west).
+    {PIV2_DRAPES,13,PIV2_ROOM(0)+.8f,2.5f,-.1f,SWAT_PI,true},
+    {PIV2_DRAPES_B,37,PIV2_ROOM(1)+.8f,2.5f,-.1f,SWAT_PI,true},
+    {PIV2_DRAPES,61,PIV2_ROOM(2)+.8f,2.5f,-.1f,SWAT_PI,true},
+    {PIV2_DRAPES_B,85,PIV2_ROOM(3)+.8f,2.5f,-.1f,SWAT_PI,true},
+    // Laundry: linen shelving in the nook between the north wall and the
+    // desk (west wall), canvas cart against the east wall north of the
+    // service opening (z -7.37..-8.63 stays clear).
+    {PIV2_SHELF,127,-11.905f,.0f,-6.55f,SWAT_PI*.5f,false},
+    {PIV2_CART,127,-8.12f,.0f,-6.76f,-SWAT_PI*.5f,false},
 };
 #define SWAT_PROPS_V2_PIECES ((int)(sizeof(props_v2_pieces)/sizeof(props_v2_pieces[0])))
 

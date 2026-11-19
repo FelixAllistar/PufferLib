@@ -1,0 +1,17 @@
+{
+ "file": "linen_shelf.glb",
+ "triangles": 7312,
+ "materials": 6,
+ "bytes": 685740,
+ "sha256": "1df80b7e558fcab9",
+ "min": [
+  -0.38,
+  0.0,
+  -0.0
+ ],
+ "max": [
+  0.38,
+  1.8,
+  0.418
+ ]
+}

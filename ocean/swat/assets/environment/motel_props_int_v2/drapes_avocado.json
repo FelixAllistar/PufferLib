@@ -1,0 +1,17 @@
+{
+ "file": "drapes_avocado.glb",
+ "triangles": 6724,
+ "materials": 2,
+ "bytes": 599540,
+ "sha256": "eeb527ab009cc837",
+ "min": [
+  -1.08,
+  -2.475,
+  -0.0
+ ],
+ "max": [
+  1.386,
+  0.277,
+  0.197
+ ]
+}

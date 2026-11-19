@@ -224,7 +224,7 @@ def bm_lathe(profile, c=(0, 0, 0), seg=24, cap_top=False, cap_bottom=False):
         bm.faces.new(list(reversed(rings[-1])))
     bm.normal_update()
     # Outward normals: flip if the first side face points inward.
-    f0 = bm.faces[0]
+    bm.faces.ensure_lookup_table(); f0 = bm.faces[0]
     cen = E(*c); mid = f0.calc_center_median()
     radial = Vector((mid.x - cen.x, mid.y - cen.y, 0))
     if radial.length > 1e-6 and f0.normal.dot(radial) < 0:
