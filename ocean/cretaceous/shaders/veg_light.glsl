@@ -85,6 +85,11 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // Ground cover: neighbouring blades hide much of the sky as well (more
     // than one plant's baked occlusion), so a sunlit sward keeps dark gaps.
     if (u_understory > 0.0) amb *= canopy_sky(texture(t_misc, map_uv(base.xz)).a * u_understory) * mix(1.0, 1.15, u_understory);   // lit like the ground it stands on (terrain.fs uses 1.5x sky)
+    // Tree bark in a forest: the crowns round it hide the sky, and its sides face other trunks and the
+    // understorey, not the open horizon. Judged by its own plant alone it took the whole sky and stood out of
+    // a shaded forest as pale blue-grey poles at 20-60 m (round 2). The canopy closure over its foot, as the
+    // floor takes it, and a little more on its sides.
+    else if (leaf < 0.5) { float cnp = texture(t_misc, map_uv(base.xz)).a; amb *= canopy_sky(cnp) * mix(1.0, 0.7, cnp * (1.0 - max(N.y, 0.0))); }
     // Sky light reaching a leaf has mostly bounced through other leaves
     // first, which filters it green (and keeps sunlit ferns from going mint
     // under a blue sky). Gentler with a low sun: in the shade at golden hour
