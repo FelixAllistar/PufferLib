@@ -234,7 +234,9 @@ static inline void veg_species_dims(int kind, int variant, float* H, float* r0) 
     case FL_SABAL: h = vp_rr(&r, 4.0f, 8.5f); rr = 0.27f; break;
     case FL_FEATHER_PALM: h = vp_rr(&r, 3.0f, 6.5f); rr = 0.24f; break;
     case -2:   // standing dead trees: whole and broken conifers, a dead broadleaf, a leaning broken trunk
-        if (variant == 0) { h = vp_rr(&r, 18, 27); rr = 0.1f + 0.014f * h; }   // a dead araucaria, near the living ones' height
+        // A dead araucaria, near the living ones' height (18-27 m); its radius from the same draw as when it was
+        // 11-18 m, so the trunk colliders (and the sim that walks round them) are unchanged.
+        if (variant == 0) { float h0 = vp_rr(&r, 11, 18); rr = 0.12f + 0.02f * h0; h = 18 + (h0 - 11) * (9.0f / 7.0f); }
         else if (variant == 1) { h = vp_rr(&r, 3.5f, 7); rr = 0.35f; }
         else if (variant == 2) { h = vp_rr(&r, 7, 11); rr = 0.08f + 0.024f * h; }
         else if (variant == 3) { h = vp_rr(&r, 4, 7.5f); rr = 0.26f; }

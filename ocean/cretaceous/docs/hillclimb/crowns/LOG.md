@@ -87,3 +87,17 @@ Triangles at the start (full / reduced): araucaria v0 22502 / 3712, v4 22140 / 3
     2 m under it the big fans along the crown's lower edge are gone, finer foliage in their place; 12 m
     unchanged. Triangles 23588 / 1180 (from 15822 / 1182 at the start of the round); lodmatch reduced
     against full 1.11, 1.08, 1.05 at 30, 150, 300 m (impostor 0.90, 1.02, 1.02).
+16. Fault (tests): ecoprobe fell from 126 to 118 of 146 within budget (126 on `cret/hc` in this sandbox).
+    Not the krummholz (a build without them gave 118 too) but pass 5's new dead-araucaria size: its new
+    radius draw moved the trunk colliders of every standing dead conifer, and the probe's animals walk a
+    different path round them (chaotic, as the conifers track saw with test_quests). Change: the radius
+    comes from the same draw as before (the old 11-18 m height), the height is that draw mapped to 18-27 m.
+    Kept: ecoprobe 126 again, the snag the same at 25 m.
+
+Sheets (960x540 renders; before left, after right; world shots with 24 warm-up frames): 01 `tl3` and
+02 `k2` (2.5 m up on a slope at 410-440 m, (3850, 3720)) at the tree line, 03 `mtS` the main summit from
+420 m up, 04 the flagged krummholz side-on to the wind at 12 m and 3 m (after only), 05 the mats (14 m)
+and the tree islands (16 m) (after only), 06 the Norfolk araucaria from under it (4 m), 07 the dead
+conifer at 25 m, 08 the araucaria's trunk at 40 m, 09 the cheirolep at 3 m from a hatchling's eye
+(left: pass 8's finer cards, right: pass 15), 10 the cheirolep from 2 m under it (left: the start of the
+round, right: pass 15).
