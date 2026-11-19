@@ -44,3 +44,6 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
 8. Fault: in `bchS` the steep hillside behind the beach is sand to 15 m up. Change: the load's beach sand fades on
    ground that stays steep after the cut. Reverted: no visible change in `bchS`, `airN`, `airS` or `topW`; that face's
    sand does not come from `beaches_build`.
+9. Fault: as pass 6, no reeds or horsetails where streams slow behind the beach. Change: horsetail clumps only (no
+   mud) within 10 m of a stream from 0.35 W inland, emergent plants exempt from the wet-sand rule. Reverted: 300 more
+   horsetails on the island and none to be seen in `mouth_high`, `mouthA`, `strW30` or `topW`.
