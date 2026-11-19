@@ -464,7 +464,7 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
             Path Q; float phs = gr(g);
             grow(g, &Q, p, d2, len2, 4, fminf(r * 0.62f, 0.012f + 0.02f * len2), 0.008f, C->trop2, 0.6f, E, 1.5f, hw, fminf(hw + 0.3f, 1), 0, 0.55f);
             if (C->droop > 0) for (int k = 1; k < Q.n; k++) { float tq = (float)k / (Q.n - 1); Q.p[k].y -= C->droop * len2 * len2 * tq * tq * 0.15f; }
-            if (!g->lod || Q.r[0] > 0.025f) bark(g, &Q, v1 * t, lb->ph, phs, 0);   // the reduced mesh drops the thinnest branches
+            if (!g->lod || Q.r[0] > 0.025f * fmaxf(1.0f, H / 10.0f)) bark(g, &Q, v1 * t, lb->ph, phs, 0);   // the reduced mesh drops the thinnest branches (hidden in a tall crown at its distance)
             // A mass of leaves round the branch's outer part, domed and open
             // below: the crown reads as clouds of foliage with shade between,
             // not as sprigs strung along the skeleton.
@@ -700,9 +700,11 @@ static void species_dims(int kind, int variant, float* H, float* r0) { veg_speci
 // tall crown is as full as a small one without its twigs multiplying.
 static void crown_scale(Crown* C, float ref) {
     float k = C->H / ref; if (k <= 1) return;
-    C->sp3 *= sqrtf(k); C->twig_len *= sqrtf(k); C->leaf_size *= sqrtf(k); C->lod_size *= k;
+    C->sp3 *= sqrtf(k); C->twig_len *= sqrtf(k); C->leaf_size *= sqrtf(k); C->lod_size *= powf(k, 0.6f);
     int n0 = C->nleaf; C->nleaf = (int)(n0 * k * k / sqrtf(k));
-    C->lod_div = (int)(3.0f * C->nleaf / n0 + 0.5f);   // the reduced mesh keeps as many cards as before, k times longer
+    // The reduced mesh's merged cards: k^0.8 as many, k^0.6 longer (k^2 the
+    // area, as the crown's), so a leaf on them is not blown up past its size.
+    C->lod_div = (int)(3.0f * C->nleaf / (n0 * powf(k, 0.8f)) + 0.5f);
 }
 // Spends the twigs hidden in a full crown on leaves: every other twig is
 // drawn, and the full mesh carries more (the same) cards; the reduced mesh
