@@ -510,8 +510,8 @@ void main() {
             albedo = mix(albedo, moss, ledge * smoothstep(0.35, 0.6, mz + 0.15 * cov.b) * 0.75);
         }
     }
-    // Fractured rock, near (under about 60 m): the rock is broken into plates of 0.4-1.5 m with a finer
-    // set of cracks inside the larger ones, each plate its own tone and tilted a little on its own, the
+    // Fractured rock, near (under about 60 m): the rock is broken into slabs of 1.5-4 m, most split into
+    // plates of 0.4-1.5 m within 30 m and some of those again, each plate its own tone and tilted a little on its own, the
     // cracks dark. Read triplanar (the planes facing x, y and z), so it holds on faces and flats alike.
     // The heightfield (4 m) and the photo alone drew high rock as flat paint at a hatchling's eye.
     {
@@ -526,14 +526,20 @@ void main() {
                 vec3 au = j == 0 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0), av = j == 1 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
                 // Cracks wander (the cell space is warped) and some die out, so the plates are not a net.
                 vec2 qw = q / FR_CELL + (texture(t_noise, q / 2.3 + 0.31).rg - 0.5) * 0.9;
-                vec4 c1 = fracture(qw), c2 = fracture(qw / 0.37 + 7.3);
-                float e1 = c1.x * FR_CELL, e2 = c2.x * FR_CELL * 0.37;
-                float crack = (1.0 - smoothstep(0.012, 0.012 + 1.5 * px, e1)) * mix(0.35, 1.0, smoothstep(0.38, 0.55, texture(t_noise, q / 3.7 + 0.77).b));
-                float crack2 = (1.0 - smoothstep(0.006, 0.006 + 1.5 * px, e2)) * step(0.45, c1.w);   // only some plates are split again
-                float tone = mix(0.74, 1.22, c1.y) * mix(0.92, 1.08, c2.y);
-                vec3 a = albedo * tone * (1.0 - 0.65 * crack) * (1.0 - 0.45 * crack2);
-                // The plate's face tilts its own way, and bevels down into the crack at its edge.
-                vec3 tilt = (au * (c1.z - 0.5) + av * (c1.w - 0.5)) * 0.8 + (au * (c2.z - 0.5) + av * (c2.w - 0.5)) * 0.25;
+                // Big plates (3x) carry the pattern to 60 m; the smaller splits inside them fade out by 30 m, so
+                // at mid distance the rock is not an even mosaic of small scales.
+                vec4 cb = fracture(qw / 3.0 + 3.1), c1 = fracture(qw), c2 = fracture(qw / 0.37 + 7.3);
+                float small = 1.0 - smoothstep(12.0, 30.0, dist);
+                float eb = cb.x * FR_CELL * 3.0, e1 = c1.x * FR_CELL, e2 = c2.x * FR_CELL * 0.37;
+                float wander = mix(0.35, 1.0, smoothstep(0.38, 0.55, texture(t_noise, q / 3.7 + 0.77).b));
+                float crackb = (1.0 - smoothstep(0.02, 0.02 + 1.5 * px, eb)) * mix(0.6, 1.0, wander);
+                float crack = (1.0 - smoothstep(0.012, 0.012 + 1.5 * px, e1)) * wander * step(0.3, cb.w) * small;   // most big plates are split
+                float crack2 = (1.0 - smoothstep(0.006, 0.006 + 1.5 * px, e2)) * step(0.45, c1.w) * small;   // only some plates are split again
+                float tone = mix(0.76, 1.2, cb.y) * mix(1.0, mix(0.86, 1.12, c1.y) * mix(0.94, 1.06, c2.y), small);
+                vec3 a = albedo * tone * (1.0 - 0.65 * max(crack, crackb)) * (1.0 - 0.45 * crack2);
+                // The plate's face tilts its own way.
+                vec3 tilt = (au * (cb.z - 0.5) + av * (cb.w - 0.5)) * 0.7 + ((au * (c1.z - 0.5) + av * (c1.w - 0.5)) * 0.5 + (au * (c2.z - 0.5) + av * (c2.w - 0.5)) * 0.2) * small;
+                crack = max(crack, crackb);
                 fa += a * tw[j]; fn += tilt * tw[j] * (1.0 - crack);
             }
             albedo = mix(albedo, fa, fr);

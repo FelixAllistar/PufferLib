@@ -35,3 +35,7 @@ is at the end of this file.
    triplanar. A first version was a regular polygon net (crazy paving); the cell space is now warped by
    noise so the cracks wander, and some fade out. Kept: `af4` reads as broken stone instead of smears,
    `tl2` and `c3` as rock with joints and slabs. High and medium presets only.
+6. Fault: at 30-60 m the plates of pass 5 are one even size and read as cracked mud or reptile scales
+   (`tl6`, 30 m over the slope east of the summit). Change: big slabs (3x, 1.5-4 m) carry the pattern to
+   60 m; the 0.9 m plates split most of them and fade out from 12 to 30 m, the finer cracks with them.
+   Kept: `tl6` shows slabs and joints like bare rock, `af4` and `c3` unchanged in character.
