@@ -221,28 +221,61 @@ def jar_shelf(m):
 
 @prop
 def salt_box(m):
-    p = Part()
-    p.add(bm_box((0, .4, 0), (.6, .4, .25)), m["grey"])
-    p.add(tilt_bm(bm_box((0, .82, -.05), (.62, .02, .28)), .25, 'x', (0, .8, -.3)), m["grey"])
+    # Salting bench: a shallow trough on four legs with a shelf below
+    # (HABS MO-1220 smokehouse bench), crusted with old salt.
+    p = Part(); salt = mat("old_salt", (.55, .52, .46), .95)
+    legs(p, m["grey"], (-.55, .55), (-.2, .2), .74, .035)
+    p.add(bm_box((0, .76, 0), (.6, .03, .25)), m["grey"])                 # trough floor
+    for z in (-.24, .24):
+        p.add(bm_box((0, .86, z), (.6, .1, .015)), m["grey"])               # trough sides
+    for x in (-.59, .59):
+        p.add(bm_box((x, .86, 0), (.015, .1, .25)), m["grey"])
+    p.add(bm_box((0, .795, 0), (.56, .008, .22)), salt)                    # crust of salt
+    p.add(bm_box((0, .25, 0), (.56, .02, .22)), m["grey"])                 # lower shelf
+    p.add(bm_cyl((-.3, .34, 0), .09, .16, 10), m["rust"])                    # a crock / can
     return p
 
 @prop
 def school_bus(m):
+    # An old school bus body set down on cinder blocks, wheels gone, lived in
+    # and then abandoned (FSA 1941 photo): low on its blocks, rounded roof,
+    # faded paint, a rear door and windows soaped over.
     p = Part(); rng = np.random.default_rng(21)
-    # Old school bus body on cinder blocks, wheels gone; soaped windows.
-    p.add(bm_box((0, 1.6, .2), (1.2, 1.0, 4.5), bevel=.12, seg=2), m["bus"])
-    p.add(bm_box((0, 1.0, -4.55), (1.15, .45, .35), bevel=.08), m["bus"])  # hood
+    # Procedural faded chrome-yellow paint, chalked and streaked, with rust blooms.
+    nrng = np.random.default_rng(7)
+    n1 = C.periodic_noise(nrng, 256, 3.0); n2 = C.periodic_noise(nrng, 256, 10.0)
+    rust = np.clip((n1 * .85 + n2 * .15 - .66) * 4, 0, 1)
+    yellow = np.array([.62, .50, .20]) * (.85 + .25 * n2[..., None])
+    streak = (np.sin(np.linspace(0, 40, 256))[None, :] * .5 + .5) * .08
+    rgb = yellow * (1 - streak[..., None]) * (1 - rust[..., None]) + np.array([.24, .11, .05]) * rust[..., None]
+    paint = mat("bus_faded", (1, 1, 1), .8, .05, image=C.to_image("bus_paint", rgb))
+    y0 = .38
+    p.add(bm_box((0, y0 + 1.0, .2), (1.2, 1.0, 4.5), bevel=.08, seg=2), paint)
+    # Rounded roof: a squashed half-cylinder along the body.
+    roof = bm_cyl((0, y0 + 2.0, .2), 1.2, 9.0, 16, axis='z', smooth=True)
+    for v in roof.verts:
+        if v.co.z < (y0 + 2.0): v.co.z = y0 + 2.0
+        else: v.co.z = y0 + 2.0 + (v.co.z - (y0 + 2.0)) * .3
+    p.add(roof, paint)
+    p.add(bm_box((0, y0 + .5, -4.55), (1.15, .45, .35), bevel=.08), paint)  # hood stub
     for k in range(9):
-        p.add(bm_box((1.205, 1.95, -3.4 + k * .85), (.01, .3, .36)), m["glass"])
-        p.add(bm_box((-1.205, 1.95, -3.4 + k * .85), (.01, .3, .36)), m["glass"])
-    p.add(bm_box((0, 1.95, -4.25), (1.1, .35, .01)), m["glass"])
-    p.add(bm_box((0, 1.25, 4.72), (1.0, .55, .02)), m["black"])
+        for x in (-1.205, 1.205):
+            p.add(bm_box((x, y0 + 1.45, -3.4 + k * .85), (.01, .3, .36)), m["glass"])
+    p.add(bm_box((0, y0 + 1.45, -4.25), (1.1, .35, .01)), m["glass"])
+    # Rear: emergency door and two windows.
+    p.add(bm_box((.5, y0 + .95, 4.705), (.4, .9, .01)), m["wood"])
+    for x in (-.62, .5):
+        p.add(bm_box((x, y0 + 1.62, 4.705), (.36, .26, .01)), m["glass"])
     for x in (-1.21, 1.21):
-        p.add(bm_box((x, 1.45, .2), (.012, .04, 4.4)), m["black"])  # rub rails
+        p.add(bm_box((x, y0 + .95, .2), (.012, .04, 4.4)), m["black"])  # rub rails
+    p.add(bm_box((.5, y0 + 1.62, 4.716), (.4, .3, .012)), m["wood"])            # boarded rear window
+    for k in (2, 6):
+        p.add(bm_box((1.218, y0 + 1.45, -3.4 + k * .85), (.012, .33, .4)), m["wood"])  # plywood over side windows
+    letters = mat("bus_letters", (1, 1, 1), .8, image=image("bus_letters.png"))
+    p.add(bm_box((-.58, y0 + .55, 4.708), (.5, .19, .004)), letters, uv_mode="fit")  # rear lettering panel
     for z in (-3.2, 3.0):
         for x in (-.9, .9):
-            p.add(bm_box((x, .3, z), (.2, .3, .4)), m["grey"])  # blocks
-    p.add(bm_cyl((.9, .42, -3.2), .45, .25, 14, axis='x'), m["tyre"])
+            p.add(bm_box((x, y0 / 2, z), (.2, y0 / 2, .4)), m["grey"])  # cinder blocks
     return p
 
 @prop
@@ -363,9 +396,9 @@ def hooks_chains(m):
     p = Part()
     p.add(bm_box((0, 2.1, 0), (1.4, .05, .06)), m["grey"])
     p.add(bm_box((0, 2.1, -.9), (1.4, .05, .06)), m["grey"])
-    for k in range(6):
-        x = -1.1 + k * .45; z = 0 if k % 2 else -.9
-        L = .5 + .25 * (k % 3)
+    for k in range(9):
+        x = -1.2 + k * .3; z = 0 if k % 2 else -.9
+        L = .45 + .3 * (k % 3) + .1 * (k % 2)
         pts = [(x, 2.05 - t * L / 6, z + .02 * math.sin(t)) for t in range(7)]
         p.add(bm_tube(pts, .01, 5), m["chain"])
         y = 2.05 - L

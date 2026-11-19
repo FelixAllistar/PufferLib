@@ -1,17 +1,17 @@
 {
  "file": "school_bus.glb",
- "triangles": 516,
- "materials": 5,
- "bytes": 177084,
- "sha256": "351e443e18bc62e3",
+ "triangles": 596,
+ "materials": 6,
+ "bytes": 364828,
+ "sha256": "4a2954f7d3ef9711",
  "min": [
   -1.222,
-  -0.019,
+  0.0,
   -4.9
  ],
  "max": [
-  1.222,
-  2.6,
-  4.74
+  1.23,
+  2.74,
+  4.728
  ]
 }

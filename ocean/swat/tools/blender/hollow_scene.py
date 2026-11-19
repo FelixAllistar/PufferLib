@@ -355,6 +355,12 @@ def outbuildings_trim(m):
     for k in range(9):
         a = math.pi * k / 8
         p.add(bm_box((18 + .62 * math.cos(a), 2.0 + .35 * math.sin(a), 11.94), (.12, .09, .06)), m["stone"])
+    # Smokehouse inside: nailing girts and a shelf on the back wall (HABS MO-1220).
+    for y in (.9, 1.75):
+        p.add(bm_box((25.5, y, 5.96), (1.45, .045, .02)), g)
+        for x in (24.04, 26.96):
+            p.add(bm_box((x, y, 4.5), (.02, .045, 1.45)), g)
+    p.add(bm_box((25.5, 1.32, 5.82), (1.2, .02, .16)), m["grey"])
     # Smokehouse ridge cap and a rusted vent; shed ridge.
     p.add(bm_box((25.5, 3.48, 4.5), (.12, .04, 1.85)), m["tin"])
     p.add(bm_cyl((25.5, 3.7, 4.5), .07, .4, 8), m["rust"])

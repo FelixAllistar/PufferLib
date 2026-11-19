@@ -138,7 +138,14 @@ void swat_mission_build_hollow(SwatWorld* w) {
     // --- Ground. Soil stops at the raised house; its own floors own contact.
     hollow_box(w,-8,-1,-24,57,0,-8,SWAT_SOIL,0,SWAT_PART_SOLID);          // lane, yard south
     hollow_box(w,-8,-1,-8,14,0,12,SWAT_SOIL,0,SWAT_PART_SOLID);           // yard west
-    hollow_box(w,22,-1,-8,57,0,12,SWAT_SOIL,0,SWAT_PART_SOLID);           // yard east, barn and smokehouse floors
+    hollow_box(w,22,-1,-8,24,0,12,SWAT_SOIL,0,SWAT_PART_SOLID);           // yard east, around the outbuildings
+    hollow_box(w,24,-1,-8,27,0,3,SWAT_SOIL,0,SWAT_PART_SOLID);
+    hollow_box(w,24,-1,6,27,0,12,SWAT_SOIL,0,SWAT_PART_SOLID);
+    hollow_box(w,27,-1,-8,32,0,12,SWAT_SOIL,0,SWAT_PART_SOLID);
+    hollow_box(w,32,-1,4,41,0,12,SWAT_SOIL,0,SWAT_PART_SOLID);
+    hollow_box(w,41,-1,-8,57,0,12,SWAT_SOIL,0,SWAT_PART_SOLID);
+    hollow_box(w,24,-1,3,27,0,6,SWAT_SOIL,0,SWAT_PART_SOLID);             // smokehouse earth floor
+    hollow_box(w,32,-1,-8,41,0,4,SWAT_SOIL,0,SWAT_PART_SOLID);            // barn earth floor
     hollow_box(w,19,-1,0,22,0,3.5f,SWAT_SOIL,0,SWAT_PART_SOLID);          // behind the stair room
     hollow_box(w,14,-1,3.5f,22,0,12,SWAT_SOIL,0,SWAT_PART_SOLID);         // north yard, drag marks to the cellar
     // --- The hill bank north of the yard, with the root cellar dug into it.

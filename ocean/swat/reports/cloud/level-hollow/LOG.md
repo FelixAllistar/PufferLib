@@ -147,3 +147,46 @@ fov 72.
 | 04 | 3. The light is a black fixture cube | A bare bulb on a cord (Hollow renderer) | Yes |
 | 05 | 3. The reference floor is patterned linoleum | Worn printed linoleum rugs (procedural texture) in both front rooms | Partly: the pattern was stretched |
 | 06 | UV fix | Top-projected UVs | Yes; stopped |
+
+### Smokehouse interior vs `smokehouse_interior_sinclair_habs.jpg`
+- The reference is HABS MO-1220, Sinclair Farm smokehouse, public domain. A
+  West Virginia smokehouse interior was not in the collection, so this
+  Missouri one stands in; the type is the same.
+- View: eye (25.5, 1.55, 3.15), target (25.6, 1.3, 5.9), fov 72.
+
+| Iter | Biggest differences | Change | Closer? |
+|---|---|---|---|
+| 00 | 1. The reference has girts, a shelf and a bench on legs; ours is a solid box. 2. Our floor is green yard ground; the reference is dark earth and debris. 3. Smoke-blackened upper walls. | (baseline) | n/a |
+| 01 | 1. Girts | Nailing girts on all four walls and a shelf on the back wall | Yes |
+| 02 | 2. Floor | The yard soil box is split so the smokehouse and barn have their own earth-floor collider (dirt material) | Yes |
+| 03 | 1. Solid box | Salting bench on legs: trough, salt crust, lower shelf, crock. More hooks and chains. | Yes |
+| 04 | 3. Soot | Grime decals on the inside walls | **No**: they read as a dark mid-band |
+| 05 | Soot direction | The decals were flipped so the dark edge sits at the top, and made taller | Slightly; stopped |
+
+### School bus on blocks vs `school_bus_fsa_1941.jpg`
+- The reference is FSA, 1941, "Abandoned school bus occupied by two workers
+  ... Fort Bragg", public domain.
+- View: eye (4.0, 1.4, 9.8), target (0.2, 1.2, 2.5), fov 50.
+
+| Iter | Biggest differences | Change | Closer? |
+|---|---|---|---|
+| 00 | 1. Our bus floats 0.6 m up with a flat roof; the reference sits low on blocks with a rounded roof. 2. Our paint reads oxide red; the reference is pale faded paint. 3. "SCHOOL BUS" stencil, rear door and windows. | (baseline) | n/a |
+| 01 | 1. Silhouette | Body lowered onto 0.38 m blocks, rounded roof, rear emergency door and windows | Yes |
+| 02 | 2. Paint | Procedural faded chrome-yellow with rust blooms (the Poly Haven tint was too red) | Yes |
+| 03 | 3. Stencil | Generic "SCHOOL BUS" stencil panel (procedural text, no brand) | Partly: hidden behind the door |
+| 04 | Layout | Door to the right and lettering to the left, as in the reference | Yes |
+| 05 | 3. Boarded windows | Boarded rear window and plywood over two side windows | Slightly; stopped |
+
+## Frame cost (software GL, llvmpipe under xvfb)
+- Command: `performance_tool --hidden --frames 90 --size 1280x720` from
+  staging; `--hollow` was added to the tool.
+- Lower is better.
+
+| Mission | Objects | draw_submit p50 | total p50 | draw_cpu p50 |
+|---|---|---|---|---|
+| The Hollow | 888 | 156.6 ms | 160.7 ms | 55.6 ms |
+| Cedar House | 1057 | 158.9 ms | 163.2 ms | 78.2 ms |
+| Briar Court motel | 1472 | 204.6 ms | 208.7 ms | 67.0 ms |
+
+The Hollow's first frames include a one-time 414 ms shadow build (p99).
+After that it costs the same as Cedar House and less than the motel.

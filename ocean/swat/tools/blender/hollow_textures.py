@@ -125,6 +125,16 @@ def linoleum():
     Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)).save(os.path.join(OUT, "linoleum.png"))
 
 
+def bus_letters():
+    """Generic black stencil lettering for the bus's rear panel (no brand)."""
+    im = Image.new("RGB", (512, 192), (158, 128, 52)); d = ImageDraw.Draw(im)
+    d.text((256, 54), "SCHOOL", fill=(28, 24, 18), font=font(78), anchor="mm")
+    d.text((256, 138), "BUS", fill=(28, 24, 18), font=font(78), anchor="mm")
+    rng = np.random.default_rng(9)
+    a = np.asarray(im, np.float32) * (0.8 + 0.3 * noise(rng, 512, 16)[:192, :, None])
+    Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)).save(os.path.join(OUT, "bus_letters.png"))
+
+
 def stain(rng, n, blobs, color, alpha_max, spread=0.12):
     """Soft, irregular, dried-looking stain mask (n x n) and colour."""
     yy, xx = np.mgrid[0:n, 0:n] / n
@@ -306,6 +316,6 @@ def newspaper_placement(out_dir):
 
 
 if __name__ == "__main__":
-    flyer_wall(); mattress(); tarp(); stain_sheet(); linoleum()
+    flyer_wall(); mattress(); tarp(); stain_sheet(); linoleum(); bus_letters()
     if len(sys.argv) > 2: decal_atlas(sys.argv[2]); newspaper_placement(sys.argv[2])
     print("wrote", sorted(os.listdir(OUT)))

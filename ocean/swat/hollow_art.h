@@ -147,7 +147,9 @@ static bool hollow_box_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
     case SWAT_SOIL:
         // Earth floors inside the barn, smokehouse and cellar read as packed dirt;
         // the hill bank's face is a dry-laid field-stone retaining wall.
-        id=o->center.y<-1 && o->center.z>14 && o->half.x<3 ? HOLLOW_MAT_DIRT :
+        id=(o->center.y<-1 && o->center.z>14 && o->half.x<3) ||
+           (fabsf((float)o->center.x-25.5f)<.01f && fabsf((float)o->center.z-4.5f)<.01f) ||   // smokehouse floor
+           (fabsf((float)o->center.x-36.5f)<.01f && fabsf((float)o->center.z+2)<.01f) ? HOLLOW_MAT_DIRT : // barn floor
            (o->center.z>12 && o->center.y>-.5f && o->half.y>1) ? HOLLOW_MAT_STONE : HOLLOW_MAT_GROUND; break;
     case SWAT_CLOTH: case SWAT_ALUMINUM: break;
     default: break;

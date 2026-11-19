@@ -133,6 +133,7 @@ int main(int argc,char** argv) {
         else if(!strcmp(argv[i],"--generated")) mission=SWAT_GENERATED;
         else if(!strcmp(argv[i],"--storefront")) mission=SWAT_STOREFRONT;
         else if(!strcmp(argv[i],"--motel")) mission=SWAT_MOTEL;
+        else if(!strcmp(argv[i],"--hollow")) mission=SWAT_HOLLOW;
         else if(!strcmp(argv[i],"--indoors")) indoors=true;
         else if(!strcmp(argv[i],"--room")) {
             if(++i>=argc)return 1;

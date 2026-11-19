@@ -27,6 +27,17 @@ decal boots 16.0 0.30 -7.0 0 1 0 rot=0 alpha=0.6 layer=0
 decal stain_pool 16.6 2.90 -3.75 0 1 0 rot=70 alpha=0.75 layer=1
 decal drips 17.3 2.90 -3.2 0 1 0 rot=0 alpha=0.6 layer=1
 
+# Packed, ash-dark earth floors inside the smokehouse and the barn.
+decal mud_splash 34.0 0 -4.0 0 1 0 w=4.5 h=4.5 rot=10 alpha=0.85 layer=0
+decal mud_splash 38.5 0 0.5 0 1 0 w=4.5 h=4.5 rot=200 alpha=0.85 layer=0
+decal mud_splash 36.5 0 -6.5 0 1 0 w=3.5 h=3.0 rot=80 alpha=0.8 layer=0
+
+# Smokehouse: smoke-blackened upper walls (inside faces).
+decal grime_base 25.5 1.62 5.985 0 0 -1 w=2.9 h=1.25 rot=0 alpha=1.0 layer=0
+decal grime_base 25.5 1.62 3.015 0 0 1 w=2.9 h=1.25 rot=0 alpha=1.0 layer=0
+decal grime_base 24.015 1.62 4.5 1 0 0 w=2.9 h=1.25 rot=0 alpha=1.0 layer=0
+decal grime_base 26.985 1.62 4.5 -1 0 0 w=2.9 h=1.25 rot=0 alpha=1.0 layer=0
+
 # Smokehouse: the dirt floor under the hooks.
 decal stain_pool 25.2 0 4.4 0 1 0 rot=0 alpha=0.85 layer=1
 decal stain_smear 26.1 0 5.1 0 1 0 rot=30 alpha=0.7 layer=1
