@@ -1006,11 +1006,11 @@ static void gen_treefern(Gen* g, bool stout) {
     for (int k = 0; k < 8; k++) { float t = k / 7.0f; T.p[k] = v3(lx * t * t, -0.2f + (H + 0.2f) * t, lz * t * t); T.r[k] = lerpf(r0, 0.15f, sqrtf(t)) + (k == 7 ? 0.06f : 0) + 0.12f * expf(-t * 10); T.hw[k] = 0.15f * t; T.ws[k] = 0; }
     tube(g, &T, sides_for(g, r0) + 2, fmaxf(1, roundf(r0 * 6)), 1.0f, 0, 0, 0, g->bark_layer, 0, 0.3f);
     V3 top = T.p[7];
-    int nd = 5 + (int)grr(g, 0, 4); if (g->lod) nd = 4;
+    int nd = 8 + (int)grr(g, 0, 5); if (g->lod) nd = 5;
     VRng sv = fork_in(g);
-    for (int f = 0; f < nd; f++) {   // dead fronds hang against the trunk
+    for (int f = 0; f < nd; f++) {   // a skirt of dead fronds: out from under the crown, then hanging against the trunk
         float az = f * 2.39996f + grr(g, -0.3f, 0.3f); g->dry = (int)grr(g, 190, 255);
-        ribbon(g, vadd(top, v3(0, -0.1f, 0)), dir_az(az), grr(g, -1.35f, -1.0f), grr(g, 0.1f, 0.35f), grr(g, 1.3f, 2.0f), grr(g, 0.45f, 0.6f), L_TFERN, 0.25f, grr(g, -0.6f, 0.6f), g->lod ? 3 : 5, gr(g), 0.05f);
+        ribbon(g, vadd(top, v3(0, -0.1f, 0)), dir_az(az), grr(g, -1.15f, -0.7f), grr(g, 0.25f, 0.5f), grr(g, 1.4f, 2.2f) * (stout ? 1.1f : 1.0f), grr(g, 0.5f, 0.68f), L_TFERN, 0.25f, grr(g, -0.6f, 0.6f), g->lod ? 3 : 5, gr(g), 0.05f);
     }
     fork_out(g, sv);
     int nf = 18 + (int)grr(g, 0, 6);
