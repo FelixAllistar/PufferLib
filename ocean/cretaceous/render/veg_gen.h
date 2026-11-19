@@ -561,15 +561,6 @@ typedef struct {
     int twig_every;             // the full mesh draws every n-th twig (0: all)
     float inner;                // leaf weight deep inside the crown, against 1 at its surface (0: 0.12)
 } Crown;
-// A twig: a three-sided bark tube (the fine index list, full mesh only) that tapers to a point instead of
-// ending as a blunt cut tube, its bark at the scan's own scale round it (one tile round, square texels).
-static void twig(Gen* g, const Path* T, float ph, float phs) {
-    Path Q = *T; int bt = g->bark_tone;
-    for (int k = 0; k < Q.n; k++) { float t = (float)k / (Q.n - 1); Q.r[k] = T->r[0] * (1 - 0.85f * powf(t, 1.3f)); }
-    g->fine = 1; g->bark_tone = 6;
-    tube(g, &Q, 3, 1, clampf(2 * VPI * T->r[0], 0.03f, 0.12f) * bark_tile_aspect(g->bark_layer), 0, ph, phs, g->bark_layer, 0, 0);
-    g->fine = 0; g->bark_tone = bt;
-}
 static void crown_tree(Gen* g, const Crown* C, const Env* E) {
     LeafPts L = {0}; float H = C->H; int ntw = 0;
     // Stems.
@@ -659,7 +650,7 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
                 Path T; grow(g, &T, p3, dt, lt, 2, fminf(r3 * 0.7f, 0.012f), 0.004f, C->trop3, 0.8f, NULL, 0, hw3, fminf(hw3 + 0.15f, 1), ws3, fminf(ws3 + 0.35f, 1));
                 tip_add(g, T.p[T.n - 1], vnorm(vsub(T.p[T.n - 1], T.p[T.n - 2])), (Wnd){T.hw[T.n - 1], lb->ph, T.ws[T.n - 1], phs, 0}, env_depth(E, T.p[T.n - 1]));
                 // Every other twig is drawn (C->twig_every): inside a full crown the rest are hidden by their leaves.
-                if (!g->lod && (ntw++ % (C->twig_every > 0 ? C->twig_every : 1)) == 0) twig(g, &T, lb->ph, phs);
+                if (!g->lod && (ntw++ % (C->twig_every > 0 ? C->twig_every : 1)) == 0) { int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &T, 3, 1, 0.12f, 0, lb->ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt; }
                 for (float u = 0.3f; u <= 1.001f; u += 0.24f) {
                     V3 q, dq; float hq, wq; path_at(&T, u, &q, &dq, NULL, &hq, &wq);
                     float dep = env_depth(E, q);
@@ -969,7 +960,7 @@ static void pad_conifer(Gen* g, const PadCrown* K) {
                 V3 st; path_at(&P, tp * grr(g, 0.75f, 0.95f), &st, NULL, NULL, NULL, NULL);
                 Path Q; Q.n = 3; Q.len = vlen(vsub(e, st));
                 for (int m = 0; m < 3; m++) { Q.p[m] = vlerp(st, e, m * 0.5f); Q.r[m] = lerpf(0.014f, 0.005f, m * 0.5f); Q.hw[m] = hp; Q.ws[m] = m * 0.3f; }
-                twig(g, &Q, ph, phs);
+                int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &Q, 3, 1, 0.12f, 0, ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt;
             }
             fork_out(g, s2);
             int nq = (int)(22 * pr * pr) + 6;
@@ -1171,7 +1162,7 @@ static void gen_metasequoia(Gen* g) {
                 V3 dt = vnorm(vadd(vadd(vmul(dp, cosf(a)), vmul(sd0, side * sinf(a))), v3(0, grr(g, -0.3f, 0.2f), 0)));
                 float lt = fminf(lerpf(1.3f, 0.45f, t) * grr(g, 0.8f, 1.1f), 0.35f + 0.5f * bl); float phs = gr(g);
                 Path Q; grow(g, &Q, p, dt, lt, 2, 0.01f, 0.004f, -0.2f, 0.5f, NULL, 0, hw, fminf(hw + 0.15f, 1), 0, 0.6f);
-                if (!g->lod && lt > 0.95f) twig(g, &Q, ph, phs);
+                if (!g->lod && lt > 0.95f) { int bt = g->bark_tone; g->fine = 1; g->bark_tone = 6; tube(g, &Q, 3, 1, 0.12f, 0, ph, phs, g->bark_layer, 0, 0); g->fine = 0; g->bark_tone = bt; }
                 for (float u = 0.15f; u <= 1.001f; u += 0.28f) {
                     V3 q, dq; float hq, wq; path_at(&Q, u, &q, &dq, NULL, &hq, &wq);
                     lp_add(&L, q, vnorm(vadd(dq, v3(0, -0.3f, 0))), (Wnd){hq, ph, wq, phs, 0}, 1);
