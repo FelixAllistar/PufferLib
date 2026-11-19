@@ -3,6 +3,7 @@
 // (lighting, shadows, bloom) and writes one PNG per view. Presentation only:
 // the sim is stepped with neutral input so state is the ordinary start.
 //   exterior_capture OUT_DIR [--view N] [--width W --height H] [--breach] [--lights-off MASK] [--jpg]
+//                    [--eye X,Y,Z --target X,Y,Z --fov F --name NAME]   (one custom view)
 // --breach blows a wall-breacher opening in the rear wall beside the VEXO tag
 // first (decal clipping review); it uses the ordinary world breach path.
 // SWAT_TIME=night renders the night mode.
@@ -30,6 +31,7 @@ static const ExteriorView views[]={
 int main(int argc,char** argv) {
     if(argc<2) { fprintf(stderr,"usage: %s OUT_DIR [--view N] [--width W --height H] [--breach] [--lights-off MASK] [--jpg]\n",argv[0]); return 2; }
     const char* out=argv[1]; int only=-1,width=1600,height=900;unsigned lights_off=0;bool jpg=false,breach=false;
+    ExteriorView custom={"custom",{0,1.6f,10},{0,1.6f,0},50};bool use_custom=false;
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"--view") && i+1<argc) only=atoi(argv[++i]);
         else if(!strcmp(argv[i],"--width") && i+1<argc) width=atoi(argv[++i]);
@@ -37,6 +39,10 @@ int main(int argc,char** argv) {
         else if(!strcmp(argv[i],"--breach")) breach=true;
         else if(!strcmp(argv[i],"--lights-off") && i+1<argc) lights_off=(unsigned)strtoul(argv[++i],NULL,0);
         else if(!strcmp(argv[i],"--jpg")) jpg=true;
+        else if(!strcmp(argv[i],"--eye") && i+1<argc) {use_custom=sscanf(argv[++i],"%f,%f,%f",&custom.eye.x,&custom.eye.y,&custom.eye.z)==3;}
+        else if(!strcmp(argv[i],"--target") && i+1<argc) {sscanf(argv[++i],"%f,%f,%f",&custom.target.x,&custom.target.y,&custom.target.z);}
+        else if(!strcmp(argv[i],"--fov") && i+1<argc) custom.fov=strtof(argv[++i],NULL);
+        else if(!strcmp(argv[i],"--name") && i+1<argc) custom.name=argv[++i];
     }
     SetTraceLogLevel(LOG_WARNING);
     SwatSim* sim=calloc(1,sizeof(*sim));
@@ -63,13 +69,14 @@ int main(int argc,char** argv) {
         for(int t=0;t<10;t++) swat_sim_step(sim,&in);
     }
     char path[1024];
-    for(int v=0;v<VIEW_COUNT;v++) {
-        if(only>=0 && only!=v) continue;
-        Camera3D cam={views[v].eye,views[v].target,{0,1,0},views[v].fov,CAMERA_PERSPECTIVE};
+    for(int v=0;v<(use_custom?1:VIEW_COUNT);v++) {
+        if(!use_custom && only>=0 && only!=v) continue;
+        const ExteriorView* view_def=use_custom?&custom:&views[v];
+        Camera3D cam={view_def->eye,view_def->target,{0,1,0},view_def->fov,CAMERA_PERSPECTIVE};
         for(int f=0;f<4;f++) { BeginDrawing(); swat_view_draw_cinematic(&view,sim,cam); EndDrawing(); }
         BeginDrawing(); swat_view_draw_cinematic(&view,sim,cam); EndDrawing();
         Image im=LoadImageFromScreen();
-        snprintf(path,sizeof(path),"%s/%s.%s",out,views[v].name,jpg?"jpg":"png"); ExportImage(im,path); UnloadImage(im);
+        snprintf(path,sizeof(path),"%s/%s.%s",out,view_def->name,jpg?"jpg":"png"); ExportImage(im,path); UnloadImage(im);
         printf("wrote %s\n",path);
     }
     swat_view_close(&view); swat_sim_close(sim); free(sim); return 0;

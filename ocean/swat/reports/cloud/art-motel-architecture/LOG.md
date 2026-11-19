@@ -22,3 +22,18 @@ https://commons.wikimedia.org/wiki/File:2021_Buckhorn_Baths_Motel_15_motel_build
 https://commons.wikimedia.org/wiki/File:Warm_Mineral_Springs_Motel_rear_wing.jpg (through-wall AC sleeves, walkway).
 
 ## Iterations
+
+### Item 1: front / room block (ref: Truxton, Highsmith PD)
+
+Blender view `front` (motel_exterior_preview.py), eye (13.5,1.4,6.5) -> (0,1.7,0), 46 deg.
+
+- iter 0: first build: teal 0.44 m main-roof fascia + coping, 0.48 m flat teal canopy fascia with K gutter, 0.20 m box posts with knee braces, plinth, door/window surrounds, AC collars, pilasters. Reads as a stacked double band; reference canopy is a pale sloped corrugated awning. closer: baseline
+- iter 1: canopy fascia -> sloped corrugated sheet (wall 2.80 -> eave 2.60) with shallow eave board; camera matched to the reference. closer: yes (awning reads as a roof, not a band)
+- iter 2: main-roof teal fascia -> stucco parapet + galvanized coping (like the reference end wall top); removed floating end-post downspouts (no front gutter on a corrugated awning); posts 0.20 -> 0.17 m. closer: yes
+- iter 3: sheet slope wall 2.80 -> 2.98 m. closer: no (invisible from eye height); kept for the roof view but not counted
+- iter 4: corrugated sheet bent into a 0.28 m bull-nose at the eave (the reference awning's curved scalloped edge). closer: yes
+- iter 5: bull-nose 0.28 -> 0.36 m, wave amplitude 12 -> 16 mm (scallops read); 4 -> 3 segments per wave, arc 6 -> 4 steps (54k -> 37k tris). closer: yes
+- iter 6: canopy end closure teal -> cream soffit colour, beam 0.22 -> 0.17 m. closer: marginal
+- engine e1: `exterior_capture --eye 13.5,1.4,6.5 --target 0,1.7,0 --fov 46`: overlay loads/draws; chain-link fence in the way, awning blown out white, ochre stripe of the old canopy deck bleeds through the sheet. 
+- engine e2: eye moved inside the fence (12,1.45,4.6); sheet albedo .70 -> .50. closer: yes
+- engine e3: sheet eave 2.60 -> 2.72 m (clears the old deck edge, no bleed), wall end 3.0 m, albedo .42; the bull-nose now drops to ~2.3 m like the reference awning edge. closer: yes

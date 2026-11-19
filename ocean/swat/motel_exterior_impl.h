@@ -12,28 +12,37 @@
 //    an existing authoritative owner (wall skin section, roof, post, sign).
 //    They have no collider, no navigation/cover effect and vanish with their
 //    support. SWAT_MOTEL_EXTERIOR=0 disables both parts for comparison.
+// 3. Architecture overlay (architecture_kit.glb, motel_exterior_arch_data.h):
+//    parapets and coping, corrugated bull-nose canopy, rafters, beams, post
+//    sleeves and braces, plinths, door/window surrounds, AC collars, block
+//    coursing, rear plumbing, scuppers/downspouts, roof equipment, office gable
+//    and the laundry annex parapet. Wall geometry is pre-clipped into one piece
+//    per authoritative skin section and drawn only with that section (matched
+//    by its fixed centre), so a breached or removed section takes exactly its
+//    share of every overlay with it. Object pieces follow their owner (roof,
+//    canopy, post). It replaces a few exterior kit pieces (old gutters, rear
+//    downspouts, post bases, canopy membrane) while active. Nothing is read by
+//    the simulation. SWAT_MOTEL_ARCHITECTURE=0 restores the previous look; it
+//    needs the exterior kit's library (off with SWAT_MOTEL_EXTERIOR=0).
 #include "motel_exterior_data.h"
+#include "motel_exterior_arch_data.h"
 
 static bool exterior_enabled(void) {
     const char* e=getenv("SWAT_MOTEL_EXTERIOR");
     return !e || strcmp(e,"0");
 }
 
+static bool arch_enabled(void) {
+    const char* e=getenv("SWAT_MOTEL_ARCHITECTURE");
+    return !e || strcmp(e,"0");
+}
+
 static void exterior_close(SwatEnvironmentArt* art) {
+    swat_art_model_close(art->motel_architecture);art->motel_architecture=(Model){0};
     swat_art_model_close(art->motel_exterior);art->motel_exterior=(Model){0};
 }
 
-static void exterior_load(SwatEnvironmentArt* art) {
-    exterior_close(art);
-    if(!exterior_enabled())return;
-    char path[4096];if(!asset_path(path,sizeof(path),SWAT_EXTERIOR_KIT_FILE))return;
-    Model* model=&art->motel_exterior;*model=LoadModel(path);
-    SwatArtMaterialFactors factors[SWAT_LOCATION_MATERIALS-1];
-    int count=swat_art_material_factors(path,factors,SWAT_LOCATION_MATERIALS-1);
-    if(model->meshCount!=SWAT_EXTERIOR_KIT_MESHES || count!=SWAT_EXTERIOR_KIT_MATERIALS || model->materialCount!=count+1) {
-        TraceLog(LOG_WARNING,"SWAT: motel exterior kit missing or mismatched; original shell maps retained");
-        exterior_close(art);return;
-    }
+static void exterior_factors(Model* model,const SwatArtMaterialFactors* factors,int count) {
     for(int m=0;m<count;m++) {
         Material* material=&model->materials[m+1];const SwatArtMaterialFactors* f=&factors[m];
         // Raylib 5.5 omits scalar factors without an ORM map; the library
@@ -51,7 +60,59 @@ static void exterior_load(SwatEnvironmentArt* art) {
             if(t->id && t->id!=rlGetTextureIdDefault()) {GenTextureMipmaps(t);SetTextureFilter(*t,TEXTURE_FILTER_TRILINEAR);SetTextureWrap(*t,TEXTURE_WRAP_REPEAT);}
         }
     }
+}
+
+static void exterior_borrow(const SwatEnvironmentArt* art,Model* model,const char* path,const char* file);
+static bool arch_suppressed[SWAT_EXTERIOR_PIECES];
+// Lookup: object placements by owner tag, section placements by centre.
+#define ARCH_HASH 1024
+static int arch_object_first[SWAT_MOTEL_INSTANCES+1],arch_next[SWAT_ARCH_PLACEMENTS],arch_hash[ARCH_HASH];
+static uint32_t arch_key(float x,float y,float z) {
+    int32_t a=(int32_t)lroundf(x*100),b=(int32_t)lroundf(y*100),c=(int32_t)lroundf(z*100);
+    return ((uint32_t)a*73856093u^(uint32_t)b*19349663u^(uint32_t)c*83492791u)&(ARCH_HASH-1);
+}
+
+static void arch_load(SwatEnvironmentArt* art) {
+    if(!arch_enabled() || !art->motel_exterior.meshCount)return;
+    char path[4096];if(!asset_path(path,sizeof(path),SWAT_ARCH_KIT_FILE))return;
+    Model* model=&art->motel_architecture;*model=LoadModel(path);
+    SwatArtMaterialFactors factors[32];
+    int count=swat_art_material_factors(path,factors,32);
+    if(model->meshCount!=SWAT_ARCH_KIT_MESHES || count!=SWAT_ARCH_KIT_MATERIALS || model->materialCount!=count+1) {
+        TraceLog(LOG_WARNING,"SWAT: motel architecture kit missing or mismatched; overlay disabled");
+        swat_art_model_close(*model);*model=(Model){0};return;
+    }
+    exterior_factors(model,factors,count);
     swat_art_model_share_textures(*model,path);
+    exterior_borrow(art,model,path,"architecture_kit.glb");
+    for(int i=0;i<SWAT_EXTERIOR_PIECES;i++) {
+        arch_suppressed[i]=false;
+        for(int k=0;k<SWAT_ARCH_SUPPRESS;k++)arch_suppressed[i]|=!strcmp(swat_exterior_pieces[i].name,swat_arch_suppress[k]);
+    }
+    for(int i=0;i<=SWAT_MOTEL_INSTANCES;i++)arch_object_first[i]=-1;
+    for(int i=0;i<ARCH_HASH;i++)arch_hash[i]=-1;
+    for(int i=SWAT_ARCH_PLACEMENTS-1;i>=0;i--) {
+        const SwatArchPlacement* a=&swat_arch_placements[i];
+        int* head=a->section?&arch_hash[arch_key(a->x,a->y,a->z)]:(a->owner>0 && a->owner<=SWAT_MOTEL_INSTANCES?&arch_object_first[a->owner]:NULL);
+        if(!head){arch_next[i]=-1;continue;}
+        arch_next[i]=*head;*head=i;
+    }
+}
+
+static void exterior_load(SwatEnvironmentArt* art) {
+    exterior_close(art);
+    if(!exterior_enabled())return;
+    char path[4096];if(!asset_path(path,sizeof(path),SWAT_EXTERIOR_KIT_FILE))return;
+    Model* model=&art->motel_exterior;*model=LoadModel(path);
+    SwatArtMaterialFactors factors[SWAT_LOCATION_MATERIALS-1];
+    int count=swat_art_material_factors(path,factors,SWAT_LOCATION_MATERIALS-1);
+    if(model->meshCount!=SWAT_EXTERIOR_KIT_MESHES || count!=SWAT_EXTERIOR_KIT_MATERIALS || model->materialCount!=count+1) {
+        TraceLog(LOG_WARNING,"SWAT: motel exterior kit missing or mismatched; original shell maps retained");
+        exterior_close(art);return;
+    }
+    exterior_factors(model,factors,count);
+    swat_art_model_share_textures(*model,path);
+    arch_load(art);
 }
 
 // Exterior shell modules only: interior furniture keeps its own MC15 maps.
@@ -86,6 +147,10 @@ static void exterior_override(const SwatEnvironmentArt* art,Model* model,const c
     bool shell=false;
     for(size_t i=0;i<sizeof(exterior_shell_files)/sizeof(exterior_shell_files[0]);i++)shell|=!strcmp(file,exterior_shell_files[i]);
     if(!shell)return;
+    exterior_borrow(art,model,path,file);
+}
+
+static void exterior_borrow(const SwatEnvironmentArt* art,Model* model,const char* path,const char* file) {
     cgltf_options options={0};cgltf_data* source=NULL;
     if(cgltf_parse_file(&options,path,&source)!=cgltf_result_success)return;
     for(size_t m=0;m<source->materials_count && (int)m+1<model->materialCount;m++) {
@@ -130,10 +195,34 @@ static int exterior_support(const SwatWorld* w,const SwatExteriorPlacement* e) {
     return -1;
 }
 
+static void arch_piece_draw(const SwatEnvironmentArt* art,const SwatObject* o,const SwatArchPlacement* a,bool shadow,bool cutaway) {
+    Model view=art->motel_architecture;
+    view.meshes+=a->first;view.meshMaterial+=a->first;view.meshCount=a->count;
+    SwatMotelInstance p={.origin={a->x,a->y,a->z},.scale={1,1,1},.yaw=0,.roof=a->roof};
+    location_mesh_draw(art,o,&p,&view,&art->motel_architecture,shadow,cutaway,false,NULL);
+}
+
+static void arch_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
+    if(o->tag.index>0 && o->tag.index<=SWAT_MOTEL_INSTANCES) {
+        for(int i=arch_object_first[o->tag.index];i>=0;i=arch_next[i])arch_piece_draw(art,o,&swat_arch_placements[i],shadow,cutaway);
+        return;
+    }
+    if(o->part!=SWAT_PART_SKIN || !o->wall_group || o->motion)return;
+    for(int i=arch_hash[arch_key(o->center.x,o->center.y,o->center.z)];i>=0;i=arch_next[i]) {
+        const SwatArchPlacement* a=&swat_arch_placements[i];
+        if(fabsf(a->x-o->center.x)>.006f || fabsf(a->y-o->center.y)>.006f || fabsf(a->z-o->center.z)>.006f)continue;
+        if(a->owner>=world->count || world->objects[a->owner].wall_group!=o->wall_group)continue;
+        arch_piece_draw(art,o,a,shadow,cutaway);
+    }
+}
+
 static void exterior_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!art->motel_exterior.meshCount || !o->active)return;
+    bool arch=art->motel_architecture.meshCount>0;
+    if(arch)arch_draw(art,world,o,shadow,cutaway);
     for(int i=0;i<SWAT_EXTERIOR_PLACEMENTS;i++) {
         const SwatExteriorPlacement* e=&swat_exterior_placements[i];
+        if(arch && arch_suppressed[e->piece])continue;
         if(e->owner!=o->tag.index && (!e->wall || o->tag.index<=SWAT_MOTEL_INSTANCES || o->part!=SWAT_PART_SKIN ||
            !o->wall_group || e->owner>=world->count || o->wall_group!=world->objects[e->owner].wall_group))continue;
         if(exterior_support(world,e)!=o->tag.index)continue;

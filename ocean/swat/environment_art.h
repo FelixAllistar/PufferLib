@@ -63,6 +63,7 @@ typedef struct SwatEnvironmentArt {
     Model motel_reception;
     Model motel_roadside;
     Model motel_exterior; // Exterior kit: shell material library + render-only dressing.
+    Model motel_architecture; // Architecture overlay (motel_exterior_impl.h), SWAT_MOTEL_ARCHITECTURE=0 disables.
     struct SwatPicnicArt* picnic_art;
     Model roadside_props[2]; // Approved parked sedan and open-front shelter.
     float roadside_props_normal_scale[2][SWAT_ROOM101_MATERIALS];
