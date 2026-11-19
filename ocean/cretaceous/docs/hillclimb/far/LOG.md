@@ -33,3 +33,8 @@ trees at 30, 150 and 300 m) measured with `tools/lodmatch.py`; the tree gallery 
    fronds 1 m apart and 2.7 times as wide on the reduced mesh. Kept: 87% and 84% of the full cover, tone
    unchanged (0.99 and 1.01 of the full mesh), tiers read as shelves; reduced triangles 3594 -> 3712 and
    3376 -> 3494.
+5. Fault: impostors are fatter, more solid crowns than the meshes they replace (pixels against the full mesh at
+   150 m: araucaria 1.41, katsura 1.30, tree fern 1.37; a solid cone where the mesh shows tiers). Change tried:
+   the impostor's coverage boost per mip level 0.5 -> 0.3. Reverted: the counts came down a little (1.31, 1.27,
+   1.33) and tone held, but in `val3`, `hill` and `skyh` the far stands only got a shade thinner, showing more
+   ground; no visible gain.
