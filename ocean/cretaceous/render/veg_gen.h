@@ -725,7 +725,9 @@ static void gen_broadleaf(Gen* g, int s) {
     else if (s == 2) { C.leaf_layer = L_CL_HEART; C.lod_layer = L_LEAF3; C.stems = 2 + (int)grr(g, 0, 2.99f); C.fork = 0.3f; C.sp1 = 1.0f; C.el1 = 0.55f;
                        C.leaf_size = 0.38f; C.nleaf = 1000; spread = 0.72f; cy = 0.62f; ry = 0.4f; }
     else if (s == 3) { C.fork = 0.38f; C.nleaf = 420; C.sp2 = 0.5f; C.leaf_size = 0.38f; C.lod_size = 1.0f; spread = 0.85f; C.droop = 0.4f; }
-    else { C.nleaf = 1100; C.leaf_size = 0.45f; spread = 0.95f; }
+    else {   // laurel: a dense, dark oval crown carried low on a short trunk, often forked near the ground
+        C.nleaf = 1250; C.leaf_size = 0.45f; spread = 0.8f; C.fork *= 0.7f; cy = 0.56f; ry = 0.46f; C.el1 = 1.0f; C.inner = 0.35f;
+    }
     crown_scale(&C, s == 0 ? 10.5f : s == 2 ? 11.5f : s == 3 ? 5.5f : 9.0f); crown_full(&C, 1.5f);
     Env E; float rx = H * 0.44f * spread * grr(g, 0.9f, 1.1f), rz = H * 0.44f * spread * grr(g, 0.9f, 1.1f);
     env_init(g, &E, v3(grr(g, -0.06f, 0.06f) * H, H * cy, grr(g, -0.06f, 0.06f) * H), v3(rx, H * ry, rz), 6, 0.16f);
