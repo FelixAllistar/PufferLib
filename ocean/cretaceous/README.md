@@ -320,6 +320,7 @@ The terra bake pipeline:
 - rock shoulders: curved notches cut into valley sides only as high as the rock that stands in them (version 23; see Rock shoulders);
 - rivers carved along flow;
 - surface materials and vegetation from moisture, temperature, slope and curvature;
+- at load (not saved): the big beaches (`world.c` `beaches_build`): on about a third of the coast the land within 120-195 m of the sea is lowered onto a 1.2 % sand profile with low dunes at the back. The sand runs on across the streams that cross it (their beds sanded, their banks held just above their water); behind it the beach grades into the strand: scrub and a few low cycads on the back dunes, then an open belt of palm groves and scrub on sandy ground with the coastal forest thinned, before the forest closes. Palms of open country near the sea are kept. Nothing grows on wet sand (within 0.6 m of a river's water, or under 0.6 m over the sea: `render/veg_place.h` `placeable`);
 - at load (not saved, so the world file and its version stay): a half-resolution habitat grid (moisture index, nearness to rivers and the sea, landform) from the fields every build ships (`terra_habitat`), which picks the species of every plant (docs/flora.md).
 
 The view module covers:
@@ -939,6 +940,7 @@ Where the director runs, calm bot groups with no person within 1200 m (past ever
 | `CRET_CACHE_DIR=PATH` | Uses another cache directory (an empty one gives a cold start). |
 | `CRET_LOAD_THREADS=N` | Threads for startup decoding and hashing (default: the CPU count, at most 8). |
 | `TERRA_NO_DETAIL`, `TERRA_NO_THERMAL`, `TERRA_NO_SLIDE`, `TERRA_NO_BEACH`, `TERRA_DEBUG` | Disables bake stages and prints statistics. |
+| `CRET_MAP_DBG=file.ppm` | Writes the island top-down as the load leaves it (materials blended by weight, water, trees darkened, palms red, scrub olive) and prints the scatter's palm, shrub and horsetail counts. `CRET_BEACH_DBG=1` prints spots on the big beaches and the yaw that faces the sea. |
 | `TERRA_ACRIT` | Channel-initiation area in m² (default 4000). |
 | `CRET_VEG_NEAR` | Mesh/impostor switch distance in metres (default 150). |
 | `CRET_VEG_TREE_LOD` | Full/reduced tree mesh switch distance in metres (default 32). `CRET_VEG_LOD`: the same for ground cover (default 25). |

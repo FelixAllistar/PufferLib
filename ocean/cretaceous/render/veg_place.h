@@ -73,6 +73,10 @@ static inline bool placeable(const TerraMap* m, float x, float z, float max_slop
     bool wet = m->water_kind[i] != TERRA_WATER_NONE && w > h + 0.05f;
     if (h < 0.4f || m->water_kind[i] == TERRA_WATER_SEA) return false;
     if (wet && w - h > wade) return false;
+    // Wet sand: nothing grows on a beach or a sand bar within 0.6 m of the water beside it (a river's or a
+    // lake's level runs a few cells under its dry banks) or below 0.6 m over the sea, the swash zone (at
+    // 0.9 m the palms of the upper beach went too).
+    if (m->splat[i * TERRA_MAT_COUNT + TERRA_MAT_SAND] > 128 && (h < 0.6f || (w > TERRA_DRY && h < w + 0.6f))) return false;
     *y = h - 0.15f; return true;
 }
 // Standing dead trees use slots 0-3; 4-7 hold the krummholz, the stunted, wind-shaped conifers of the
