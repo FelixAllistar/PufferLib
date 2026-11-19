@@ -721,7 +721,10 @@ static void gen_broadleaf(Gen* g, int s) {
                .twig_len = 0.7f, .leaf_layer = L_CL_LAUREL, .lod_layer = L_LEAF2, .nleaf = 1100, .leaf_size = 0.45f, .lod_size = 1.5f,
                .curl = 0.35f, .upbias = 0.25f, .lobes = 0.25f, .droop = 0.0f, .clump = 0.6f};
     float spread = 1.0f, cy = 0.6f, ry = 0.4f;
-    if (s == 0) { C.leaf_layer = L_CL_MAGN; C.lod_layer = L_LEAF; C.leaf_size = 0.62f; C.lod_size = 1.9f; C.nleaf = 900; C.twig_len = 0.8f; }
+    if (s == 0) {   // magnolia: a central leader under a tall, dense oval crown from low down (Magnolia grandiflora)
+        C.leaf_layer = L_CL_MAGN; C.lod_layer = L_LEAF; C.leaf_size = 0.62f; C.lod_size = 1.9f; C.nleaf = 1000; C.twig_len = 0.8f;
+        C.leader = 1; C.fork *= 0.5f; C.sp1 = 1.0f; C.el1 = 0.55f; C.inner = 0.3f; spread = 0.78f; cy = 0.54f; ry = 0.48f;
+    }
     else if (s == 2) { C.leaf_layer = L_CL_HEART; C.lod_layer = L_LEAF3; C.stems = 2 + (int)grr(g, 0, 2.99f); C.fork = 0.3f; C.sp1 = 1.0f; C.el1 = 0.55f;
                        C.leaf_size = 0.38f; C.nleaf = 1350; spread = 0.98f; cy = 0.6f; ry = 0.42f; }   // broad, a vase of stems
     else if (s == 3) { C.fork = 0.38f; C.nleaf = 420; C.sp2 = 0.5f; C.leaf_size = 0.38f; C.lod_size = 1.0f; spread = 0.85f; C.droop = 0.4f; }
@@ -730,6 +733,7 @@ static void gen_broadleaf(Gen* g, int s) {
     }
     crown_scale(&C, s == 0 ? 10.5f : s == 2 ? 11.5f : s == 3 ? 5.5f : 9.0f); crown_full(&C, 1.5f);
     if (s == 2) { C.lod_div = (int)(C.lod_div * 1.35f + 0.5f); C.lod_size *= 1.12f; }   // the katsura's extra cards on the full mesh only
+    if (s == 0) { C.lod_div = (int)(C.lod_div * 1.12f + 0.5f); C.lod_size *= 1.05f; }   // and the magnolia's
     Env E; float rx = H * 0.44f * spread * grr(g, 0.9f, 1.1f), rz = H * 0.44f * spread * grr(g, 0.9f, 1.1f);
     env_init(g, &E, v3(grr(g, -0.06f, 0.06f) * H, H * cy, grr(g, -0.06f, 0.06f) * H), v3(rx, H * ry, rz), 6, 0.16f);
     crown_tree(g, &C, &E);
