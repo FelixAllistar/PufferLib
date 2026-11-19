@@ -22,7 +22,7 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 #define CRET_UNDER_NEAR 0.55
 #endif
 // The ninth (pan) is not a splat material: the cracked mud drawn in place of sand on the near-desert's pans (main).
-const float TILE[9] = float[9](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5, 3.4);
+const float TILE[9] = float[9](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5, 4.6);
 const float BED_PALE = 1.1;   // brightest the bedrock skin's tones lift the ground before easing (main)
 const float STONY_SOIL = 0.6;   // bare soil above the tree line, darkened (main)
 const float FR_CELL = 0.9;   // fractured rock: mean plate size (m)
@@ -33,7 +33,7 @@ const vec3 DRY_STRAW = vec3(1.62, 1.28, 0.64), DRY_OLIVE = vec3(1.2, 1.18, 0.62)
 const bool TRIPLANAR[9] = bool[9](true, true, false, false, false, false, false, true, false);
 // Living ground cover: ferns, mosses and litter read green, as they would
 // under a Cretaceous canopy (photo sources are mostly brown leaf litter).
-const vec3 TINT[9] = vec3[9](vec3(1.0), vec3(0.4, 0.41, 0.44), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(2.2, 2.05, 1.7), vec3(0.85, 0.9, 0.8), vec3(0.74, 0.71, 0.67));   // pan: the photo is near white in the sun   // scree: the gravel photo is far paler than the rock it falls from (read as cream bands), so grey it down to near the rock; forest floor: brown litter; fern ground: litter with some green; sand: the photo is damp, dry beach sand is pale
+const vec3 TINT[9] = vec3[9](vec3(1.0), vec3(0.4, 0.41, 0.44), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(2.2, 2.05, 1.7), vec3(0.85, 0.9, 0.8), vec3(0.66, 0.6, 0.57));   // pan: the photo is near white in the sun   // scree: the gravel photo is far paler than the rock it falls from (read as cream bands), so grey it down to near the rock; forest floor: brown litter; fern ground: litter with some green; sand: the photo is damp, dry beach sand is pale
 // Fern and moss photos are khaki; keep only their luminance detail and take
 // the hue from TINT (living fern albedo has green about twice red). The
 // detail is stretched around the photo's mean luminance (RECOLOR_MEAN), so
@@ -296,6 +296,9 @@ void main() {
         if (k == 1) al *= mix(mix(0.4, 1.0, smoothstep(0.2, 0.42, mats[j].height)), 1.0, smoothstep(60.0, 150.0, dist));
         shv += vec4(k == 0, k == 1, k == 2, k == 6 || k == 8) * b;
         if (k == 2) soil_h = mats[j].height;
+        // The pan's cracks are deep and dark (its photo's are shallow and mid-grey): its low points darkened,
+        // near only (past 40-120 m the mips average them away).
+        if (k == 8) al *= mix(mix(0.45, 1.0, smoothstep(0.2, 0.45, mats[j].height)), 1.0, smoothstep(40.0, 120.0, dist));
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
     albedo /= max(wt, 1e-4); shv /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
@@ -435,7 +438,7 @@ void main() {
         // Pans and washes: pale grey-buff silt and sand, not beach gold, out to the desert's very edge (the beach
         // is never dry); from afar a little darker, as dust and the scrub at their edges grey them (a pan drew
         // near white from 480 m).
-        albedo = mix(albedo, dl * vec3(1.08, 1.0, 0.86) * mix(1.0, 0.8, smoothstep(60.0, 400.0, dist)), smoothstep(0.02, 0.2, dg) * shv.w * 0.85);
+        albedo = mix(albedo, dl * vec3(1.14, 0.98, 0.88) * mix(1.0, 0.8, smoothstep(60.0, 400.0, dist)), smoothstep(0.02, 0.2, dg) * shv.w * 0.85);   // pale grey-brown clay
     }
     // Near-desert (bare earth in dry country): from afar the dwarf scrub dots the ground dark olive-grey
     // at a few metres, gathered in loose stands (the drawn plants end at the cover range).

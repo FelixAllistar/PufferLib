@@ -57,3 +57,15 @@ plain (Atriplex vesicaria, SW Queensland), Atriplex glauca up close, a cracked r
    high points (its stones) turn pale grey-brown and the fines between darker and redder (one height value the
    blend already read; no new lookup). Kept: `desH` and `desG` show grey stones and plates set in red-brown
    fines.
+9. Fault: the dry grassland at a hatchling's eye (`grG`) stands on bare soil (so the grass plants, which grow
+   mostly on fern ground, are few). Change: `terra.c` the bare soil laid on very dry ground kept mostly to the
+   near-desert. Reverted: `grG` and `grB` do not change; the bare soil there comes from another rule that I did
+   not trace in the time left.
+10. Fault: the washes (drainage lines) draw as cracked mud like the pans; a wash is a bed of sand and grit.
+    Change: `terrain.fs` the pan layer only off the drainage lines (t_cover's drainage wetness). Reverted: no
+    visible change in `pA`, `pG` or `dAir`; on this island the washes and pans share the same few valley floors.
+11. Fault: next to the reference (a dried reservoir bed), the pan is too pale and cream, its cracks shallow and
+    mid-grey, its polygons small. Change: `terrain.fs` the pan layer tiles at 4.6 m (was 3.4), is tinted a
+    little darker, its low points (the cracks, from its height map) darkened to under half within 40-120 m, and
+    the dry tint of pans is a pale grey-brown clay. Kept: `pG` reads as cracked clay with deep dark cracks and
+    polygons of 20-40 cm; `pA` and `dAir` slightly greyer. Still paler than the reference.
