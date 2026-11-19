@@ -343,8 +343,24 @@ action in units of its clamp, taken before the clamp, so it slopes back from
 anywhere and costs the sampled action, noise included. The log's
 `action_size` is m (0.04 at the start of training).
 
-**Run 15 (256x2, live):** run 14 with `reward_action 0.2` (`reward_speed
-0.35`, `reward_effort 0.05`). Not evaluated yet.
+**Run 15 (256x2): the cost was too weak.** Run 14 with `reward_action 0.2`
+(`reward_speed 0.35`, `reward_effort 0.05`). From its log: entropy still
+climbs (98 to 158), `action_size` grows from 0.04 to about 1.4 (a root mean
+square past the clamp), joints 32 degrees off, step rate 1.75x, cost of
+transport 66. The policy gives up 0.12 of reward a step to keep its actions
+large. A cost of transport of 66 on a 302 kg animal at 2.8 m/s is about
+550 kW of joint power: the springs have no torque limit, so slamming every
+target from one end of its range to the other is a strong and free motor.
+A guess from that, not traced: with speed paid for and the pose loose,
+thrashing unlimited actuators beats moving like the clip. (Box3D's
+spherical joint spring has no cap; only its motor has `maxMotorTorque`.)
+
+**Run 16 (256x2, live): strict pose, free tempo.** Runs 11 to 15 loosened
+the pose, added the speed term and added the step rate all at once. Run 16
+is run 10's rewards unchanged (`reward_pose 0.65, k_pose 2`, exp kernel,
+which kept every action inside its range) plus only `cadence 1.5` and
+`reward_speed 0.3`: the one way to gain speed without leaving the clip is to
+play it faster. Not evaluated yet.
 
 ## The policy sees the target pose (2026-11-18)
 
