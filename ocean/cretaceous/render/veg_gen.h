@@ -1926,7 +1926,7 @@ static void gen_snag(Gen* g, int v) {
                 if (gr(g) < 0.35f) continue;   // fallen
                 float len = grr(g, 0.4f, 1.0f) * (0.4f + 2.2f * t * (1.15f - t)) + rt;
                 Path B; grow(g, &B, p, dir_ae(a0 + b * 2 * VPI / nb + grr(g, -0.2f, 0.2f), grr(g, -0.12f, 0.08f)), len, 2, fminf(rt * 0.45f, 0.03f + 0.025f * len), 0.015f, -0.1f, 0.2f, NULL, 0, 0.05f, 0.1f, 0, 0);
-                bark(g, &B, 0, 0, 0, 0);
+                if (!g->lod || len > 0.95f) bark(g, &B, 0, 0, 0, 0);   // the reduced mesh: only the long ones
             }
         }
         fork_out(g, sv);
