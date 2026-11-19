@@ -96,6 +96,12 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // open sward keeps its dark gaps.
     amb *= 1.0 + 1.6 * u_understory * (1.0 - shadow * cs);
     vec3 col = albedo / PI * sun * shadow * (ndl * self * cs + back * trans_col * 0.7 * mix(0.3, 1.0, cs)) + albedo * (amb + bounce * ao);
+    // Sky light through the blade: from under a crown you see the leaves' lower faces, lit by the sky on
+    // their upper ones; a leaf lets a fifth to a third of it through, yellow-green. Without it a crown seen
+    // from beneath was a flat dark cut-out against the sky. Only when looking up at the leaf (meshes, not
+    // impostors or ground cover), the crown's depth (ao) hiding the leaves deep inside.
+    float below = smoothstep(0.05, 0.6, -V.y) * leaf * (1.0 - card) * (1.0 - u_understory);
+    col += albedo * sky_up * vec3(1.5, 1.8, 0.75) * (1.2 * below * veg_trans * ao * contact);
     // Rain: a faint, broad sheen of grey sky on wet leaves and bark at grazing angles.
     float nv = abs(dot(N, V));
     col += mix(sky_h, sky_up, 0.6) * (u_wet * 0.05 * pow(1.0 - nv, 3.0) * ao);
