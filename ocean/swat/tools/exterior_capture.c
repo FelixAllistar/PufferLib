@@ -96,6 +96,7 @@ int main(int argc,char** argv) {
         Image im=LoadImageFromScreen();
         snprintf(path,sizeof(path),"%s/%s.%s",out,view_def->name,jpg?"jpg":"png"); ExportImage(im,path); UnloadImage(im);
         printf("wrote %s\n",path);
+        if(hollow){SwatSurfaceDecalStats ds=swat_environment_surface_decal_stats(&view.environment);printf("decals %d placed, %d unresolved\n",ds.decals,ds.unresolved);}
     }
     swat_view_close(&view); swat_sim_close(sim); free(sim); return 0;
 }
