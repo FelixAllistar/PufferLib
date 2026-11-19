@@ -28,3 +28,10 @@ near-desert from the air), `desG` 2760:3700:1.8:0.3:-0.02 and `desH` 3050:3650:2
    trees, regrowth patches and the edges of clearings (`flora_gap`) young redwoods, mature trees elsewhere. Kept:
    `canopy` and `standA` show groups, gaps and mixed heights instead of an even pile; `wetF` opened up (taken up in a
    later pass). Trees on the island (the scatter, before the draw caps) 125,085 to 101,539.
+4. Fault: riversides look like any other ground: 10 horsetails on the whole island, no bank mud, the bank species
+   (giant horsetail, gunnera, royal fern, river plane) almost never chosen. Cause: nearness to water was the 24 m blur
+   of the river mask times 3, which is about 0.33 on a bank (rivers are 1-3 cells wide), so every rule asking for
+   0.5-0.9 never fired. Change: `terra.c` `terra_riparian` maps the blur so it means what `terra.h` says (1 within
+   about 20 m, a half at 26 m, nothing past 40 m), in the bake and in the habitat derived at load. Kept: horsetail
+   stands line the water in `wetl` and `river`, river planes and redwoods stand on the bank, the bank canopy opens to
+   the water; 16,254 horsetails on the island.

@@ -16,6 +16,11 @@ static inline int imin(int a, int b) { return a < b ? a : b; }
 static inline int imax(int a, int b) { return a > b ? a : b; }
 
 // ---------------------------------------------------------------- random/noise
+// Nearness to river or lake water (0..1, 1 within about 25 m) from the water mask blurred over 24 m.
+// Rivers are only 1-3 cells wide, so the blurred mask is about 0.11 on a bank and 0.03 at 40 m: a plain
+// factor of 3 left every bank near 1/3 and the rules that wanted 0.5-0.9 (bank mud, horsetails, the bank
+// species) never fired. 1 at 20 m, a half at about 28 m, nothing past 40 m.
+static inline float terra_riparian(float wetblur) { float t = (wetblur - 0.03f) / 0.07f; t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); }
 static inline uint32_t mix32(uint32_t h) {
     h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return h;
 }
@@ -1179,7 +1184,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
             float r = fbm(wx / 1500.0f, wz / 1500.0f, s + 21, 3, 2, 0.5f) + 0.5f * (0.9f - m->rain[i] / p->rain);
             dregion[i] = r;
             if (h <= 1.0f || sea[i]) continue;
-            float riparian = clampf(wet[i] * 3.0f, 0, 1), flowlog = clampf(log10f(m->flow[i] / (p->rain * cell * cell) + 1) / 4.0f, 0, 1);
+            float riparian = terra_riparian(wet[i]), flowlog = clampf(log10f(m->flow[i] / (p->rain * cell * cell) + 1) / 4.0f, 0, 1);
             float dmask = (1 - sstep(140.0f, 260.0f, h)) * (1 - sstep(0.15f, 0.6f, riparian)) * (1 - sstep(0.35f, 0.6f, flowlog)) * sstep(1.0f, 4.0f, h);
             hist[imin(imax((int)((r + 1.0f) * 64.0f), 0), 255)] += dmask; tot += 1;
         }
@@ -1200,7 +1205,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float temp = p->temperature - 6.5f * fmaxf(h, 0) / 1000.0f + 2.0f * n1;
         m->temp[i] = temp;
         float moist = clampf(m->rain[i] / (p->rain * 1.6f), 0, 1);
-        float riparian = clampf(wet[i] * 3.0f, 0, 1);
+        float riparian = terra_riparian(wet[i]);
         float flowlog = clampf(log10f(m->flow[i] / (p->rain * cell * cell) + 1) / 4.0f, 0, 1);
         moist = clampf(moist * 0.7f + 0.5f * riparian + 0.25f * flowlog + 0.15f * clampf(curv[i] / 4.0f, -1, 1) + 0.1f * n1, 0, 1);
         // Near-desert scrub: a few large regions of the lowlands, more in the mountains' rain shadow, kept
@@ -1854,7 +1859,7 @@ int terra_habitat(TerraMap* m) {
             layers += (0.45f * vg[TERRA_VEG_TREEFERN] + 0.25f * vg[TERRA_VEG_HORSETAIL] - 0.45f * vg[TERRA_VEG_CYCAD]) / (4 * 255.0f);
             flowlog += 0.25f * clampf(log10f(m->flow[i] / (cell * cell) + 1) / 4.0f, 0, 1);
         }
-        float riparian = clampf(wet[j] * 3.0f, 0, 1), curv = hb[j] - h[j];
+        float riparian = terra_riparian(wet[j]), curv = hb[j] - h[j];
         float v[TERRA_HAB_COUNT];
         v[TERRA_HAB_MOIST] = clampf(0.38f + 0.45f * riparian + 0.2f * flowlog + 0.08f * clampf(curv / 2.0f, -1, 1) + ground + layers, 0, 1);
         v[TERRA_HAB_WET] = riparian;
