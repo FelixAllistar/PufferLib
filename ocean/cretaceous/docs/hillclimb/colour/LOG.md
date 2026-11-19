@@ -35,3 +35,7 @@ green under it, and the teal is mostly the haze.
    on `hill` the far forest goes grey-green like the reference valley while the terrain haze behind it is
    unchanged; canopy 168 / teal 61%, hill 158 / 48%. What is left of the teal in `aerial` and `skyh`
    (187-189) is mostly 2-8 km out, where the terrain shader paints the far canopy (not this track's file).
+5. Fault: neon lime ground ferns and fern prairie (`ground`, `ga0`: a quarter of the green pixels lime,
+   saturation 0.49). Change: the ground cover's saturation offset in `veg_shade` -0.22 -> -0.38. Kept: the
+   fronds read as a natural mid green in sun and shade, the prairie at `ga0` no longer glows; lime share
+   24-25% -> 15-17%, saturation 0.49 -> 0.44-0.46; trees untouched.
