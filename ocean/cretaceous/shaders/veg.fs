@@ -105,6 +105,10 @@ void main() {
             float ff = clamp(1.0 - 2.0 * fwidth(ph), 0.0, 1.0);
             albedo *= mix(1.0, 0.8 + 0.25 * fib * fib + 0.2 * clump, ff);
             bump = vec2(-cos(ph) * 0.4, (clump - 0.5) * 0.3) * ff * fine;
+            // Broad patches of lighter, rust-brown root mat and darker old stipe bases, which hold at 10-30 m
+            // (it drew as a smooth, even column there).
+            float pt = 0.65 * vnoise2(q * vec2(3.0, 1.4) + 3.0) + 0.35 * vnoise2(q * vec2(7.0, 3.5) + 11.0);
+            albedo *= mix(vec3(0.62, 0.64, 0.68), vec3(1.55, 1.32, 1.08), smoothstep(0.3, 0.7, pt));
         } else if (tone == 12) {    // plane: bark shed in plates, a camouflage of cream, grey-green and fawn patches
             // In metres round the plant (no seam where u wraps), stretched along the trunk; two octaves of
             // 15-40 cm patches with sharp edges. They stay as large shapes at a distance, as on a real plane.
@@ -122,6 +126,11 @@ void main() {
             albedo = mix(albedo, ls * vec3(2.4, 2.08, 1.22), pa * (1.0 - 0.5 * pb));   // fresh cream-yellow inner bark
         } else if (tone == 2) {     // palm: horizontal leaf-base rings
             albedo *= 0.85 + 0.2 * smoothstep(0.0, 0.25, abs(fract(q.y * 6.0) - 0.5));
+            // Broad tone that holds at 10-30 m, where the rings average out (it drew as a smooth pale column):
+            // ring bands of their own shade, grey weathering streaks down the trunk, a darker, soil-splashed foot.
+            float hb = v_world.y - v_base.y;
+            float band = vnoise2(vec2(0.5, q.y * 1.6)), streak = vnoise2(vec2(q.x * 7.0, q.y * 0.25));
+            albedo *= (0.78 + 0.4 * band) * (0.82 + 0.32 * streak) * mix(0.7, 1.0, smoothstep(0.1, 0.9, hb));
             // Each ring a low ridge (the old leaf base) with a groove above it, lit as relief, wavering a little.
             float y6 = q.y * 6.0 + 0.08 * sin(q.x * 6.2832 * 3.0 + q.y), fy = fract(y6), fr = clamp(1.0 - 2.5 * fwidth(y6), 0.0, 1.0);
             bump = vec2(0.0, (fy < 0.2 ? 1.0 : -0.25) * 0.45 * fr);
