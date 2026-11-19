@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#define TERRA_VERSION 24u
+#define TERRA_VERSION 25u   // 25: grass line, scree fans, gullies, near-desert, mixed-stand density (mountains hill-climb)
 #define TERRA_DRY (-1.0e4f)   // water surface value for cells with no water
 
 enum { TERRA_WATER_NONE, TERRA_WATER_SEA, TERRA_WATER_LAKE, TERRA_WATER_RIVER };

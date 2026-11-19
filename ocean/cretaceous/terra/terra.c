@@ -1136,6 +1136,35 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
     box_blur(hb, n, imax(1, (int)(30.0f / cell)), 2);
     box_blur(face, n, imax(1, (int)lroundf(6.0f / cell)), 2);
     for (size_t i = 0; i < N; i++) curv[i] = hb[i] - m->height[i]; // >0 concave (valley)
+    // Talus: under a rock face the rock that falls off it lies in scree fans. From each sample walk up the
+    // fall line; a face within the fan's reach (20-55 m, by a noise along the foot so the fans come and go)
+    // and at least 4 m above gives scree, fading out with distance from the face's foot.
+    float* dgrid = fgrid(n);
+    float* talus = fgrid(n); float* crag = fgrid(n);   // crag: rock steeper than about 40 degrees, the scree's source
+    #pragma omp parallel for schedule(static)
+    for (int z = 1; z < n - 1; z++) for (int x = 1; x < n - 1; x++) {
+        size_t i = (size_t)z * n + x;
+        float gx = (m->height[i + 1] - m->height[i - 1]) / (2 * cell), gz = (m->height[i + n] - m->height[i - n]) / (2 * cell);
+        crag[i] = gx * gx + gz * gz > 1.0f && m->height[i] > 3 ? 1.0f : 0.0f;
+    }
+    #pragma omp parallel for schedule(dynamic, 16)
+    for (int z = 1; z < n - 1; z++) for (int x = 1; x < n - 1; x++) {
+        size_t i = (size_t)z * n + x; float h0 = m->height[i];
+        if (crag[i] > 0.5f || h0 < 2) continue;
+        float gx = (m->height[i + 1] - m->height[i - 1]) / (2 * cell), gz = (m->height[i + n] - m->height[i - n]) / (2 * cell);
+        float g = sqrtf(gx * gx + gz * gz); if (g < 0.08f) continue;
+        float wx = x * cell, wz = z * cell, reach = 12.0f + 23.0f * sstep(-0.25f, 0.3f, fbm(wx / 45.0f, wz / 45.0f, mix32(p->seed + 1777), 2, 2, 0.5f));
+        float ux = gx / g, uz = gz / g, best = 0;
+        for (float d = cell; d <= reach; d += cell) {
+            float px = x + ux * d / cell, pz = z + uz * d / cell;
+            if (px < 1 || pz < 1 || px > n - 2 || pz > n - 2) break;
+            if (sample_bilinear(crag, n, px, pz) > 0.5f && sample_bilinear(m->height, n, px, pz) - h0 > 8.0f) { best = (1 - d / reach) * (0.35f + 0.65f * sstep(150.0f, 380.0f, h0)); break; }
+        }
+        talus[i] = best;
+    }
+    box_blur(talus, n, 1, 1);
+    if (getenv("CRET_TERRA_DBG")) { long a = 0, b = 0, f = 0, l = 0; for (size_t i = 0; i < N; i++) { if (m->height[i] < 1) continue; l++; a += talus[i] > 0.1f; b += talus[i] > 0.4f; f += crag[i] > 0.5f; } fprintf(stderr, "talus: >0.1 %.2f%% >0.4 %.2f%% face %.2f%% of land\n", 100.0 * a / l, 100.0 * b / l, 100.0 * f / l); }
+    free(crag);
     float rmax = 0; for (size_t i = 0; i < N; i++) rmax = fmaxf(rmax, m->rain[i]);
     #pragma omp parallel for schedule(dynamic, 16)
     for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
@@ -1153,6 +1182,13 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float riparian = clampf(wet[i] * 3.0f, 0, 1);
         float flowlog = clampf(log10f(m->flow[i] / (p->rain * cell * cell) + 1) / 4.0f, 0, 1);
         moist = clampf(moist * 0.7f + 0.5f * riparian + 0.25f * flowlog + 0.15f * clampf(curv[i] / 4.0f, -1, 1) + 0.1f * n1, 0, 1);
+        // Near-desert scrub: a few large regions of the lowlands, more in the mountains' rain shadow, kept
+        // off the rivers and their banks, the wet hollows and the high ground. Bare, cracked earth and sand
+        // with sparse clumps of cycads and scrub and hardly a tree; its edges blend over a few hundred metres.
+        float region = fbm(wx / 1500.0f, wz / 1500.0f, s + 21, 3, 2, 0.5f) + 0.5f * (0.9f - m->rain[i] / p->rain);
+        float desert = sstep(0.12f, 0.32f, region) * (1 - sstep(140.0f, 260.0f, h)) * (1 - sstep(0.15f, 0.6f, riparian)) * (1 - sstep(0.35f, 0.6f, flowlog)) * sstep(1.0f, 4.0f, h);
+        moist *= 1 - 0.75f * desert;
+        dgrid[i] = desert;
         float soil = m->soil[i], hd = hard ? hard[i] : 1;
         // Beaches: a sand berm up to 3.5-10 m along any sea shore that is not
         // a cliff (coastal slopes here are mostly 0.1-0.5, so the berm sets the
@@ -1169,15 +1205,24 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float n3 = fbm(wx / 14.0f, wz / 14.0f, s + 6, 2, 2, 0.5f);
         // And wherever the loose ground is gone (regolith: steep, convex, high, windward ground) the
         // bedrock shows, on anything but flat ground (more of it above the tree line).
-        float tline = TREELINE + 30.0f * n1 - 70.0f * expo[i], alpine = sstep(tline - 50, tline + 40, h);
+        // Mountain gullies and hollows: wetter and sheltered, so the forest climbs higher up them and
+        // stops lower on the spurs between.
+        float hollow = clampf(curv[i] / 5.0f, -1, 1), mgully = sstep(0.25f, 0.5f, flowlog) * sstep(160.0f, 260.0f, h) * (1 - riparian);
+        float tline = TREELINE + 30.0f * n1 - 70.0f * expo[i] + 45.0f * hollow + 40.0f * mgully, alpine = sstep(tline - 50, tline + 40, h);
         float nearface = clampf(face[i] * 2.5f, 0, 1);
+        // The high ground above the tree line: from about 60 m over it the living fern turf thins to a
+        // brown-green alpine turf of scattered tufts in the hollows, and none is left within about 200 m of
+        // it on exposed ground; summits and crests are rock, scree and bare stony soil.
+        float summit = sstep(tline + 40, tline + 230, h + 25.0f * n2 - 40.0f * clampf(curv[i] / 4.0f, -1, 1) + 60.0f * expo[i]);
         float rockiness = sstep(1.15f, 1.75f, slope + 0.08f * (hd - 1) - 0.12f * cv + 0.18f * n3 + 0.12f * n2 - 0.15f * clampf(soil - 1.0f, 0, 2));
         float bare = 1 - sstep(0.04f, 0.45f, soil + 0.1f * n3);
         rockiness = fmaxf(rockiness, bare * sstep(0.3f, 0.7f, slope + 0.35f * alpine + 0.1f * n2) * (0.2f + 0.8f * sstep(280.0f, 420.0f, h)));
         w[TERRA_MAT_ROCK] = rockiness * 1.2f;
         // Scree collects in hollows below faces, not as bands across them.
         w[TERRA_MAT_SCREE] = sstep(1.0f, 1.45f, slope + 0.15f * n3) * (1 - rockiness) * (0.6f + 0.6f * clampf(soil, 0, 1)) * (0.35f + 0.65f * sstep(-0.3f, 0.6f, cv)) + wavecut * 1.3f
-                           + (1 - rockiness) * sstep(0.15f, 0.4f, slope) * (1 - sstep(0.3f, 1.0f, soil)) * (0.9f * alpine + 0.5f * nearface * sstep(-0.5f, 1.0f, cv));
+                           + (1 - rockiness) * sstep(0.15f, 0.4f, slope) * (1 - sstep(0.3f, 1.0f, soil)) * (0.9f * alpine + 0.5f * nearface * sstep(-0.5f, 1.0f, cv))
+                           + (1 - rockiness) * 0.3f * summit * (0.7f + 0.6f * n3)   // the summits' stony ground
+                           + (1 - rockiness) * 1.1f * sstep(0.15f, 0.6f, talus[i] + 0.15f * n3);   // fans under the faces
         w[TERRA_MAT_SAND] = beach * 2.0f + (sea[i] ? 1.5f : 0) + sstep(0.6f, 0.9f, riparian) * sstep(0.0f, 0.3f, soil - 0.3f) * 0.6f;
         float open = (1 - rockiness) * (1 - clampf(beach, 0, 1));
         float flat = 1 - sstep(0.1f, 0.35f, slope);
@@ -1188,17 +1233,25 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         w[TERRA_MAT_FOREST] = open * canopy * 1.1f;
         // Fern prairie is the default open ground (no grasses yet); bare soil only
         // where it is very dry or steep.
-        w[TERRA_MAT_FERN] = open * (0.5f + 0.5f * sstep(0.05f, 0.4f, moist)) * (1 - canopy * 0.35f) * (0.9f + 0.2f * n2) * (1 - sstep(1.05f, 1.5f, slope)) * (1 - 0.4f * alpine);
+        w[TERRA_MAT_FERN] = open * (0.5f + 0.5f * sstep(0.05f, 0.4f, moist)) * (1 - canopy * 0.35f) * (0.9f + 0.2f * n2) * (1 - sstep(1.05f, 1.5f, slope)) * (1 - 0.4f * alpine) * (1 - 0.92f * summit) * (1 - 0.4f * expo[i] * alpine) * (1 - 0.6f * sstep(0.1f, 0.6f, talus[i]));
         // Bare soil where the landform strips it: dry ground, sharp convex
         // ridge crests and shoulders, and erosion gullies (channelled flow
         // without standing water). Edges are broken by fine noise, not blobs.
         float gully = sstep(0.3f, 0.55f, flowlog) * (1 - riparian) * sstep(0.12f, 0.4f, slope);
         float crest = sstep(0.6f, 1.4f, -cv + 0.4f * n3) * sstep(0.35f, 0.8f, slope);
-        w[TERRA_MAT_DIRT] = open * (0.03f + sstep(0.12f, 0.0f, moist) * 0.5f + 0.35f * crest + 0.35f * gully + 0.1f * alpine) * (0.75f + 0.5f * n3);
+        w[TERRA_MAT_DIRT] = open * (0.03f + sstep(0.12f, 0.0f, moist) * 0.5f + 0.35f * crest + 0.35f * gully * (1 - sstep(160.0f, 260.0f, h)) + 0.1f * alpine + 0.2f * summit) * (0.75f + 0.5f * n3);
         // Moss on damp, shaded hollows and around rock, not on every steep slope.
-        w[TERRA_MAT_MOSS] = sstep(0.4f, 0.85f, moist) * sstep(0.2f, 0.6f, slope) * (0.4f + 0.6f * rockiness) * (0.6f + 0.8f * n3) * (0.5f + 0.5f * sstep(-0.2f, 0.6f, cv))
+        // Up in the mountains a gully is a green seam of moss and fern, not bare soil (as it is lower down).
+        w[TERRA_MAT_FERN] += open * 0.7f * mgully * sstep(-0.2f, 0.4f, hollow + 0.3f * n3) * (1 - 0.7f * summit);
+        w[TERRA_MAT_MOSS] = 0.6f * open * mgully * (1 - sstep(0.7f, 1.1f, slope)) * (0.6f + 0.8f * n3) + sstep(0.4f, 0.85f, moist) * sstep(0.2f, 0.6f, slope) * (0.4f + 0.6f * rockiness) * (0.6f + 0.8f * n3) * (0.5f + 0.5f * sstep(-0.2f, 0.6f, cv))
                           + open * sstep(0.6f, 1.1f, slope) * (0.3f + 0.6f * moist) * sstep(0.0f, 0.8f, cv) * (0.8f + 0.4f * n3)
-                          + (1 - rockiness) * (nearface + 0.6f * alpine) * (1 - sstep(0.4f, 0.8f, slope)) * (0.5f + 0.5f * moist) * (0.8f + 0.4f * n3);
+                          + (1 - rockiness) * (nearface + 0.6f * alpine * (1 - 0.7f * summit)) * (1 - sstep(0.4f, 0.8f, slope)) * (0.5f + 0.5f * moist) * (0.8f + 0.4f * n3);
+        if (desert > 0) {
+            float d = desert;
+            w[TERRA_MAT_DIRT] += open * d * (0.9f + 0.5f * n3);
+            w[TERRA_MAT_SAND] += open * d * 0.6f * sstep(0.1f, 0.4f, n2 + 0.3f * n1) * (1 - sstep(0.06f, 0.16f, slope));   // sandy pans on the flats
+            w[TERRA_MAT_FERN] *= 1 - 0.85f * d; w[TERRA_MAT_MOSS] *= 1 - d; w[TERRA_MAT_FOREST] *= 1 - 0.9f * d; w[TERRA_MAT_MUD] *= 1 - d;
+        }
         float tot = 0; for (int k = 0; k < TERRA_MAT_COUNT; k++) { w[k] = fmaxf(w[k], 0); w[k] *= w[k]; tot += w[k]; }
         if (tot < 1e-6f) { w[TERRA_MAT_DIRT] = 1; tot = 1; }
         int acc = 0, big = 0;
@@ -1213,24 +1266,52 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         // and angiosperm groves form a mosaic, cycads fill drier openings.
         // Forest covers everything that is not rock, beach or water; moisture
         // and patch noise only shift the mix between conifers and angiosperms.
-        float forest = grow * (0.6f + 0.4f * sstep(0.05f, 0.45f, moist)) * (1 - sstep(0.95f, 1.25f, slope)) * (1 - 0.85f * nearface);
+        float fan = sstep(0.1f, 0.6f, talus[i]);   // live scree: a few trees on its old outer edge only
+        float forest = grow * (0.6f + 0.4f * sstep(0.05f, 0.45f, moist)) * (1 - sstep(0.95f, 1.25f, slope)) * (1 - 0.85f * nearface) * (1 - 0.5f * fan);
         float conshare = clampf(0.55f + 0.5f * (clump - clump2) - 0.35f * riparian + 0.2f * sstep(0.3f, 0.7f, slope), 0.1f, 0.9f);
         // At the tree line conifers go highest, the broadleaf groves stop below them; scrub carries on
         // a little higher as a low thicket, then thins out.
+        // The scatter keeps a tree with a chance that goes as its layer's density squared
+        // (render/veg_place.h), so two layers sharing a stand half and half would carry half the stems
+        // of a pure stand and every mixed forest read as open parkland. Both are raised so the stand's
+        // stems do not depend on its mix.
+        float mixfix = 1.0f / sqrtf(conshare * conshare + (1 - conshare) * (1 - conshare));
+        forest *= mixfix;
         v[TERRA_VEG_CONIFER] = forest * conshare * sstep(0.0f, 8.0f, temp) * (1 - sstep(tline - 30, tline + 50, h));
         v[TERRA_VEG_BROADLEAF] = forest * (1 - conshare) * sstep(12.0f, 18.0f, temp) * (1 - sstep(tline - 90, tline, h));
         v[TERRA_VEG_CYCAD] = grow * sstep(0.55f, 0.2f, moist) * sstep(16.0f, 22.0f, temp) * (0.3f + 0.4f * n2) * (1 - alpine);
-        v[TERRA_VEG_FERN] = grow * (0.55f + 0.45f * sstep(0.1f, 0.5f, moist)) * (0.65f + 0.35f * n2) * (1 - 0.5f * alpine);
+        v[TERRA_VEG_FERN] = grow * (0.55f + 0.45f * sstep(0.1f, 0.5f, moist)) * (0.65f + 0.35f * n2) * (1 - 0.5f * alpine) * (1 - 0.85f * summit) * (1 - 0.7f * fan);
         v[TERRA_VEG_TREEFERN] = grow * sstep(0.7f, 0.95f, moist) * sstep(0.0f, 3.0f, curv[i]) * sstep(15.0f, 20.0f, temp) * (1 - alpine) * (1 - nearface);
         v[TERRA_VEG_HORSETAIL] = (1 - sstep(0.1f, 0.3f, slope)) * sstep(0.4f, 0.9f, riparian) * (wetcell ? 0.3f : 1.0f);
         v[TERRA_VEG_PALM] = grow * sstep(0.2f, 0.6f, coast[i] * 2) * (1 - sstep(8.0f, 30.0f, h)) * sstep(20.0f, 24.0f, temp) * (0.3f + 0.7f * clump2);
-        v[TERRA_VEG_SHRUB] = grow * (0.25f + 0.4f * sstep(0.6f, 0.3f, moist) + 0.35f * alpine) * (0.5f + 0.5f * n2) * (1 - sstep(tline + 60, tline + 170, h));
+        // The tree line is not an edge: above it a few stunted outlying conifers stand alone or in small
+        // clumps for another 60-140 m (more in the hollows), among thickets of scrub.
+        float above = sstep(tline - 20, tline + 30, h) * (1 - sstep(tline + 60 + 40 * clampf(hollow, 0, 1), tline + 140, h));
+        float outl = above * grow * (1 - summit) * sstep(-0.1f, 0.25f, n2 + 0.3f * n3) * sstep(0.0f, 8.0f, temp) * (1 - 0.6f * expo[i]);
+        v[TERRA_VEG_CONIFER] = fmaxf(v[TERRA_VEG_CONIFER], 0.5f * outl);
+        v[TERRA_VEG_SHRUB] = grow * (0.25f + 0.4f * sstep(0.6f, 0.3f, moist) + 0.35f * alpine + 0.3f * above * sstep(-0.1f, 0.3f, n2)) * (0.5f + 0.5f * n2) * (1 - sstep(tline + 60, tline + 170, h));
+        if (desert > 0) {   // a tree only here and there; cycads and scrub in clumps with bare ground between
+            float d = desert, cl = sstep(0.05f, 0.3f, n2 + 0.25f * n3);
+            v[TERRA_VEG_CONIFER] *= 1 - 0.93f * d; v[TERRA_VEG_BROADLEAF] *= 1 - 0.95f * d; v[TERRA_VEG_TREEFERN] *= 1 - d; v[TERRA_VEG_PALM] *= 1 - 0.7f * d;
+            v[TERRA_VEG_FERN] *= 1 - 0.85f * d; v[TERRA_VEG_HORSETAIL] *= 1 - d;
+            v[TERRA_VEG_CYCAD] = lerpf(v[TERRA_VEG_CYCAD], grow * 0.22f * cl, d);   // sparse: a cycad here and there in the scrub
+            v[TERRA_VEG_SHRUB] = lerpf(v[TERRA_VEG_SHRUB], grow * 0.55f * (0.3f + 0.7f * cl), d);
+        }
         if (sea[i] || h < 0.3f) for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = 0;
         for (int k = 0; k < TERRA_VEG_COUNT; k++) m->veg[i * TERRA_VEG_COUNT + k] = (uint8_t)(255 * clampf(v[k], 0, 1));
         m->hardness[i] = (uint8_t)(clampf(hd / 2.2f, 0, 1) * 255);
     }
     (void)rmax;
-    free(wet); free(coast); free(curv); free(hb); free(face);
+    if (getenv("CRET_TERRA_DBG")) {   // where the near-desert lies: its share of the land and its most desert 256 m block
+        long l = 0, d = 0; float best = -1; int bx = 0, bz = 0; int B = imax(1, (int)(256 / cell));
+        for (size_t i = 0; i < N; i++) if (m->height[i] > 1) { l++; d += dgrid[i] > 0.5f; }
+        for (int z = 0; z + B < n; z += B / 2) for (int x = 0; x + B < n; x += B / 2) {
+            float a = 0; for (int k = 0; k < B; k += 4) for (int j = 0; j < B; j += 4) a += dgrid[(size_t)(z + k) * n + x + j];
+            if (a > best) { best = a; bx = x + B / 2; bz = z + B / 2; }
+        }
+        fprintf(stderr, "terra: near-desert on %.1f%% of the land; its heart near %.0f %.0f\n", 100.0 * d / (l ? l : 1), bx * cell, bz * cell);
+    }
+    free(wet); free(coast); free(curv); free(hb); free(face); free(talus); free(dgrid);
 }
 
 // ---------------------------------------------------------------- rock shoulders

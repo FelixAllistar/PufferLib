@@ -25,7 +25,7 @@ const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
 // under a Cretaceous canopy (photo sources are mostly brown leaf litter).
-const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(1.0), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(2.2, 2.05, 1.7), vec3(0.85, 0.9, 0.8));   // forest floor: brown litter; fern ground: litter with some green; sand: the photo is damp, dry beach sand is pale
+const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(0.4, 0.41, 0.44), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(2.2, 2.05, 1.7), vec3(0.85, 0.9, 0.8));   // scree: the gravel photo is far paler than the rock it falls from (read as cream bands), so grey it down to near the rock; forest floor: brown litter; fern ground: litter with some green; sand: the photo is damp, dry beach sand is pale
 // Fern and moss photos are khaki; keep only their luminance detail and take
 // the hue from TINT (living fern albedo has green about twice red). The
 // detail is stretched around the photo's mean luminance (RECOLOR_MEAN), so
@@ -237,6 +237,7 @@ void main() {
     // what the photos show, brown litter and soil with a little moss; it only goes green with distance,
     // where the patches of plants are no longer drawn one by one.
     float recolor_near = mix(0.1, 0.8, smoothstep(8.0, 70.0, dist));
+    float stony = 0.85 * smoothstep(360.0, 500.0, p.y + 60.0 * (texture(t_noise, p.xz / 190.0 + 0.37).r - 0.5));
     vec3 albedo = vec3(0.0), n = vec3(0.0); float rough = 0.0, wt = 0.0, mao = 0.0;
     for (int j = 0; j < 4; j++) {
         if (hsum[j] < 0.0) continue;
@@ -244,6 +245,9 @@ void main() {
         float b = max(hsum[j] - best + 0.3, 0.0);
         float rl = RECOLOR_MEAN * pow(dot(mats[j].albedo, vec3(0.3, 0.59, 0.11)) / RECOLOR_MEAN, RECOLOR_CONTRAST);
         vec3 al = mix(mats[j].albedo, rl * RECOLOR_HUE, RECOLOR[k] * recolor_near);
+        // Bare soil above the tree line is stony and grey-brown (weathered rock, little humus), not the
+        // orange lowland earth of the photo, which read as yellow-ochre streaks down the high slopes.
+        if (k == 2) al = mix(al, vec3(dot(al, vec3(0.3, 0.59, 0.11))) * vec3(1.06, 1.0, 0.9), stony);
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
     albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
@@ -269,7 +273,10 @@ void main() {
     {
         vec4 bio = texture(t_biome, uv) * (1.0 - clamp(w[0] + w[1], 0.0, 1.0)); float bl = dot(albedo, vec3(0.3, 0.59, 0.11));   // not on rock or scree
         albedo = mix(albedo, bl * vec3(1.32, 0.86, 0.6), bio.r * 0.8);   // red-brown, a little darker than the soil
-        albedo = mix(albedo, bl * vec3(1.65, 1.35, 0.78) * 0.98, bio.g * 0.8);
+        // Bare earth in dry country (the near-desert scrub, terra.c) stays earth: red-brown and darker
+        // than the straw of the dry grass round it.
+        float earth = clamp(w[2] * 1.4 - 0.2, 0.0, 1.0);
+        albedo = mix(albedo, bl * mix(vec3(1.65, 1.35, 0.78) * 0.98, vec3(1.45, 1.0, 0.68) * 0.92, earth), bio.g * 0.8);
     }
     // Far forest. Between distant crowns the ground is the shaded floor, and
     // past the impostor range the terrain is the canopy: coloured by the
@@ -344,12 +351,30 @@ void main() {
         vec2 tilt = (q.ba - 0.5) * 2.0 * 0.8 + (q2.ba - 0.5) * 2.0 * 0.4;
         n = normalize(n + vec3(tilt.x, 0.0, tilt.y) * under);
     }
+    // Above the tree line (about 380 m, terra.c TREELINE) what green there is is thin alpine turf:
+    // brown-green and dry, browner with height, so no lowland green reaches up to a summit.
+    {
+        float alp = smoothstep(400.0, 560.0, p.y + 70.0 * (texture(t_noise, p.xz / 190.0 + 0.37).r - 0.5));
+        float lv = clamp(live + under, 0.0, 1.0) * alp * (1.0 - clamp(w[0] + w[1] + w[6], 0.0, 1.0));
+        float al = dot(albedo, vec3(0.3, 0.59, 0.11));
+        albedo = mix(albedo, al * vec3(1.1, 1.0, 0.84) * 0.92, lv * 0.7);   // grey-brown, not straw
+    }
     // Rock reads grey-brown, not orange: desaturate the source photo.
     // Dry grassland seen from afar is straw too, not the green understorey painted above (not on rock or sand).
     {
-        float dryf = texture(t_biome, uv).g * (1.0 - clamp(w[0] + w[1] + w[6], 0.0, 1.0)) * smoothstep(20.0, 90.0, dist);
+        float dryf = texture(t_biome, uv).g * (1.0 - clamp(w[0] + w[1] + w[6], 0.0, 1.0)) * smoothstep(20.0, 90.0, dist) * (1.0 - 0.6 * clamp(w[2] * 1.4 - 0.2, 0.0, 1.0));
         float dl = dot(albedo, vec3(0.3, 0.59, 0.11));
         albedo = mix(albedo, max(dl, 0.045) * vec3(1.55, 1.3, 0.72) * 1.25, dryf * 0.85);
+    }
+    // Near-desert (bare earth in dry country): from afar the dwarf scrub dots the ground dark olive-grey
+    // at a few metres, gathered in loose stands (the drawn plants end at the cover range).
+    {
+        float de = texture(t_biome, uv).g * clamp(w[2] * 1.4 - 0.2, 0.0, 1.0) * (1.0 - clamp(w[0] + w[1], 0.0, 1.0));
+        if (de > 0.0) {
+            float dots = noise_qp(p.xz, 3.1, 0.17).r * 0.75 + noise_qp(p.xz, 31.0, 0.53).g * 0.25;   // dots, gathered in loose stands
+            float far_ = smoothstep(25.0, 80.0, dist) * (1.0 - smoothstep(1500.0, 3000.0, dist));
+            albedo = mix(albedo, vec3(0.055, 0.058, 0.042) * mix(0.8, 1.2, nz2.x), smoothstep(0.55, 0.65, dots) * de * far_ * 0.6);
+        }
     }
     float lum = dot(albedo, vec3(0.3, 0.55, 0.15));
     albedo = mix(albedo, vec3(lum) * vec3(1.02, 0.98, 0.93), clamp(0.6 * w[0] + 0.45 * w[1], 0.0, 1.0));

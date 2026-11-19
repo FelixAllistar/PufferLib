@@ -265,6 +265,18 @@ How a kind's plants become a community (`render/flora.h`):
 - **Coasts**: fan palms below 40 m and feather palms on the strand below
   12 m; the canopy thins on the strand (by up to 60%) and the shrub layer
   thickens with evergreen scrub.
+- **Near-desert scrub** (`terra.c` surface, the mountains hill-climb): a 1.5 km noise and the
+  mountains' rain shadow pick a few regions of the lowlands, under 140-260 m and off the rivers, their
+  banks and the wet hollows (8.8% of the island; its heart near 2944, 3584; on the 2 km test world about
+  a quarter of the land). There the ground is bare red-brown earth with sand in pans on the flats, ferns
+  are down by 85% and trees by 93-95%, cycads stand here and there (density at most 0.22, in clumps) and
+  scrub in loose clumps with bare ground between; its edges blend over a few hundred metres. From afar
+  the ground shader dots the earth with dark dwarf scrub in loose stands.
+- **Mixed stands are as dense as pure ones.** The scatter keeps a plant with a chance of its layer's
+  density squared, so a stand split between conifers and broadleaves carried up to half the stems of a
+  pure one and mixed lowland forest read as parkland; the bake raises both canopy layers by
+  1/sqrt(c^2 + (1-c)^2) for a conifer share c (164,025 trees on the island before, 186,804 after with
+  the desert's clearing).
 - **Dead wood in old stands.** An old-stand noise (180 m) marks about a fifth
   of the forest as old: there standing dead trees appear (`VEG_SNAG`: a dead
   conifer with a broken top and whorl stubs, a broken conifer, a dead

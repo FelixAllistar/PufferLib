@@ -1671,9 +1671,10 @@ static void test_wound_heal(void) {
 static void test_wound_effects(void) {
     uint32_t rng = 803; float x, z;
     // Leg: trot for 3 s and turn on the spot for 1 s, unhurt and with severity 1.
-    float v[2], turn[2];
+    // Both runs at the same site, so the ground under the trot (slope, props) is the same and only the wound differs.
+    float v[2], turn[2]; uint32_t rng0 = rng;
     for (int w = 0; w < 2; w++) {
-        CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_GALLI, &rng, &x, &z); CretAgent* a = &s->agents[0];
+        rng = rng0; CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_GALLI, &rng, &x, &z); CretAgent* a = &s->agents[0];
         put(s, 0, x, z, 0); put(s, 1, x - 200, z, 0); settle(s, 3);
         a->wound[CRET_WOUND_LEG].sev = w ? 1.0f : 0;
         float x0 = a->x;
