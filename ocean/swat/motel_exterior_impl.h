@@ -67,6 +67,9 @@ static bool arch_suppressed[SWAT_EXTERIOR_PIECES];
 // Lookup: object placements by owner tag, section placements by centre.
 #define ARCH_HASH 1024
 static int arch_object_first[SWAT_MOTEL_INSTANCES+1],arch_next[SWAT_ARCH_PLACEMENTS],arch_hash[ARCH_HASH];
+// Every placement of an owner, section pieces included: the court layer and
+// moved owners repeat a template's whole overlay (swat_motel_art_frame).
+static int arch_owner_first[SWAT_MOTEL_INSTANCES+1],arch_owner_next[SWAT_ARCH_PLACEMENTS];
 static uint32_t arch_key(float x,float y,float z) {
     int32_t a=(int32_t)lroundf(x*100),b=(int32_t)lroundf(y*100),c=(int32_t)lroundf(z*100);
     return ((uint32_t)a*73856093u^(uint32_t)b*19349663u^(uint32_t)c*83492791u)&(ARCH_HASH-1);
@@ -89,7 +92,11 @@ static void arch_load(SwatEnvironmentArt* art) {
         arch_suppressed[i]=false;
         for(int k=0;k<SWAT_ARCH_SUPPRESS;k++)arch_suppressed[i]|=!strcmp(swat_exterior_pieces[i].name,swat_arch_suppress[k]);
     }
-    for(int i=0;i<=SWAT_MOTEL_INSTANCES;i++)arch_object_first[i]=-1;
+    for(int i=0;i<=SWAT_MOTEL_INSTANCES;i++)arch_object_first[i]=arch_owner_first[i]=-1;
+    for(int i=SWAT_ARCH_PLACEMENTS-1;i>=0;i--) {
+        int owner=swat_arch_placements[i].owner;arch_owner_next[i]=-1;
+        if(owner>0 && owner<=SWAT_MOTEL_INSTANCES){arch_owner_next[i]=arch_owner_first[owner];arch_owner_first[owner]=i;}
+    }
     for(int i=0;i<ARCH_HASH;i++)arch_hash[i]=-1;
     for(int i=SWAT_ARCH_PLACEMENTS-1;i>=0;i--) {
         const SwatArchPlacement* a=&swat_arch_placements[i];
@@ -230,8 +237,39 @@ static void arch_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const
     }
 }
 
+// Map a piece authored against `from` onto `to` (MOTEL_LAYOUT.md court layer).
+static SwatMotelInstance exterior_remap(const SwatMotelInstance* from,const SwatMotelInstance* to,b3Pos origin,float yaw,b3Vec3 scale,bool roof) {
+    b3Vec3 d=b3SubPos(origin,from->origin);float y=-from->yaw,c=cosf(y),s=sinf(y);
+    b3Vec3 local=swat_v(c*d.x+s*d.z,d.y,-s*d.x+c*d.z);
+    c=cosf(to->yaw);s=sinf(to->yaw);
+    b3Pos at=b3OffsetPos(to->origin,swat_v(c*local.x+s*local.z,local.y,-s*local.x+c*local.z));
+    return (SwatMotelInstance){.origin=at,.scale=scale,.yaw=yaw+to->yaw-from->yaw,.roof=roof};
+}
+static void exterior_clone_draw(const SwatEnvironmentArt* art,int source,const SwatMotelInstance* from,const SwatMotelInstance* to,
+                                const SwatObject* o,bool shadow,bool cutaway) {
+    bool arch=art->motel_architecture.meshCount>0;
+    if(arch)for(int i=arch_owner_first[source];i>=0;i=arch_owner_next[i]) {
+        const SwatArchPlacement* a=&swat_arch_placements[i];
+        Model view=art->motel_architecture;
+        view.meshes+=a->first;view.meshMaterial+=a->first;view.meshCount=a->count;
+        SwatMotelInstance p=exterior_remap(from,to,(b3Pos){a->x,a->y,a->z},0,swat_v(1,1,1),a->roof);
+        location_mesh_draw(art,o,&p,&view,&art->motel_architecture,shadow,cutaway,false,NULL);
+    }
+    for(int i=0;i<SWAT_EXTERIOR_PLACEMENTS;i++) {
+        const SwatExteriorPlacement* e=&swat_exterior_placements[i];
+        if(e->owner!=source || (arch && arch_suppressed[e->piece]))continue;
+        const SwatExteriorPiece* piece=&swat_exterior_pieces[e->piece];
+        Model view=art->motel_exterior;
+        view.meshes+=piece->first;view.meshMaterial+=piece->first;view.meshCount=piece->count;
+        SwatMotelInstance p=exterior_remap(from,to,(b3Pos){e->x,e->y,e->z},e->yaw,swat_v(e->sx,e->sy,e->sz),e->roof);
+        location_mesh_draw(art,o,&p,&view,&art->motel_exterior,shadow,cutaway,false,NULL);
+    }
+}
+
 static void exterior_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!art->motel_exterior.meshCount || !o->active)return;
+    int source;SwatMotelInstance from,to;
+    if(swat_motel_art_frame(world,o->tag.index,&source,&from,&to)){exterior_clone_draw(art,source,&from,&to,o,shadow,cutaway);return;}
     bool arch=art->motel_architecture.meshCount>0;
     if(arch)arch_draw(art,world,o,shadow,cutaway);
     for(int i=0;i<SWAT_EXTERIOR_PLACEMENTS;i++) {

@@ -91,8 +91,9 @@ int main(void) {
     // Physical controllers, not nav coordinates, cross each material/grade.
     place(0,20);walk(0,46);walk(0,20);
     // Go around the existing raised bank/rocks, along the new end grades.
-    place(22,14);walk(34,14);walk(22,14);
-    place(-22,10);walk(-34,10);walk(-22,10);
+    // Start 1 m behind the court's side wings (rear walls at x=+-22).
+    place(23,14);walk(34,14);walk(23,14);
+    place(-23,10);walk(-34,10);walk(-23,10);
     place(-58,40);walk(58,40);
     printf("PASS ground: %d rays, exact closed thickness, court/asphalt/shoulder seams, finite edges and live controller crossings\n",rays);fflush(stdout);
     // The wider grid exceeds uint16 capacity; distant road routes remain valid.

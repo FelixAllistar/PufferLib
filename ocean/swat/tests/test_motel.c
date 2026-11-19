@@ -4,10 +4,14 @@
 #include <stdio.h>
 #include <string.h>
 static SwatWorld world;
+// The chain-link run moved out of the court onto the rear service drive
+// (MOTEL_LAYOUT.md): every probe keeps its place relative to the fence.
+#define FX 2.0f
+#define FZ (-14.0f)
 static void fence_hits(SwatWorld* w) {
     int openings=0,wires=0;
     for(int side=0;side<2;side++)for(int y=0;y<30;y++)for(int z=0;z<40;z++) {
-        b3Pos origin={side?13:12,.3f+.0271f*y,4.2f+.0317f*z};
+        b3Pos origin={FX+(side?13:12),.3f+.0271f*y,FZ+4.2f+.0317f*z};
         b3Vec3 direction=swat_v(side?-1:1,0,0);
         SwatHit hit=swat_world_ray(w,origin,direction,1,b3_nullBodyId);
         if(!hit.hit){openings++;continue;}
@@ -17,15 +21,15 @@ static void fence_hits(SwatWorld* w) {
     }
     assert(openings>1800 && wires>50);
     for(int side=0;side<2;side++)for(int post=0;post<4;post++) {
-        SwatHit hit=swat_world_ray(w,(b3Pos){side?13:12,.8f,6-2*post},swat_v(side?-1:1,0,0),1,b3_nullBodyId);
+        SwatHit hit=swat_world_ray(w,(b3Pos){FX+(side?13:12),.8f,FZ+6-2*post},swat_v(side?-1:1,0,0),1,b3_nullBodyId);
         assert(hit.hit && (post==3?hit.index==158:swat_motel_fence_parent(w,&w->objects[hit.index])==155+post));
         float thickness=swat_world_exit_distance(&w->objects[hit.index],hit.point,swat_v(side?-1:1,0,0));
         assert(thickness>.05f && thickness<.06f);
     }
     b3Capsule capsule={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};
     for(int side=0;side<2;side++)for(int lane=0;lane<5;lane++) {
-        float z=lane==0?-.65f:lane==4?6.65f:1+2*(lane-1);
-        float f=b3World_CastMover(w->id,(b3Pos){side?13.5:11.5,-.075f,z},&capsule,swat_v(side?-2:2,0,0),b3DefaultQueryFilter(),NULL,NULL);
+        float z=FZ+(lane==0?-.65f:lane==4?6.65f:1+2*(lane-1));
+        float f=b3World_CastMover(w->id,(b3Pos){FX+(side?13.5:11.5),-.075f,z},&capsule,swat_v(side?-2:2,0,0),b3DefaultQueryFilter(),NULL,NULL);
         assert(lane==0 || lane==4 ? f>.999f : f<.5f);
     }
     printf("PASS east fence: %d open rays/%d thin-wire hits, four posts, both faces, blocked panels and two open capsule routes\n",openings,wires);
@@ -35,7 +39,7 @@ static void live_fence_routes(void) {
     swat_sim_init(&s,cfg,81);
     b3Pos open={0},wire={0};bool found_open=false,found_wire=false;
     for(int i=0;i<200;i++) {
-        b3Pos origin={12,.70f+.0019f*i,4.4f+.00131f*i};
+        b3Pos origin={FX+12,.70f+.0019f*i,FZ+4.4f+.00131f*i};
         SwatHit hit=swat_world_ray(&s.world,origin,swat_v(1,0,0),1,b3_nullBodyId);
         if(!hit.hit){open=origin;found_open=true;}
         else if(swat_world_exit_distance(&s.world.objects[hit.index],hit.point,swat_v(1,0,0))>.001f){wire=origin;found_wire=true;}
@@ -43,8 +47,8 @@ static void live_fence_routes(void) {
     assert(found_open && found_wire);
     float damage[3];
     for(int i=0;i<3;i++) {
-        b3Pos origin=i==0?open:i==1?wire:(b3Pos){12,.8f,4};
-        swat_sim_spawn_actor(&s,1,SWAT_CIVILIAN,(b3Pos){13.3,-.07f,origin.z},0);
+        b3Pos origin=i==0?open:i==1?wire:(b3Pos){FX+12,.8f,FZ+4};
+        swat_sim_spawn_actor(&s,1,SWAT_CIVILIAN,(b3Pos){FX+13.3,-.07f,origin.z},0);
         swat_sim_shoot(&s,0,origin,swat_v(1,0,0),(SwatShot){.fired=true,.damage=34,.range=2,.energy=1});
         damage[i]=100-s.actors[1].health;
     }
@@ -52,14 +56,14 @@ static void live_fence_routes(void) {
     printf("PASS fence bullet traversal: opening %.3f damage, wire %.3f, post %.3f\n",damage[0],damage[1],damage[2]);
     for(int lane=0;lane<3;lane++) {
         SwatController* c=&s.actors[0].controller;
-        float z=lane==0?-.65f:lane==1?3:6.65f;
-        b3Body_SetTransform(c->body.body,(b3Pos){11.3,-.075f+c->body.totalHeight*.5f,z},b3Quat_identity);
+        float z=FZ+(lane==0?-.65f:lane==1?3:6.65f);
+        b3Body_SetTransform(c->body.body,(b3Pos){FX+11.3,-.075f+c->body.totalHeight*.5f,z},b3Quat_identity);
         b3Body_SetLinearVelocity(c->body.body,swat_v(0,0,0));c->yaw=0;
         SwatInput in=swat_neutral_input();in.forward=1;
         for(int t=0;t<180;t++)swat_sim_step(&s,&in);
         float x=swat_body_feet_position(&c->body).x;
         printf("Fence live lane%d position %.3f %.3f %.3f\n",lane,x,(float)swat_body_feet_position(&c->body).y,(float)swat_body_feet_position(&c->body).z);fflush(stdout);
-        assert(lane==1 ? x<12.31f && x>11.8f : x>13.5f);
+        assert(lane==1 ? x<FX+12.31f && x>FX+11.8f : x>FX+13.5f);
     }
     swat_sim_close(&s);
     puts("PASS east fence: live standing controller stopped by wire and walks both open ends");
@@ -69,20 +73,20 @@ static void fence_charge_route(void) {
     swat_sim_init(&s,cfg,82);int parts=swat_motel_fence_part_count();assert(parts>0 && parts<=SWAT_FENCE_PART_CAPACITY);
     for(int i=0;i<parts;i++)assert(s.world.fence_meshes[i] && s.world.fence_meshes[i]->triangleCount<=240);
     static SwatWorld air;swat_world_init(&air);
-    SwatSoundEvent sound={.position={11.5,.8,3},.strength=1,.range=30};b3Pos listener={13.5,.8,3};
+    SwatSoundEvent sound={.position={FX+11.5,.8,FZ+3},.strength=1,.range=30};b3Pos listener={FX+13.5,.8,FZ+3};
     SwatAcousticPath reference=swat_acoustic_path(&air,&sound,listener),through=swat_acoustic_path(&s.world,&sound,listener);
     for(int i=0;i<3;i++)assert(fabsf(reference.bands[i]-through.bands[i])<1e-6f);
     swat_world_close(&air);
     SwatController* c=&s.actors[0].controller;
-    b3Body_SetTransform(c->body.body,(b3Pos){11.65,-.065f+c->body.totalHeight*.5f,3},b3Quat_identity);c->yaw=0;
+    b3Body_SetTransform(c->body.body,(b3Pos){FX+11.65,-.065f+c->body.totalHeight*.5f,FZ+3},b3Quat_identity);c->yaw=0;
     SwatInput in=swat_neutral_input();for(int i=0;i<10;i++)swat_sim_step(&s,&in);
     // Mount low for a full-height passage; the tool preserves the aimed height.
-    b3Pos eye=swat_controller_eye(c);c->pitch=atan2f(1.02f-(float)eye.y,12.5f-(float)eye.x);s.actors[0].gear.wall_charges=1;
+    b3Pos eye=swat_controller_eye(c);c->pitch=atan2f(1.02f-(float)eye.y,FX+12.5f-(float)eye.x);s.actors[0].gear.wall_charges=1;
     SwatHit target=swat_context_hit(&s,0,1.7f);assert(target.hit && swat_motel_fence_parent(&s.world,&s.world.objects[target.index])==156);
     assert(swat_world_breachable(&s.world.objects[target.index]));
     int first=s.world.objects[156].wall_group-1;
     for(int i=0;i<parts;i++)if(s.world.objects[first+i].part==SWAT_PART_FENCE_POST)assert(!swat_world_breachable(&s.world.objects[first+i]));
-    b3Capsule capsule={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};b3Pos from={11.6,-.075f,3};
+    b3Capsule capsule={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};b3Pos from={FX+11.6,-.075f,FZ+3};
     assert(b3World_CastMover(s.world.id,from,&capsule,swat_v(1.8f,0,0),b3DefaultQueryFilter(),NULL,NULL)<.8f);
     in.door_tool=SWAT_PLACE_CHARGE;for(int i=0;i<30;i++)swat_sim_step(&s,&in);
     assert(s.actors[0].gear.wall_charges==1);
@@ -100,7 +104,7 @@ static void fence_charge_route(void) {
     assert(b3World_CastMover(replica.world.id,from,&capsule,swat_v(1.8f,0,0),b3DefaultQueryFilter(),NULL,NULL)>.999f);
     swat_sim_close(&replica);
     in=swat_neutral_input();in.forward=1;for(int i=0;i<160;i++)swat_sim_step(&s,&in);
-    assert(swat_body_feet_position(&c->body).x>13.5f);
+    assert(swat_body_feet_position(&c->body).x>FX+13.5f);
     swat_sim_reset(&s);fence_hits(&s.world);
     printf("PASS fence charge: interrupted placement, one charge, %d removed/%d surviving groups, adjacent bays intact, live passage, late replica and reset\n",removed,survivors);
     swat_sim_close(&s);
@@ -259,13 +263,15 @@ static void live_squad_and_evacuation(void) {
         else s.actors[i].gear.surrendered=true;
     }
     SwatActor* officer=&s.actors[3];officer->mind.order=SWAT_ORDER_MOVE;officer->mind.goal=(b3Pos){-6.8f,0,-.85f};
-    int t=0;for(;t<2400;t++) {
+    // Staging is in the east breezeway beyond Room 105 (MOTEL_LAYOUT.md): the
+    // walk to Room 101 is about 4 m longer than from the 5.0 staging.
+    int t=0;for(;t<3000;t++) {
         swat_sim_step(&s,&(SwatInput){0});
         if(b3Distance(swat_body_feet_position(&officer->controller.body),officer->mind.goal)<.65f)break;
     }
     b3Pos feet=swat_body_feet_position(&officer->controller.body);
     printf("Motel squad room101 after %d ticks: %.3f %.3f %.3f\n",t,(float)feet.x,(float)feet.y,(float)feet.z);fflush(stdout);
-    if(t==2400) {
+    if(t==3000) {
         printf("Route waypoint %.3f %.3f %.3f yaw %.3f\n",(float)officer->mind.waypoint.x,(float)officer->mind.waypoint.y,(float)officer->mind.waypoint.z,officer->controller.yaw);
         for(int i=0;i<s.actor_count;i++)if(s.actors[i].present) {
             b3Pos p=swat_body_feet_position(&s.actors[i].controller.body);
@@ -273,7 +279,7 @@ static void live_squad_and_evacuation(void) {
         }
         fflush(stdout);
     }
-    assert(t<2400 && s.world.objects[16].door_open);
+    assert(t<3000 && s.world.objects[16].door_open);
     // The standing civilian physically fills the narrow chair/bed aisle. Clear
     // that occupant through an ordinary escort before asking a body to pass.
     officer->mind.goal=(b3Pos){-7.2f,0,2};officer->mind.replan_tick=0;

@@ -22,9 +22,9 @@ POST_PITCH_MAX = 3.0
 #   axis 'x': rooms run along x, facade at z=line, rooms on the -z side (rear wing)
 #   axis 'z': rooms run along z, facade at x=line, rooms behind the facade
 #             (facing=+1: wing faces +x, rooms at x<line; -1: faces -x, rooms x>line)
-REAR_EXT = dict(name='rear wing (105-106)', axis='x', line=0.0, start=8.0, bays=2, facing=+1, first=105)
-EAST = dict(name='east wing (107-112)', axis='z', line=16.0, start=WALK, bays=6, facing=-1, first=107)
-WEST = dict(name='west wing (113-119)', axis='z', line=-16.0, start=WALK - BAY, bays=7, facing=+1, first=113)
+REAR_EXT = dict(name='rear wing (105)', axis='x', line=0.0, start=8.0, bays=1, facing=+1, first=105)
+EAST = dict(name='east wing (107-112)', axis='z', line=16.0, start=WALK - 0.23, bays=6, facing=-1, first=107)
+WEST = dict(name='west wing (113-118)', axis='z', line=-16.0, start=WALK - 0.23, bays=6, facing=+1, first=113)
 WINGS = [REAR_EXT, EAST, WEST]
 
 def wing_rooms(wg):
@@ -52,11 +52,10 @@ def posts(a0, a1):
 
 # Rear (main) wing walkway: office + 101-104 (existing) + 105-106 (new): x -12..16.
 POST_OFFSET = 1.77                           # post centre from the facade (existing)
-# The rear run ends at the east wing's post line (its corner post).
-REAR_POSTS_X = posts(-12.0, EAST['line'] - POST_OFFSET)          # 10 posts at 2.91 m
+# The rear run covers office..105 (x -12..12): 9 posts at 3.0 m.
+REAR_POSTS_X = posts(-12.0, REAR_EXT['start'] + REAR_EXT['bays'] * BAY)
 def side_posts(wg):
-    z = posts(wg['start'], wg['start'] + wg['bays'] * BAY)
-    return z[1:] if wg is EAST else z                              # east corner post is the rear run's last
+    return posts(wg['start'], wg['start'] + wg['bays'] * BAY)
 
 # Court = between the side-wing walkway edges and in front of the rear walkway.
 COURT_X = (WEST['line'] + WALK, EAST['line'] - WALK)      # -14.17 .. 14.17
@@ -78,7 +77,7 @@ def side_stalls(sign):
     return out
 
 ISLAND = (-1.2, 1.2, WALK + STALL_D + AISLE, 22.6)          # central concrete island (Luna Lodge)
-PLANTERS = [(COURT_X[0], -10.05, WALK, WALK + STALL_D), (8.85, COURT_X[1], WALK, WALK + STALL_D)]
+PLANTERS = [(COURT_X[0], -10.05, WALK, WALK + STALL_D), (8.85, 12.0, WALK, WALK + STALL_D)]
 
 def stalls(): return rear_stalls() + side_stalls(-1) + side_stalls(+1)
 
@@ -97,7 +96,7 @@ SIGN = (6.6, 31.6, -0.13)        # roadside sign at the street, beside the drive
 FENCE_X, FENCE_Z0 = 23.2, 4.0    # chain-link run moved to the east property line
 PICNIC = (-12.1, 4.6)            # west corner planter
 WHEEL_STOPS_X = [-8.7, -6.0, -3.3, 2.1, 4.8]   # in rear-row stall centres
-STAGING = (19.0, -3.0)           # east breezeway, behind the building line
+STAGING = (13.8, -3.0)           # east breezeway (x 12..16), behind the building line
 EXTRACTION = (0.0, 10.0)
 
 def plan_paint():

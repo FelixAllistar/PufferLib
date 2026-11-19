@@ -45,7 +45,7 @@
    ]
   }
  },
- "decal_mean_alpha": 0.1038,
+ "decal_mean_alpha": 0.2147,
  "decal_size": [
   1280,
   2048
@@ -56,8 +56,8 @@
    "sha256": "82921b6352420259dd866e08d874cf1b075796ee9e8d29bfa6a4be91caa76f6a"
   },
   "ground_decals.png": {
-   "bytes": 1475679,
-   "sha256": "200215b0c4e188419f95eca8e0ea5a6a1be851ff2797739cc93d83f506c2b80b"
+   "bytes": 1852142,
+   "sha256": "aae09f5407bfce5b0863bf349c6cf679a764866c0c0fcab16bf6e0342d0f2f2b"
   },
   "near_props.glb": {
    "bytes": 404020,

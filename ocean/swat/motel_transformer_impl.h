@@ -1,10 +1,11 @@
-// Original closed exterior in the rear utility court. Owner order follows the
+// Original closed exterior in the rear utility court (2 m further back than
+// 5.0, clear of Room 105; MOTEL_LAYOUT.md). Owner order follows the
 // support graph; asset order preserves the delivered GLB node traversal.
 static const SwatMotelInstance transformer_instances[]={
-    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+3,{10.8f,-.08f,-7.6f},{1,1,1},0,SWAT_CONCRETE,false,false},
-    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST,{10.8f,-.08f,-7.6f},{1,1,1},0,SWAT_STEEL,false,false},
-    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+1,{10.8f,-.08f,-7.6f},{1,1,1},0,SWAT_STEEL,false,false},
-    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+2,{10.8f,-.08f,-7.6f},{1,1,1},0,SWAT_STEEL,false,false}
+    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+3,{10.8f,-.08f,-9.6f},{1,1,1},0,SWAT_CONCRETE,false,false},
+    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST,{10.8f,-.08f,-9.6f},{1,1,1},0,SWAT_STEEL,false,false},
+    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+1,{10.8f,-.08f,-9.6f},{1,1,1},0,SWAT_STEEL,false,false},
+    {SWAT_MOTEL_TRANSFORMER_ASSET_FIRST+2,{10.8f,-.08f,-9.6f},{1,1,1},0,SWAT_STEEL,false,false}
 };
 // Sections tune existing game damage. The cabinet is a joined exterior, so its
 // aggregate section is an approximation, not a physical strength specification.

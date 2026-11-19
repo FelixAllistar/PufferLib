@@ -38,6 +38,8 @@ ROAD_Z = (36.0, 44.0)
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 here = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(here))
+import motel_court_spec as C     # Briar Court court layout (stalls, island, gravel zones)
 OUT = os.path.abspath(argv[0]) if argv else os.path.normpath(os.path.join(here, "..", "..", "assets", "environment", "motel_backdrop"))
 os.makedirs(OUT, exist_ok=True)
 
@@ -690,7 +692,11 @@ def build_decals():
     # tyre-polished lanes: driveway into the aisle, and the highway wheel paths
     for x0 in (-1.6, 1.6):
         cv.paint((x0 - 1, x0 + 1, 7, 36), lambda X, Z, px, x0=x0: np.clip(1 - np.abs(X - x0) / 0.8, 0, 1) * 0.8, (0.11, 0.11, 0.12), 0.35)
-    cv.paint((-20, 20, 7.5, 11), lambda X, Z, px: np.clip(1 - np.abs(Z - 9.2) / 1.6, 0, 1) * np.clip((20 - np.abs(X)) / 6, 0, 1), (0.12, 0.12, 0.13), 0.28)
+    # court aisles (tools/motel_court_spec.py): the cross aisle and the two side aisles
+    za = (C.WALK + C.STALL_D, C.WALK + C.STALL_D + C.AISLE)
+    cv.paint((-9, 9, za[0], za[1]), lambda X, Z, px: np.clip(1 - np.abs(Z - (za[0] + za[1]) / 2) / 1.6, 0, 1) * np.clip((8.6 - np.abs(X)) / 3, 0, 1), (0.12, 0.12, 0.13), 0.28)
+    for xc in (-4.9, 4.9):
+        cv.paint((xc - 2, xc + 2, za[0], 24), lambda X, Z, px, xc=xc: np.clip(1 - np.abs(X - xc) / 1.4, 0, 1), (0.12, 0.12, 0.13), 0.24)
     for zc in (37.6, 39.0, 41.0, 42.4):
         cv.paint((-56, 56, zc - 0.6, zc + 0.6), lambda X, Z, px, zc=zc: np.clip(1 - np.abs(Z - zc) / 0.5, 0, 1), (0.10, 0.10, 0.11), 0.30)
     # edge dust: sand blown onto the asphalt along every edge facing open ground
@@ -715,34 +721,46 @@ def build_decals():
         cv.polygon(pts, (0.15, 0.15, 0.16), 0.42)
         for i in range(4):  # sealed seam around the patch
             cv.segment(pts[i], pts[(i + 1) % 4], 0.05, (0.05, 0.05, 0.05), 0.75)
-    # parking paint (worn white), front row: bays x -12..8 every 4 m, z 1.3..6.8
+    # parking paint (worn white): 2.7 x 5.5 m stalls from tools/motel_court_spec.py
     paint = (0.80, 0.79, 0.75)
-    def worn(X, Z):  # per-texel wear for paint
-        return paint
     def stripe(a, b, w=0.11, alpha=0.86):
         n = max(1, int(math.hypot(b[0] - a[0], b[1] - a[1]) / 0.5))
         for i in range(n):  # segment-wise alpha for scuffed paint
             t0, t1 = i / n, (i + 1) / n
             p0 = (a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0); p1 = (a[0] + (b[0] - a[0]) * t1, a[1] + (b[1] - a[1]) * t1)
             cv.segment(p0, p1, w, paint, alpha * (0.62 + 0.38 * rng.random()))
-    for x in range(-12, 9, 4): stripe((x, 1.35), (x, 6.8))
-    # accessible bay (x 4..8): blue field with a white symbol and hatch aisle
-    cv.rect(4.12, 7.88, 1.4, 6.7, (0.17, 0.29, 0.48), 0.42)
-    cv.blob(6.0, 4.6, 0.12, paint, 0.85, 1.0)                       # head
-    cv.segment((6.0, 4.35), (5.9, 3.75), 0.11, paint, 0.85)          # body
-    cv.segment((5.9, 3.75), (6.4, 3.65), 0.1, paint, 0.85)
-    cv.segment((6.4, 3.65), (6.55, 3.2), 0.1, paint, 0.85)
+    for a, b in C.stall_lines(): stripe(a, b)
+    # accessible stall: the rear row's east end, by Room 104 (blue field, white symbol)
+    ax0, ax1, az0, az1 = C.rear_stalls()[-1]; acx = (ax0 + ax1) / 2
+    cv.rect(ax0 + 0.08, ax1 - 0.08, az0 + 0.1, az1 - 0.1, (0.17, 0.29, 0.48), 0.42)
+    cv.blob(acx, 4.6, 0.12, paint, 0.85, 1.0)
+    cv.segment((acx, 4.35), (acx - 0.1, 3.75), 0.11, paint, 0.85)
+    cv.segment((acx - 0.1, 3.75), (acx + 0.4, 3.65), 0.1, paint, 0.85)
+    cv.segment((acx + 0.4, 3.65), (acx + 0.55, 3.2), 0.1, paint, 0.85)
     def ring(X, Z, px):
-        d = np.hypot(X - 5.85, Z - 3.55); return np.clip((0.06 - np.abs(d - 0.42)) / px + 0.5, 0, 1) * (Z > 3.45)
-    cv.paint((5.3, 6.4, 3.4, 4.1), ring, paint, 0.85)
-    # second row facing south, both sides of the aisle, 3 m bays z 13..18.5, and back-to-back z 18.5..24
-    for x in (-22, -19, -16, -13, -10, -7, 7, 10, 13, 16, 19, 22):
-        stripe((x, 13.0), (x, 18.4)); stripe((x, 18.6), (x, 23.6))
-    stripe((-22, 18.5), (-7, 18.5)); stripe((7, 18.5), (22, 18.5))
-    # west row along the edge: bays x -24..-18.5, 3 m apart
-    for z in range(-20, 12, 3): stripe((-23.6, z), (-18.4, z))
-    # east row near the rear: bays x 18.5..24, z -22..-4
-    for z in range(-22, -3, 3): stripe((18.4, z), (23.6, z))
+        d = np.hypot(X - (acx - 0.15), Z - 3.55); return np.clip((0.06 - np.abs(d - 0.42)) / px + 0.5, 0, 1) * (Z > 3.45)
+    cv.paint((acx - 0.7, acx + 0.4, 3.4, 4.1), ring, paint, 0.85)
+    # central concrete island (painted kerb, weathered concrete, yellow noses)
+    ix0, ix1, iz0, iz1 = C.ISLAND
+    cv.rect(ix0, ix1, iz0, iz1, (0.60, 0.58, 0.54), 0.92, noise=lambda X, Z: 0.85 + 0.15 * np.sin(X * 7.1) * np.sin(Z * 5.3))
+    for zc in (iz0, iz1):
+        cv.rect(ix0, ix1, zc - 0.35, zc + 0.35, (0.82, 0.68, 0.20), 0.75)
+    for (x0, z0), (x1, z1) in (((ix0, iz0), (ix0, iz1)), ((ix1, iz0), (ix1, iz1)), ((ix0, iz0), (ix1, iz0)), ((ix0, iz1), (ix1, iz1))):
+        cv.segment((x0, z0), (x1, z1), 0.09, (0.86, 0.85, 0.80), 0.8)
+    # corner planters and the gravel service yard / strips behind the wings
+    def gravel(seed):
+        def fn(X, Z):
+            n = 0.78 + 0.22 * np.sin(X * 3.7 + seed) * np.sin(Z * 4.1 - seed) + 0.1 * np.sin(X * 11.3 + Z * 9.7)
+            return np.clip(n, 0, 1)
+        return fn
+    for k, (x0, x1, z0, z1) in enumerate(C.GRAVEL_ZONES):
+        cv.rect(x0, x1, z0, z1, (0.56, 0.50, 0.40), 0.88, noise=gravel(k))
+        for i in range(int((x1 - x0) * (z1 - z0) / 6)):   # pebbles and tyre ruts
+            cv.blob(rng.uniform(x0, x1), rng.uniform(z0, z1), rng.uniform(0.05, 0.16), (0.40, 0.36, 0.30), 0.5, i)
+    for k, (x0, x1, z0, z1) in enumerate(C.PLANTERS):
+        cv.rect(x0, x1, z0, z1, (0.50, 0.43, 0.33), 0.95, noise=gravel(10 + k))
+        for (a, b) in (((x0, z0), (x1, z0)), ((x1, z0), (x1, z1)), ((x1, z1), (x0, z1)), ((x0, z1), (x0, z0))):
+            cv.segment(a, b, 0.16, (0.78, 0.77, 0.73), 0.9)   # painted concrete kerb
     # direction arrows at the driveway and the stop bar at the highway
     def arrow(x, z, dz, alpha=0.8):
         s = 1 if dz > 0 else -1
@@ -751,18 +769,13 @@ def build_decals():
         cv.polygon([(x - 0.45, base), (x + 0.45, base), (x, tip)], paint, alpha)
     arrow(-1.5, 30.5, -1); arrow(1.5, 27.0, 1)
     cv.rect(0.05, 2.9, 34.9, 35.35, paint, 0.82)
-    # fire lane hatching along the walkway by the office (x -12..-8, z 1.3..3)
-    for i in range(9):
-        x = -16 + i * 0.5; cv.segment((x, 1.4), (x + 0.6, 2.6), 0.08, (0.80, 0.68, 0.22), 0.6)
-    cv.rect(-16.2, -11.8, 1.3, 1.42, (0.80, 0.68, 0.22), 0.7); cv.rect(-16.2, -11.8, 2.6, 2.72, (0.80, 0.68, 0.22), 0.7)
     # continue the authored road lines from |x| 52 to 56 (authored lines stop at 52)
     for s in (-1, 1):
         cv.rect(min(s * 52, s * 56), max(s * 52, s * 56), 36.45, 36.55, paint, 0.9)
         cv.rect(min(s * 52, s * 56), max(s * 52, s * 56), 43.45, 43.55, paint, 0.9)
         cv.rect(min(s * 54.5, s * 56), max(s * 54.5, s * 56), 39.94, 40.06, (0.86, 0.70, 0.22), 0.9)
     # oil stains in bays, and drips along the aisle
-    bays = [(x + 2, 4.4) for x in range(-12, 4, 4)] + [(x + 1.5, 15.2) for x in (-22, -19, -16, -13, -10, 7, 10, 13, 16, 19)] \
-        + [(x + 1.5, 21.6) for x in (-22, -16, -10, 10, 16)] + [(-20.8, z + 1.5) for z in range(-20, 9, 3)] + [(21.2, z + 1.5) for z in (-22, -19, -13, -7)]
+    bays = [((x0 + x1) / 2, (z0 + z1) / 2) for (x0, x1, z0, z1) in C.stalls()]
     for i, (x, z) in enumerate(bays):
         if rng.random() < 0.25: continue
         cv.blob(x + rng.uniform(-0.3, 0.3), z + rng.uniform(-0.6, 0.6), rng.uniform(0.25, 0.65), (0.05, 0.045, 0.04), rng.uniform(0.35, 0.6), rng.uniform(0, 6), rng.uniform(0.7, 1.4))

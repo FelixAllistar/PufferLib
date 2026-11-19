@@ -207,28 +207,26 @@ static const SwatMotelInstance utility_instances[]={
 };
 #include "motel_court_data.h"
 // Court layout (MOTEL_LAYOUT.md): authored instances moved to real-motel
-// positions. Walkway posts at 2.9 m instead of 4 m (the court layer adds the
+// positions. Walkway posts at 3.0 m instead of 4 m (the court layer adds the
 // rest of the run), wheel stops in 2.7 m stall centres, the roadside sign at
-// the street, the chain-link run 2 m toward the street into the east corner
-// planter (clear of Room 106's walkway). Object indices are unchanged.
+// the street, the chain-link run (+2 m x, -14 m z) out of the court onto the
+// rear service drive behind Room 106, both ends still open. Object indices are unchanged.
 typedef struct SwatMotelMove {int index;SwatMotelInstance placement;} SwatMotelMove;
 static const SwatMotelMove layout_moves[]={
-    {113,{8,{-12.0f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
-    {114,{8,{-9.085556f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
-    {115,{8,{-6.171111f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
-    {116,{8,{-3.256667f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
-    {117,{8,{-0.342222f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
-    {118,{8,{2.572222f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
+    {114,{8,{-9.0f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
+    {115,{8,{-6.0f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
+    {116,{8,{-3.0f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
+    {118,{8,{3.0f,0,1.77f},{1,1,1},0,SWAT_STEEL,false,false}},
     {139,{14,{6.6f,-.08f,31.6f},{1,1,1},-.13f,SWAT_STEEL,false,false}},
     {140,{19,{-8.7f,-.08f,4.3f},{1,1,1},0,SWAT_CONCRETE,false,false}},
     {141,{19,{-6.0f,-.08f,4.3f},{1,1,1},0,SWAT_CONCRETE,false,false}},
     {142,{19,{-3.3f,-.08f,4.3f},{1,1,1},0,SWAT_CONCRETE,false,false}},
     {143,{19,{2.1f,-.08f,4.3f},{1,1,1},0,SWAT_CONCRETE,false,false}},
     {144,{19,{4.8f,-.08f,4.3f},{1,1,1},0,SWAT_CONCRETE,false,false}},
-    {154,{42,{12.5f,-.08f,8},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false}},
-    {155,{42,{12.5f,-.08f,6},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false}},
-    {156,{42,{12.5f,-.08f,4},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false}},
-    {157,{43,{12.5f,-.08f,2},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false}},
+    {154,{42,{14.5f,-.08f,-8},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false}},
+    {155,{42,{14.5f,-.08f,-10},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false}},
+    {156,{42,{14.5f,-.08f,-12},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false}},
+    {157,{43,{14.5f,-.08f,-14},{1,1,1},SWAT_PI*.5f,SWAT_STEEL,false,false}},
 };
 #define LAYOUT_MOVES (int)(sizeof(layout_moves)/sizeof(layout_moves[0]))
 const SwatMotelAsset* swat_motel_asset(int index) { return index<0 || index>=SWAT_MOTEL_ASSETS?NULL:index>=SWAT_MOTEL_TRANSFORMER_ASSET_FIRST?&transformer_data[index-SWAT_MOTEL_TRANSFORMER_ASSET_FIRST]:index>=60?&dumpster_data[index-60]:index<SWAT_MOTEL_BASE_ASSETS?&motel_assets[index]:index<42?&utility_assets[index-SWAT_MOTEL_BASE_ASSETS]:index<44?&fence_assets[index-42]:index==44?&mounted_assets[0]:index==49?&nightstand_asset:index==53?&bag_asset:index==54?&cabinet_asset:index==59?&screwdriver_asset:index>=55?service_assets[index-55]:index>=50?seating_assets[index-50]:&prop_assets[index-45]; }
