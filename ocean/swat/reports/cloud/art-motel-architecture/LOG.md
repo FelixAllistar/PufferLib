@@ -63,3 +63,35 @@ Blender view `office`, eye (-15,1.5,6.5) -> (-8.5,2.3,-0.5), 60 deg (wide like t
 - iter 4: maroon trim around the lobby glazing + dark sill strip. closer: slightly
 - engine e1: same camera + the old ext4 view: roof/fascia read orange-red (too light) and the glazing trim is missing (the lobby glass draws on its own path, never reaching the overlay hook).
 - engine e2: metal roof albedo .30 -> .17 (dark maroon like the reference), trim re-owned by the office walkway slab (tag 4). closer: yes
+
+### Item 4: rear wall (ref: Hotel Palomar Courts rear elevation, HABS LA-1308-17, PD)
+
+Blender view `rear`, eye (-2,1.5,-15.5) -> (-2,1.8,-6), 52 deg (straight-on like the HABS elevation).
+
+- iter 0: block coursing (8x16 in running bond, 11 mm joints), small high obscure bathroom windows with aluminium frames and precast sills, vent stack, cleanout, hose bib, eave conduit, scupper + conductor head + rectangular downspouts, laundry awning/sign/dryer hoods. The LAUNDRY lettering on the east-facing annex wall is mirrored; joints too dark for a painted block wall.
+- iter 1: text orientation fixed for any wall frame (reads left-to-right from outside); mortar .20 -> .30 grey-brown (painted block, like the reference's whitewashed wall). closer: yes
+- iter 2: parapet coping galvanized -> dark teal with a 0.07 m overhang and skirt: a crisp dark roof edge like the reference's eave line. closer: yes
+- iter 3: electric service mast + weatherhead above the rear meter on 38; gas meter set with risers and regulator on 62 (the reference's utility clutter). closer: slightly
+- engine e1: same camera: rear wall in shade, windows read as blank grey panels.
+- engine e2: obscure glass albedo .36 -> .10 (reads as dark glass in shade), plus a close view of the VEXO section. closer: yes
+
+### Item 5: end wall (ref: Truxton, Highsmith PD; its stone end wall with meter, lamp and quoined corners)
+
+Blender view `endwall`, eye (14.5,1.5,3.5) -> (8,1.7,-2.5), 55 deg.
+
+- iter 0: old rear-corner camera: east end wall is a blank stucco plane over a heavy 0.32 m dark plinth.
+- iter 1: camera moved to the reference's front-corner framing; end-wall plinth 0.32 m dark -> 0.20 m light concrete. closer: yes
+- iter 2: socket meter + conduit to the disconnect, jelly-jar lamp near the front corner, hose bib (the reference's end-wall clutter). closer: yes
+- iter 3: alternating stucco quoins (0.42/0.28 m, 0.23 m courses) on both corners of the end walls (the reference's stone corners in the motel's stucco). closer: yes
+- engine e1: eye (12.2,1.5,3.5) -> (8,1.7,-2.5), 60 deg: quoins, meter and lamp read; plinth is subtle. closer: yes
+
+### Item 6: roofline (ref: Motel Safari, Tucumcari, Tony Hisgett, CC BY 2.0)
+
+Blender view `roof`, eye (-2,1.6,-20) -> (-2,2.7,-4), 38 deg (ground-level elevation like the reference).
+
+- iter 0: elevated 3/4 view: four swamp coolers on stands, two TV masts, roof laps/patches, old condensing units and vent sets; the roadside sign fills the frame and the view does not match the reference's street-level roofline.
+- iter 1: camera matched (ground level, behind the row); added per-room plumbing vent stacks with boots, exhaust-fan caps and J-vents. closer: no (all of it hidden behind the parapet)
+- iter 2: vent stacks 0.42 -> 0.75 m (reference stacks stand well proud of the roof). closer: yes
+- iter 3: stacks black iron -> galvanized, 90 -> 110 mm (light stacks like the reference). closer: yes
+- engine e1: same camera + the old ext7 roofline view: coolers, stacks, J-vents and antennas break the roofline; awning very bright from above.
+- engine e2: corrugated sheet albedo .42 -> .34 (the bloom on the awning calms down, corrugation still reads). closer: yes

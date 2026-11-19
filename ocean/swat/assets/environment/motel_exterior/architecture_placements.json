@@ -49,6 +49,14 @@
   "post_mat": "cream",
   "beam_mat": "teal",
   "parapet_mat": "stucco",
+  "coping_mat": "teal",
+  "coping_out": 0.07,
+  "service_mast": true,
+  "end_plinth_h": 0.2,
+  "end_meter": true,
+  "quoins": true,
+  "roof_vents": true,
+  "vent_h": 0.75,
   "canopy_style": "corrugated",
   "sheet_wall_y": 3.0,
   "sheet_eave_y": 2.72,
@@ -314,6 +322,8 @@
   "A_w86_23",
   "A_w104_00",
   "A_w104_01",
+  "A_w104_02",
+  "A_w104_03",
   "A_w104_04",
   "A_w104_05",
   "A_w104_06",
@@ -334,8 +344,13 @@
   "A_w104_27",
   "A_w104_28",
   "A_w104_32",
+  "A_w104_33",
+  "A_w104_34",
+  "A_w104_35",
   "A_w109_00",
   "A_w109_01",
+  "A_w109_02",
+  "A_w109_03",
   "A_w109_04",
   "A_w109_05",
   "A_w109_06",
@@ -355,6 +370,9 @@
   "A_w109_27",
   "A_w109_28",
   "A_w109_32",
+  "A_w109_33",
+  "A_w109_34",
+  "A_w109_35",
   "A_w129_00",
   "A_w129_01",
   "A_w129_02",
@@ -3154,6 +3172,30 @@
    "roof": false
   },
   {
+   "piece": "A_w104_02",
+   "owner": 104,
+   "origin": [
+    -12.0,
+    1.6861,
+    -0.3346
+   ],
+   "yaw": 0.0,
+   "mount": "section",
+   "roof": false
+  },
+  {
+   "piece": "A_w104_03",
+   "owner": 104,
+   "origin": [
+    -12.0,
+    2.4019,
+    -0.3852
+   ],
+   "yaw": 0.0,
+   "mount": "section",
+   "roof": false
+  },
+  {
    "piece": "A_w104_04",
    "owner": 104,
    "origin": [
@@ -3394,6 +3436,42 @@
    "roof": false
   },
   {
+   "piece": "A_w104_33",
+   "owner": 104,
+   "origin": [
+    -12.0,
+    0.9662,
+    -5.629
+   ],
+   "yaw": 0.0,
+   "mount": "section",
+   "roof": false
+  },
+  {
+   "piece": "A_w104_34",
+   "owner": 104,
+   "origin": [
+    -12.0,
+    1.6927,
+    -5.629
+   ],
+   "yaw": 0.0,
+   "mount": "section",
+   "roof": false
+  },
+  {
+   "piece": "A_w104_35",
+   "owner": 104,
+   "origin": [
+    -12.0,
+    2.4241,
+    -5.6353
+   ],
+   "yaw": 0.0,
+   "mount": "section",
+   "roof": false
+  },
+  {
    "piece": "A_w109_00",
    "owner": 109,
    "origin": [
@@ -3412,6 +3490,30 @@
     8.0,
     1.0245,
     -0.3691
+   ],
+   "yaw": 0.0,
+   "mount": "section",
+   "roof": false
+  },
+  {
+   "piece": "A_w109_02",
+   "owner": 109,
+   "origin": [
+    8.0,
+    1.7688,
+    -0.3583
+   ],
+   "yaw": 0.0,
+   "mount": "section",
+   "roof": false
+  },
+  {
+   "piece": "A_w109_03",
+   "owner": 109,
+   "origin": [
+    8.0,
+    2.4406,
+    -0.3319
    ],
    "yaw": 0.0,
    "mount": "section",
@@ -3640,6 +3742,42 @@
     8.0,
     0.3704,
     -5.7006
+   ],
+   "yaw": 0.0,
+   "mount": "section",
+   "roof": false
+  },
+  {
+   "piece": "A_w109_33",
+   "owner": 109,
+   "origin": [
+    8.0,
+    1.0513,
+    -5.687
+   ],
+   "yaw": 0.0,
+   "mount": "section",
+   "roof": false
+  },
+  {
+   "piece": "A_w109_34",
+   "owner": 109,
+   "origin": [
+    8.0,
+    1.7413,
+    -5.687
+   ],
+   "yaw": 0.0,
+   "mount": "section",
+   "roof": false
+  },
+  {
+   "piece": "A_w109_35",
+   "owner": 109,
+   "origin": [
+    8.0,
+    2.4126,
+    -5.691
    ],
    "yaw": 0.0,
    "mount": "section",

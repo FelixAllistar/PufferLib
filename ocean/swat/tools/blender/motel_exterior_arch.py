@@ -36,7 +36,7 @@ P = dict(
     joint=0.011, course=0.2032, unit=0.4064, joint_d=0.0025,
     gable_ridge=4.05, gable_eave=2.80, gable_front=2.40, gable_back=-1.30,
     office_full=True, office_eave=2.85, office_ridge=3.55, office_front=2.45, office_fascia='red', office_fascia_h=0.40, office_sign_y=2.92, office_tie=True, office_tie_h=0.32, office_trim=True,
-    annex_parapet=0.55, cooler=True, corbel=True, front_meter=True, capital=True, post_mat='cream', beam_mat='teal', parapet_mat='stucco',
+    annex_parapet=0.55, cooler=True, corbel=True, front_meter=True, capital=True, post_mat='cream', beam_mat='teal', parapet_mat='stucco', coping_mat='teal', coping_out=0.07, service_mast=True, end_plinth_h=0.20, end_meter=True, quoins=True, roof_vents=True, vent_h=0.75,
     canopy_style='corrugated', sheet_wall_y=3.0, sheet_eave_y=2.72, sheet_eave_z=2.10,
     wave=0.068, wave_amp=0.016, bullnose=0.36, bullnose_drop=0.06, canopy_gutter=False, canopy_board=0.22,
 )
@@ -64,14 +64,14 @@ ROOF = mat('MC15_roof', (.30, .30, .29))
 CREAM = mat('MC15_cream', (.62, .58, .48))
 TEAL = mat('MC15_teal', (.07, .24, .22), .6, .2)
 OCHRE = mat('MC15_ochre', (.55, .30, .06), .6, .2)
-MORTAR = mat('ARCH_mortar', (.20, .17, .13), .95)
+MORTAR = mat('ARCH_mortar', (.30, .26, .20), .95)
 GALV = mat('ARCH_galv', (.42, .43, .42), .45, .8)
 IRON = mat('ARCH_iron', (.03, .03, .03), .6, .5)
-GLASS = mat('ARCH_glass', (.36, .42, .40), .15, .0)
+GLASS = mat('ARCH_glass', (.10, .12, .12), .12, .0)
 SIGNW = mat('ARCH_sign_white', (.78, .76, .70), .5)
 SIGNR = mat('ARCH_sign_red', (.50, .05, .04), .45)
 METROOF = mat('ARCH_metal_roof', (.17, .045, .035), .5, .4)
-SHEET = mat('ARCH_sheet', (.42, .42, .39), .5, .35)
+SHEET = mat('ARCH_sheet', (.34, .34, .32), .5, .35)
 
 # ---------------------------------------------------------------- geometry
 def E(x, y, z): return Vector((x, -z, y))  # engine -> Blender
@@ -137,9 +137,11 @@ def text_faces(g, s, frame, u, v, d, size, m, depth=0.02, align='CENTER'):
     ob = bpy.data.objects.new('t', cu); bpy.context.scene.collection.objects.link(ob)
     dg = bpy.context.evaluated_depsgraph_get(); me = ob.evaluated_get(dg).to_mesh()
     bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.triangulate(bm, faces=bm.faces)
+    # Readable from outside: the text's +x must run along up x normal.
+    mx = 1 if Vector((0, 1, 0)).cross(frame.n).dot(frame.u) > 0 else -1
     for f in bm.faces:
-        pts = [frame.p(u + l.vert.co.x, v + l.vert.co.y, d + depth / 2 + l.vert.co.z) for l in f.loops]
-        nn = f.normal; out = frame.u * nn.x + Vector((0, nn.y, 0)) + frame.n * nn.z
+        pts = [frame.p(u + mx * l.vert.co.x, v + l.vert.co.y, d + depth / 2 + l.vert.co.z) for l in f.loops]
+        nn = f.normal; out = frame.u * (mx * nn.x) + Vector((0, nn.y, 0)) + frame.n * nn.z
         g.face(pts, m, out=tuple(out))
     bm.free(); ob.evaluated_get(dg).to_mesh_clear(); bpy.data.objects.remove(ob); bpy.data.curves.remove(cu)
 
@@ -168,18 +170,21 @@ POSTS = dict(zip((-12, -8, -4, 0, 4, 8), range(114, 120)))
 # ------------------------------------------------ main roof: fascia + coping
 fb, ft, fo, cp = P['fascia_bottom'], P['fascia_top'], P['fascia_out'], P['coping']
 PAR = {'stucco': STUCCO, 'teal': TEAL, 'cream': CREAM}[P['parapet_mat']]
+COPM = {'galv': GALV, 'teal': TEAL}[P['coping_mat']]
 for cx in BAYS:
     if cx == -10 and P['office_full']: continue
     g = obj(ROOFT[cx], roof=True); x0, x1 = cx - 2, cx + 2
     xa = x0 - (.15 + fo if cx == -10 else 0); xb = x1 + (.15 + fo if cx == 6 else 0)
     for z, s in ((-6.15, -1), (0.15, 1)):
         g.box((xa, fb, min(z, z + s * fo)), (xb, ft, max(z, z + s * fo)), PAR)               # fascia board
-        g.box((xa, ft, min(z - s * .12, z + s * (fo + .025))), (xb, ft + cp, max(z - s * .12, z + s * (fo + .025))), GALV)  # coping cap
+        g.box((xa, ft, min(z - s * .12, z + s * (fo + P['coping_out']))), (xb, ft + cp, max(z - s * .12, z + s * (fo + P['coping_out']))), COPM)  # coping cap
+        g.box((xa, ft - .07, min(z + s * fo, z + s * (fo + P['coping_out']))), (xb, ft, max(z + s * fo, z + s * (fo + P['coping_out']))), COPM, skip=('+j',))  # coping skirt
         g.box((xa, 3.02, min(z, z - s * .12)), (xb, ft, max(z, z - s * .12)), STUCCO, skip=('-j',))  # parapet stub
         g.box((xa, fb - .03, min(z + s * fo, z + s * (fo + .015))), (xb, fb, max(z + s * fo, z + s * (fo + .015))), GALV)  # drip edge
     for x, s in (((-12.15, -1),) if cx == -10 else ()) + (((8.15, 1),) if cx == 6 else ()):
         g.box((min(x, x + s * fo), fb, -6.15), (max(x, x + s * fo), ft, .15), PAR)
-        g.box((min(x - s * .12, x + s * (fo + .025)), ft, -6.15 - fo), (max(x - s * .12, x + s * (fo + .025)), ft + cp, .15 + fo), GALV)
+        g.box((min(x - s * .12, x + s * (fo + P['coping_out'])), ft, -6.15 - fo - P['coping_out']), (max(x - s * .12, x + s * (fo + P['coping_out'])), ft + cp, .15 + fo + P['coping_out']), COPM)
+        g.box((min(x + s * fo, x + s * (fo + P['coping_out'])), ft - .07, -6.15 - fo - P['coping_out']), (max(x + s * fo, x + s * (fo + P['coping_out'])), ft, .15 + fo + P['coping_out']), COPM, skip=('+j',))
         g.box((min(x, x - s * .12), 3.02, -6.15), (max(x, x - s * .12), ft, .15), STUCCO, skip=('-j',))
     # Rolled-roofing laps every 0.9 m and a patch or two.
     for k in range(1, 7):
@@ -222,6 +227,21 @@ if P['cooler']:
     for cx in ROOMS:
         cooler(obj(ROOFT[cx], True), cx + .7, -2.0)
     if not P['office_full']: cooler(obj(ROOFT[-10], True), -10.6, -3.4)
+# Per-room plumbing vent stacks (bath + basin), exhaust-fan cap, J-vent.
+if P['roof_vents']:
+    for cx in ROOMS:
+        g = obj(ROOFT[cx], True)
+        for x, z, h in ((cx - .95, -5.35, P['vent_h']), (cx + .15, -5.55, P['vent_h'] * .8)):
+            g.cyl((x, 3.02, z), (x, 3.06, z), .10, GALV, 10)                       # flashing boot
+            g.cyl((x, 3.02, z), (x, 3.02 + h, z), .055, GALV, 10)
+        x, z = cx + 1.25, -4.9                                                        # exhaust-fan cap
+        g.box((x - .2, 3.02, z - .2), (x + .2, 3.12, z + .2), GALV)
+        g.box((x - .13, 3.12, z - .13), (x + .13, 3.30, z + .13), GALV)
+        g.box((x - .19, 3.30, z - .19), (x + .19, 3.34, z + .19), GALV)
+        x, z = cx - .2, -1.0                                                          # J-vent
+        g.cyl((x, 3.02, z), (x, 3.32, z), .05, GALV, 8)
+        g.tube([(x, 3.32, z), (x, 3.40, z + .08), (x, 3.34, z + .16)], .05, GALV, 8)
+
 # TV antenna mast on two bays.
 for cx in (-6, 2):
     g = obj(ROOFT[cx], True); x, z = cx - 1.3, -5.3
@@ -433,17 +453,48 @@ for cx, tag in REAR.items():
 downspout(wall(14), rear(-6), .38, fb - .26 + fo)
 downspout(wall(86), rear(6), 3.62, fb - .26 + fo)
 
+# Electric service mast (riser + weatherhead) above the existing rear meter on
+# 38, and a gas meter set with risers on 62.
+if P['service_mast']:
+    F = rear(-2); g = wall(38); mu = -2.7 - (-4.0)
+    F.tube(g, [(mu, 1.55, .05), (mu, 3.75, .05)], .03, GALV, 8)
+    F.tube(g, [(mu, 3.75, .05), (mu, 3.86, .14)], .036, IRON, 8)
+    for v in (2.0, 2.6): F.box(g, mu - .06, mu + .06, v - .02, v + .02, 0, .085, GALV)
+    F = rear(2); g = wall(62); gu = 1.0
+    F.tube(g, [(gu - .18, 0, .08), (gu - .18, .55, .08), (gu - .05, .55, .08)], .022, GALV, 6)
+    F.box(g, gu - .05, gu + .17, .40, .72, .02, .26, GALV)                               # meter body
+    F.tube(g, [(gu + .06, .72, .14), (gu + .06, .86, .14), (gu + .06, .86, .02)], .022, GALV, 6)
+    F.box(g, gu - .23, gu - .13, .25, .33, .02, .14, IRON)                              # regulator
+
 # ------------------------------------------------ end walls (sectioned)
 def plinth(g, F, a, b):
     F.box(g, a, b, 0, ph, 0, pd, CONC_D); F.box(g, a, b, ph, ph + .02, 0, pd * .6, CONC_D, skip=('-j',))
 # 104: office west end (vending nook in front); 109: east end facing the sign.
 for tag, F in ((104, side(-12, -6, -1)), (109, side(8, -6, 1))):
-    g = wall(tag); plinth(g, F, 0.02, 5.98)
+    g = wall(tag)
+    F.box(g, .02, 5.98, 0, P['end_plinth_h'], 0, pd, CONC); F.box(g, .02, 5.98, P['end_plinth_h'], P['end_plinth_h'] + .02, 0, pd * .6, CONC, skip=('-j',))
     F.box(g, 2.6, 3.4, 2.20, 2.60, 0, .04, GALV)                                  # attic/louvre vent
     for i in range(6): F.box(g, 2.64, 3.36, 2.24 + i * .06, 2.27 + i * .06, 0, .06, GALV)
     for u in (1.5, 4.5): F.quad(g, u - .006, u + .006, ph + .02, 2.78, .002, MORTAR)  # control joints
     F.tube(g, [(5.2, .9, .03), (5.2, 2.75, .03)], .012, GALV, 6)                  # conduit to the roof
     F.box(g, 5.08, 5.32, .70, .95, 0, .09, IRON)                                  # disconnect box
+    if P['quoins']:
+        k = 0; v = P['end_plinth_h'] + .03
+        while v + .24 < 2.72:
+            L = .42 if k % 2 == 0 else .28
+            for a, b in ((0.0, L), (6.0 - L, 6.0)):
+                F.box(g, a + .01, b - .01, v, v + .23, 0, .028, CREAM)
+            v += .26; k += 1
+    if P['end_meter'] and tag == 109:
+        F.box(g, 4.62, 4.84, 1.15, 1.50, 0, .09, GALV)                               # meter base
+        F.tube(g, [(4.73, 1.33, .09), (4.73, 1.33, .16)], .07, GLASS, 10)
+        F.tube(g, [(4.73, 1.15, .04), (4.73, .75, .04), (5.08, .75, .04)], .014, GALV, 6)
+        # jelly-jar lamp near the front corner
+        F.box(g, 5.45, 5.57, 2.05, 2.25, 0, .015, IRON)
+        F.box(g, 5.48, 5.54, 2.12, 2.18, .015, .07, IRON)
+        F.tube(g, [(5.51, 2.03, .12), (5.51, 2.17, .12)], .045, GLASS, 10)
+        F.tube(g, [(5.51, 2.17, .12), (5.51, 2.20, .12)], .052, IRON, 10)
+        F.box(g, 2.9, 3.1, .35, .45, 0, .04, GALV); F.tube(g, [(3.0, .40, .04), (3.0, .40, .12), (3.0, .33, .14)], .012, GALV, 6)
 
 # Laundry annex: block building with its own parapet, door awning, sign, vents.
 g129 = wall(129); F = rear(-10, -10.0)
