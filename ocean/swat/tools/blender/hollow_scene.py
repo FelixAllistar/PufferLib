@@ -314,6 +314,15 @@ def house_trim(m):
     boarded(True, 0, -6, 15.4, .7, U + .75, 1.05, -1)
     boarded(False, 22, 0, -1.2, .6, U + .8, .9, 1, 2)
     boarded(False, 14, 0, 1.8, .7, F + .85, 1.0, -1)
+    # Inside the east room: a plain board mantel and a soot-black firebox on the
+    # chimney wall (HABS WV-0494 farmhouse room). Presentation only.
+    fx = 22 - .0125 - .02
+    p.add(bm_box((fx - .01, F + .5, -3), (.012, .5, .5)), m["soot"])                  # firebox
+    for z in (-3.62, -2.38):
+        p.add(bm_box((fx - .02, F + .62, z), (.03, .62, .1)), g)                       # pilasters
+    p.add(bm_box((fx - .03, F + 1.18, -3), (.04, .07, .74)), g)                         # frieze
+    p.add(bm_box((fx - .1, F + 1.27, -3), (.11, .025, .8)), g)                          # mantel shelf
+    p.add(bm_box((fx - .25, F + .01, -3), (.25, .01, .6)), st)                          # hearth stones
     # Door hood over the west front door, like the Wolcott farmhouse.
     p.add(tilt_bm(bm_box((16, 2.62, -6.25), (.6, .02, .3)), .35, 'x', (16, 2.62, -6.0)), m["tin"])
     return p

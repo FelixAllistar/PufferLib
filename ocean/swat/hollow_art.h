@@ -110,6 +110,15 @@ static int hollow_prop_row(const SwatObject* o) {
 static bool hollow_box_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
     const SwatHollowArt* h=art->hollow;
     if(!h || (o->door && (o->latch_broken || o->cuts))) return false;
+    if(o->part==SWAT_PART_LIGHT) {
+        // A bare bulb on a cord, not a fixture box: the cord rises to the
+        // ceiling, the bulb hangs at the lamp origin (swat_world_room_light).
+        swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
+        DrawCubeV((Vector3){0,o->half.y+.06f,0},(Vector3){.008f,.14f,.008f},(Color){20,18,16,255});
+        DrawCubeV((Vector3){0,o->half.y-.005f,0},(Vector3){.03f,.03f,.03f},(Color){60,58,52,255});
+        DrawSphereEx((Vector3){0,-.01f,0},.032f,8,8,(Color){255,236,190,255});
+        return true;
+    }
     if(o->material==SWAT_GLASS) {
         if(o->part==SWAT_PART_LIGHT || o->fractured || o->cuts) return false;
         // Old, filmed-over window glass: dark and nearly opaque at dusk.

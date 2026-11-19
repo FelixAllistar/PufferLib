@@ -50,6 +50,7 @@ def M():
         "leather": mat("shoe_leather", (.12, .09, .07), .7),
         "sneaker": mat("shoe_canvas", (.40, .40, .42), .9),
         "red": mat("faded_red", (.35, .08, .06), .8),
+        "lino": mat("linoleum", (1, 1, 1), .6, image=image("linoleum.png")),
     }
 
 PROPS = {}
@@ -492,6 +493,13 @@ def washtub(m):
     p.add(bm_cyl((0, .01, 0), .33, .02, 16), m["rust"])
     for x in (-.37, .37):
         p.add(bm_box((x, .28, 0), (.03, .015, .05)), m["rust"])
+    return p
+
+@prop
+def lino_rug(m):
+    # A printed linoleum rug (2.4 x 2.0 m) laid over the boards, edges curling.
+    p = Part()
+    p.add(bm_grid(12, 10, lambda u, v: ((u - .5) * 2.0, .003 + .012 * (max(0, abs(u - .5) - .42) + max(0, abs(v - .5) - .42)) * 8, (v - .5) * 2.4)), m["lino"], uv_mode="top", uv_scale=1 / 2.42, uv_offset=(.5, .5))
     return p
 
 if __name__ == "__main__":

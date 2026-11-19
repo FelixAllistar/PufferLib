@@ -67,6 +67,8 @@ static const SwatHollowProp swat_hollow_props[]={
     {"porch_woodpile",18.0f,.3f,-6.42f,0,.75f,.45f,.24f,SWAT_WOOD,true},  // split wood stacked between the front doors
     {"wood_chair",21.55f,.3f,-7.25f,-.6f,0,0,0,SWAT_WOOD,false},
     {"washtub",14.55f,.3f,-6.55f,0,0,0,0,SWAT_STEEL,false},
+    {"lino_rug",20.0f,.3f,-3.0f,0,0,0,0,SWAT_CLOTH,false},   // linoleum rugs over the boards
+    {"lino_rug",16.1f,.3f,-3.6f,1.5708f,0,0,0,SWAT_CLOTH,false},
     {"ladder",12.6f,0,-2.1f,1.5708f,0,0,0,SWAT_WOOD,false}, // left leaning on the west gable
     {"tree_stand",-4,0,-12,0,0,0,0,SWAT_WOOD,false},        // over the "Lane bend" overwatch plinth
 };
