@@ -55,3 +55,13 @@ leaves it (materials, water, plant layers); `CRET_BEACH_DBG=1` prints spots on t
     `airW`, `airN` or `strD12`.
 12. Fault: suspected low ridges along the streams at the front of the beach (the ground held above a stream rose 4 %
     from it). Change: 2 %. Reverted: no visible difference in `topW`, `mouthA`, `mouth_high` or `strW30`.
+
+Checks after pass 12: `make -i test` (every line): `test_sim` 2 and `test_net_codec` 2 fail for lack of props in the
+cloud, as on an untouched tree; `camprobe` (210 violation frames in 160 runs) and `ecoprobe` (120 of 146 within
+budget) depend on the world, which this track changes at load, and the budget files are left alone; the rest pass.
+No mesh or shader changed. Wikimedia Commons refused every request (rate limit), so there were no reference photos.
+
+Sheets (`cret/hc` left, this branch right, 1280x720 each): `01_aerial`, `02_topW` (the west beach from above),
+`03_airW` (the same from 230 m), `04_airN`, `05_mouthA` (a stream across a beach), `06_coast` (a river mouth),
+`07_mouth_high` (the largest river mouth), `08_strD` and `09_strD12` (on the back dunes, and from 12 m), `10_strW30`
+(the beach to the strand from 30 m), `11_bchS` (on a beach).
