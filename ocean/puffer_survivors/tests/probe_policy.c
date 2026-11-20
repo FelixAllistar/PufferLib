@@ -60,6 +60,8 @@ int main(int argc, char** argv) {
     double ticks[LB] = {0}, dashing[LB] = {0}, invuln[LB] = {0}, dmg[LB] = {0}, dashes[LB] = {0};
     double tot_len = 0, survived = 0, tot_level = 0, tot_dashes = 0, tot_dmg = 0;
     double tot_kills = 0, tot_straight = 0;
+    // Sea mines: set off by walking into them, armed by a dash, armed by another mine's blast.
+    double tot_touched = 0, tot_dash_armed = 0, tot_chain_armed = 0, tot_combo = 0;
     printf("%s, %d episodes, %s", pos[0], episodes, greedy ? "greedy" : "sampled");
     for (int i = 0; i < nover; i++) printf(" %s", overrides[i]);
     printf("\n");
@@ -72,6 +74,8 @@ int main(int argc, char** argv) {
         c_reset(&env);
         if (net) ps_reset_policy_state(net);
         int len = 0, level = 1, alive = 0, ep_dashes = 0;
+        int touched = 0, dash_armed = 0, chain_armed = 0;
+        float combo = 0;
         float ep_dmg = 0, kills = 0, path = 0;
         // Net displacement over a window against the distance walked in it: near 1 means
         // the player walks one way (kiting), near 0 means it stays around one area.
@@ -95,6 +99,9 @@ int main(int argc, char** argv) {
             if (!env.pending_upgrade) actions[1] = 0.0f;
             float hp_before = env.hp, x_before = env.px, y_before = env.py;
             int timer_before = env.dash_timer;
+            int idle_before[PS_MAX_MINES];
+            for (int m = 0; m < PS_MAX_MINES; m++)
+                idle_before[m] = env.mines.respawn[m] == 0 && env.mines.fuse[m] == 0;
             int lv = env.level < LB ? env.level : LB - 1;
             if (env.pending_upgrade) {
                 int pick = env.offered[(int)((unsigned)actions[1] % PS_UPGRADE_SLOTS)];
@@ -110,6 +117,13 @@ int main(int argc, char** argv) {
             }
             level = env.level;
             kills = env.episode_kills;
+            combo = env.episode_combo_kills;
+            for (int m = 0; m < env.cfg.mine_count && m < PS_MAX_MINES; m++) {
+                if (!idle_before[m]) continue;
+                if (env.mines.respawn[m] > 0) touched++;
+                else if (env.mines.fuse[m] == env.cfg.mine_fuse) dash_armed++;
+                else if (env.mines.fuse[m] > 0) chain_armed++;
+            }
             for (int m = 0; m < 4; m++) if (len == marks[m]) level_at[m] = level;
             float step = sqrtf((env.px - x_before) * (env.px - x_before)
                 + (env.py - y_before) * (env.py - y_before));
@@ -144,10 +158,16 @@ int main(int argc, char** argv) {
         float straight = windows ? straight_sum / windows : 0;
         tot_kills += kills;
         tot_straight += straight;
+        tot_touched += touched;
+        tot_dash_armed += dash_armed;
+        tot_chain_armed += chain_armed;
+        tot_combo += combo;
         printf("ep %2d  len %5d  %-8s  level %2d  kills %5.0f  dashes %3d  damage %3.0f  "
             "moving %3.0f%%  straight %.2f\n",
             ep, len, alive ? "survived" : "died", level, kills, ep_dashes, ep_dmg,
             100 * path / (len * env.cfg.player_speed), straight);
+        printf("       mines walked into %d, dash-armed %d, chain-armed %d  combo kills %.0f\n",
+            touched, dash_armed, chain_armed, combo);
         printf("       level at 1200/2400/4800/9600: %d %d %d %d  first picks:",
             level_at[0], level_at[1], level_at[2], level_at[3]);
         for (int i = 0; i < nfirst; i++) printf(" %d", first[i]);
@@ -160,6 +180,10 @@ int main(int argc, char** argv) {
         tot_len / episodes, env.cfg.max_steps, 100 * tot_len / episodes / env.cfg.max_steps,
         survived, episodes, tot_level / episodes, tot_kills / episodes, tot_dashes / episodes,
         tot_dmg / episodes, tot_straight / episodes);
+    printf("mean per game: mines walked into %.1f, dash-armed %.1f, chain-armed %.1f, "
+        "combo kills %.0f (%.1f%% of kills)\n",
+        tot_touched / episodes, tot_dash_armed / episodes, tot_chain_armed / episodes,
+        tot_combo / episodes, tot_kills > 0 ? 100 * tot_combo / tot_kills : 0.0);
     printf("\nlevel   ticks  dashing%%  invuln%%  dashes/1000t  damage/1000t\n");
     for (int l = 1; l < LB; l++) {
         if (ticks[l] < 1) continue;
