@@ -11,6 +11,7 @@
 // Compile-time backing storage; env.area_cap may be lower, never higher.
 #define PS_AREA_STORAGE_CAP 160
 #define PS_MAX_MOVING_OBSTACLES 8
+#define PS_MAX_MINES 8
 #define PS_GRID_W 32
 #define PS_GRID_H 32
 #define PS_GRID_CELLS (PS_GRID_W * PS_GRID_H)
@@ -21,7 +22,8 @@
 #define PS_ACTION_DASH 9
 #define PS_PLAYER_FEATURES 28
 #define PS_BOSS_FEATURES 7
-#define PS_ENEMY_CHANNELS 4
+// Per bin: count, nearest proximity, highest hp fraction, highest damage, frozen count.
+#define PS_ENEMY_CHANNELS 5
 #define PS_DROP_CHANNELS 3
 #define PS_OBSTACLE_CHANNELS 2
 #define PS_WEAPON_COUNT 7
@@ -35,6 +37,10 @@
 #define PS_MOVING_OBSTACLE_SLOTS 4
 #define PS_MOVING_OBSTACLE_FEATURES 4
 #define PS_MOVING_OBSTACLE_OBS_FEATURES (PS_MOVING_OBSTACLE_SLOTS * PS_MOVING_OBSTACLE_FEATURES)
+// Nearest sea mines: present, armed, player-relative dx, dy.
+#define PS_MINE_SLOTS 4
+#define PS_MINE_FEATURES 4
+#define PS_MINE_OBS_FEATURES (PS_MINE_SLOTS * PS_MINE_FEATURES)
 #define PS_OBS_SIZE (PS_PLAYER_FEATURES \
     + PS_BOSS_FEATURES \
     + PS_SECTORS * PS_RINGS * PS_ENEMY_CHANNELS \
@@ -42,7 +48,8 @@
     + PS_OBSTACLE_FEATURES \
     + PS_WEAPON_FEATURES \
     + PS_UPGRADE_SLOTS * PS_UPGRADE_FEATURES \
-    + PS_MOVING_OBSTACLE_OBS_FEATURES)
+    + PS_MOVING_OBSTACLE_OBS_FEATURES \
+    + PS_MINE_OBS_FEATURES)
 
 #define PS_SPRITE_PLAYER 0
 #define PS_SPRITE_JELLY 1
@@ -106,9 +113,12 @@ typedef enum {
 // Upgrades after the weapons are passives; each has its own level.
 #define PS_PASSIVE_COUNT (PS_UPGRADE_COUNT - PS_WEAPON_COUNT)
 
-// Area types: one per weapon, then the two combo areas.
+// Area types: one per weapon, then the combo areas.
 #define PS_AREA_DETONATION PS_WEAPON_COUNT
 #define PS_AREA_SHATTER (PS_WEAPON_COUNT + 1)
+#define PS_AREA_MINE (PS_WEAPON_COUNT + 2)
+// Damage source of a dash through a frozen enemy (not an area type).
+#define PS_DAMAGE_DASH (PS_WEAPON_COUNT + 3)
 
 // Terms of the per-episode fun scorecard.
 enum {
@@ -325,6 +335,7 @@ typedef struct {
     float oil_detonate_damage_scale;
     int oil_detonate_delay;
     int oil_detonate_ttl;
+    int sonar_detonates_oil;
     int moving_obstacle_cap;
     int moving_obstacle_start_wave;
     int moving_obstacle_spawn_interval;
@@ -343,6 +354,22 @@ typedef struct {
     float shatter_radius;
     int shatter_delay;
     int shatter_ttl;
+    int shatter_needs_dash;
+    float dash_shatter_reach;
+    int mine_count;
+    float mine_radius;
+    float mine_spawn_min;
+    float mine_spawn_max;
+    float mine_spacing;
+    int mine_fuse;
+    int mine_chain_fuse;
+    float mine_chain_radius;
+    float mine_blast_radius;
+    int mine_blast_ttl;
+    float mine_damage;
+    float mine_damage_per_wave;
+    float mine_player_damage;
+    int mine_respawn;
     float spike_speed;
     float spike_range;
     int spikes_count_base;
@@ -367,7 +394,8 @@ enum {
     PS_OBS_WEAPON_BASE = PS_OBS_OBSTACLE_BASE + PS_OBSTACLE_FEATURES,
     PS_OBS_UPGRADE_BASE = PS_OBS_WEAPON_BASE + PS_WEAPON_FEATURES,
     PS_OBS_MOVING_OBSTACLE_BASE = PS_OBS_UPGRADE_BASE + PS_UPGRADE_SLOTS * PS_UPGRADE_FEATURES,
-    PS_OBS_END = PS_OBS_MOVING_OBSTACLE_BASE + PS_MOVING_OBSTACLE_OBS_FEATURES,
+    PS_OBS_MINE_BASE = PS_OBS_MOVING_OBSTACLE_BASE + PS_MOVING_OBSTACLE_OBS_FEATURES,
+    PS_OBS_END = PS_OBS_MINE_BASE + PS_MINE_OBS_FEATURES,
 };
 
 enum {
@@ -386,4 +414,4 @@ enum {
 #define PS_STATIC_ASSERT _Static_assert
 #endif
 PS_STATIC_ASSERT(PS_OBS_END == PS_OBS_SIZE, "Observation layout does not match PS_OBS_SIZE");
-PS_STATIC_ASSERT(PS_OBS_SIZE == 337, "Unexpected Puffer Survivors observation size");
+PS_STATIC_ASSERT(PS_OBS_SIZE == 377, "Unexpected Puffer Survivors observation size");

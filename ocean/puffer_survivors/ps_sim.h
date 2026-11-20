@@ -29,6 +29,7 @@
 #define PS_AREA(sim, env, i, f) ((sim)->area_##f[PS_IDX(sim, i, env)])
 #define PS_OBSTACLE(sim, env, i, f) ((sim)->obstacle_##f[PS_IDX(sim, i, env)])
 #define PS_MOVING(sim, env, i, f) ((sim)->moving_obstacle_##f[PS_IDX(sim, i, env)])
+#define PS_MINE(sim, env, i, f) ((sim)->mine_##f[PS_IDX(sim, i, env)])
 #define PS_ENEMY_ACTIVE(sim, env) ((sim)->enemy_active)
 #define PS_ENEMY_DENSE(sim, env) ((sim)->enemy_dense)
 #define PS_ENEMY_DENSE_POS(sim, env) ((sim)->enemy_dense_pos)
@@ -64,6 +65,7 @@
 #define PS_AREA(sim, env, i, f) ((sim)->areas.f[i])
 #define PS_OBSTACLE(sim, env, i, f) ((sim)->obstacles.f[i])
 #define PS_MOVING(sim, env, i, f) ((sim)->moving_obstacles.f[i])
+#define PS_MINE(sim, env, i, f) ((sim)->mines.f[i])
 #define PS_ENEMY_ACTIVE(sim, env) ((sim)->enemies.active)
 #define PS_ENEMY_DENSE(sim, env) ((sim)->enemies.dense)
 #define PS_ENEMY_DENSE_POS(sim, env) ((sim)->enemies.dense_pos)
@@ -97,6 +99,15 @@ PS_SIM_FN float ps_dist2(float ax, float ay, float bx, float by) {
     float dx = ax - bx;
     float dy = ay - by;
     return dx * dx + dy * dy;
+}
+
+// Squared distance from (x, y) to the segment from (ax, ay) to (bx, by).
+PS_SIM_FN float ps_segment_dist2(float ax, float ay, float bx, float by, float x, float y) {
+    float sx = bx - ax, sy = by - ay;
+    float len2 = sx * sx + sy * sy;
+    float t = len2 > 1e-8f ? ((x - ax) * sx + (y - ay) * sy) / len2 : 0.0f;
+    t = t < 0.0f ? 0.0f : (t > 1.0f ? 1.0f : t);
+    return ps_dist2(x, y, ax + sx * t, ay + sy * t);
 }
 
 PS_SIM_FN uint32_t ps_rand_u32(PSSim* sim, int env) {
@@ -406,6 +417,7 @@ PS_SIM_FN void ps_compute_observations(PSSim* sim, int env) {
         obs[o + 1] = fmaxf(obs[o + 1], proximity);
         obs[o + 2] = fmaxf(obs[o + 2], PS_ENEMY(sim, env, i, hp) / PS_ENEMY(sim, env, i, max_hp));
         obs[o + 3] = fmaxf(obs[o + 3], PS_ENEMY(sim, env, i, damage) / 4.0f);
+        if (PS_ENEMY(sim, env, i, slow) > 0.0f) obs[o + 4] = fminf(obs[o + 4] + 0.125f, 1.0f);
     }
 
     if (nearest_boss >= 0) {
@@ -546,6 +558,38 @@ PS_SIM_FN void ps_compute_observations(PSSim* sim, int env) {
         obs[o + 1] = PS_MOVING(sim, env, i, type) == PS_MOVING_OBSTACLE_SUBMARINE ? 1.0f : 0.0f;
         obs[o + 2] = ps_clampf(dx * inv_observe_radius, -1.0f, 1.0f);
         obs[o + 3] = ps_clampf(dy * inv_observe_radius, -1.0f, 1.0f);
+    }
+
+    // Sea mines, nearest first: present, armed, dx, dy.
+    int mine_idx[PS_MINE_SLOTS];
+    float mine_score[PS_MINE_SLOTS];
+    for (int s = 0; s < PS_MINE_SLOTS; s++) {
+        mine_idx[s] = -1;
+        mine_score[s] = 1e30f;
+    }
+    for (int i = 0; i < sim->cfg.mine_count; i++) {
+        if (PS_MINE(sim, env, i, respawn) > 0) continue;
+        float d2 = ps_dist2(PS_MINE(sim, env, i, x), PS_MINE(sim, env, i, y),
+            PS_P(sim, env, px), PS_P(sim, env, py));
+        for (int s = 0; s < PS_MINE_SLOTS; s++) {
+            if (d2 >= mine_score[s]) continue;
+            for (int j = PS_MINE_SLOTS - 1; j > s; j--) {
+                mine_score[j] = mine_score[j - 1];
+                mine_idx[j] = mine_idx[j - 1];
+            }
+            mine_score[s] = d2;
+            mine_idx[s] = i;
+            break;
+        }
+    }
+    for (int s = 0; s < PS_MINE_SLOTS; s++) {
+        int o = PS_OBS_MINE_BASE + s * PS_MINE_FEATURES;
+        int i = mine_idx[s];
+        if (i < 0) continue;
+        obs[o + 0] = 1.0f;
+        obs[o + 1] = PS_MINE(sim, env, i, fuse) > 0 ? 1.0f : 0.0f;
+        obs[o + 2] = ps_clampf((PS_MINE(sim, env, i, x) - PS_P(sim, env, px)) * inv_observe_radius, -1.0f, 1.0f);
+        obs[o + 3] = ps_clampf((PS_MINE(sim, env, i, y) - PS_P(sim, env, py)) * inv_observe_radius, -1.0f, 1.0f);
     }
 }
 PS_SIM_FN int ps_obstacle_position_clear(PSSim* sim, int env, int count, int skip, float x, float y, float radius) {
@@ -1291,12 +1335,16 @@ PS_SIM_FN int ps_damage_enemy(PSSim* sim, int env, int eidx, float damage) {
     PS_P(sim, env, minute_kills)++;
     int source = PS_P(sim, env, damage_source);
     float frozen = PS_ENEMY(sim, env, eidx, slow);
-    // A combo kill is one made by a chain reaction: an oil detonation or a shatter. Kills
-    // on slowed or pulled enemies do not count; they are most kills whatever the player does.
-    if (source == PS_AREA_DETONATION || source == PS_AREA_SHATTER)
+    // A combo kill is one the player set up: a dash through a frozen enemy, a mine, a
+    // shatter or an oil detonation. Kills on slowed or pulled enemies alone do not count.
+    if (source == PS_AREA_DETONATION || source == PS_AREA_SHATTER
+            || source == PS_AREA_MINE || source == PS_DAMAGE_DASH)
         PS_P(sim, env, episode_combo_kills) += 1.0f;
-    // A frozen enemy shatters, hurting its neighbours a few ticks later.
-    if (frozen > 0.0f && sim->cfg.shatter_damage > 0.0f) {
+    // A frozen enemy shatters, hurting its neighbours a few ticks later. With
+    // shatter_needs_dash it takes a dash, a mine or another shatter to set it off.
+    int set_off = !sim->cfg.shatter_needs_dash || source == PS_DAMAGE_DASH
+        || source == PS_AREA_SHATTER || source == PS_AREA_MINE;
+    if (frozen > 0.0f && sim->cfg.shatter_damage > 0.0f && set_off) {
         ps_spawn_area_delayed(sim, env, PS_AREA_SHATTER,
             PS_ENEMY(sim, env, eidx, x), PS_ENEMY(sim, env, eidx, y), sim->cfg.shatter_radius,
             sim->cfg.shatter_damage * (1.0f + PS_P(sim, env, damage_bonus)),
@@ -1809,9 +1857,9 @@ PS_SIM_FN void ps_cast_sonar(PSSim* sim, int env, int level) {
         * (1.0f + PS_P(sim, env, area_bonus));
     float damage = ps_weapon_damage(sim, env, PS_WEAPON_SONAR, level, 0);
     ps_damage_radius(sim, env, PS_P(sim, env, px), PS_P(sim, env, py), radius, damage, sim->cfg.sonar_knockback);
-    // The pulse sets off every oil pool it touches: a bigger, harder single hit,
-    // later for pools further out.
-    for (int k = 0; k < PS_P(sim, env, area_count); k++) {
+    // With sonar_detonates_oil the pulse sets off every oil pool it touches: a bigger,
+    // harder single hit, later for pools further out.
+    for (int k = 0; sim->cfg.sonar_detonates_oil && k < PS_P(sim, env, area_count); k++) {
         int a = PS_AREA(sim, env, k, dense);
         if (PS_AREA(sim, env, a, type) != PS_WEAPON_INK) continue;
         float reach = radius + PS_AREA(sim, env, a, radius);
@@ -1911,6 +1959,127 @@ PS_SIM_FN void ps_update_weapons(PSSim* sim, int env) {
     }
 }
 
+PS_SIM_FN void ps_hurt_player(PSSim* sim, int env, float damage) {
+    if (PS_P(sim, env, invuln_timer) > 0 || damage <= 0.0f) return;
+    PS_P(sim, env, hp) -= damage;
+    PS_REWARD(sim, env) += sim->cfg.reward_hurt * damage;
+    PS_P(sim, env, episode_reward_hurt) += sim->cfg.reward_hurt * damage;
+    PS_P(sim, env, episode_damage_taken) += damage;
+    PS_P(sim, env, invuln_timer) = sim->cfg.invuln_steps;
+}
+
+// Puts mine i somewhere mine_spawn_min..mine_spawn_max from the player, clear of coral and
+// of the other mines when it can.
+PS_SIM_FN void ps_place_mine(PSSim* sim, int env, int i) {
+    float lo = sim->cfg.mine_spawn_min, hi = sim->cfg.mine_spawn_max;
+    float spacing2 = sim->cfg.mine_spacing * sim->cfg.mine_spacing;
+    float x = PS_P(sim, env, px) + lo, y = PS_P(sim, env, py);
+    for (int tries = 0; tries < 24; tries++) {
+        float a = ps_randf(sim, env) * 2.0f * PI;
+        float d = lo + (hi - lo) * ps_randf(sim, env);
+        x = PS_P(sim, env, px) + cosf(a) * d;
+        y = PS_P(sim, env, py) + sinf(a) * d;
+        if (ps_overlaps_obstacle(sim, env, x, y, sim->cfg.mine_radius, 0.5f)) continue;
+        int clear = 1;
+        for (int j = 0; j < sim->cfg.mine_count; j++) {
+            if (j == i || PS_MINE(sim, env, j, respawn) > 0) continue;
+            if (ps_dist2(x, y, PS_MINE(sim, env, j, x), PS_MINE(sim, env, j, y)) < spacing2) clear = 0;
+        }
+        if (clear) break;
+    }
+    PS_MINE(sim, env, i, x) = x;
+    PS_MINE(sim, env, i, y) = y;
+    PS_MINE(sim, env, i, fuse) = 0;
+    PS_MINE(sim, env, i, respawn) = 0;
+}
+
+PS_SIM_FN void ps_spawn_mines(PSSim* sim, int env) {
+    for (int i = 0; i < PS_MAX_MINES; i++) {
+        PS_MINE(sim, env, i, fuse) = 0;
+        PS_MINE(sim, env, i, respawn) = 1;
+    }
+    for (int i = 0; i < sim->cfg.mine_count; i++) ps_place_mine(sim, env, i);
+}
+
+PS_SIM_FN void ps_mine_explode(PSSim* sim, int env, int i) {
+    float x = PS_MINE(sim, env, i, x), y = PS_MINE(sim, env, i, y);
+    float damage = (sim->cfg.mine_damage
+        + sim->cfg.mine_damage_per_wave * (float)ps_wave_index(sim, env))
+        * (1.0f + PS_P(sim, env, damage_bonus));
+    ps_spawn_area(sim, env, PS_AREA_MINE, x, y, sim->cfg.mine_blast_radius, damage,
+        sim->cfg.mine_blast_ttl, 9999);
+    float reach = sim->cfg.mine_blast_radius + sim->cfg.player_radius;
+    if (ps_dist2(x, y, PS_P(sim, env, px), PS_P(sim, env, py)) <= reach * reach)
+        ps_hurt_player(sim, env, ceilf(sim->cfg.mine_player_damage));
+    // The blast arms every idle mine near it.
+    float chain2 = sim->cfg.mine_chain_radius * sim->cfg.mine_chain_radius;
+    for (int j = 0; j < sim->cfg.mine_count; j++) {
+        if (j == i || PS_MINE(sim, env, j, respawn) > 0 || PS_MINE(sim, env, j, fuse) != 0) continue;
+        if (ps_dist2(x, y, PS_MINE(sim, env, j, x), PS_MINE(sim, env, j, y)) <= chain2)
+            PS_MINE(sim, env, j, fuse) = sim->cfg.mine_chain_fuse > 1 ? sim->cfg.mine_chain_fuse : 1;
+    }
+    PS_MINE(sim, env, i, fuse) = 0;
+    PS_MINE(sim, env, i, respawn) = sim->cfg.mine_respawn > 1 ? sim->cfg.mine_respawn : 1;
+}
+
+// (sx, sy) is where the player was before this step's move; dashing is whether it dashed.
+PS_SIM_FN void ps_update_mines(PSSim* sim, int env, float sx, float sy, int dashing) {
+    float recycle = sim->cfg.arena_size * sim->cfg.obstacle_recycle_radius_ratio;
+    float touch = sim->cfg.player_radius + sim->cfg.mine_radius;
+    float px = PS_P(sim, env, px), py = PS_P(sim, env, py);
+    // Count every fuse down first (-1 marks a mine that goes off now), then set them off,
+    // so a mine armed by a blast this tick starts counting next tick whatever its index.
+    for (int i = 0; i < sim->cfg.mine_count; i++) {
+        if (PS_MINE(sim, env, i, respawn) > 0) {
+            if (--PS_MINE(sim, env, i, respawn) == 0) ps_place_mine(sim, env, i);
+        } else if (PS_MINE(sim, env, i, fuse) > 0) {
+            if (--PS_MINE(sim, env, i, fuse) == 0) PS_MINE(sim, env, i, fuse) = -1;
+        }
+    }
+    for (int i = 0; i < sim->cfg.mine_count; i++) {
+        if (PS_MINE(sim, env, i, respawn) == 0 && PS_MINE(sim, env, i, fuse) < 0)
+            ps_mine_explode(sim, env, i);
+    }
+    for (int i = 0; i < sim->cfg.mine_count; i++) {
+        if (PS_MINE(sim, env, i, respawn) > 0 || PS_MINE(sim, env, i, fuse) != 0) continue;
+        float mx = PS_MINE(sim, env, i, x), my = PS_MINE(sim, env, i, y);
+        if (ps_dist2(mx, my, px, py) > recycle * recycle) {
+            ps_place_mine(sim, env, i);
+            continue;
+        }
+        if (ps_segment_dist2(sx, sy, px, py, mx, my) > touch * touch) continue;
+        if (dashing) PS_MINE(sim, env, i, fuse) = sim->cfg.mine_fuse > 1 ? sim->cfg.mine_fuse : 1;
+        else ps_mine_explode(sim, env, i);
+    }
+}
+
+// A dash through a frozen (not big) enemy breaks it, which shatters it.
+PS_SIM_FN void ps_dash_shatter(PSSim* sim, int env, float sx, float sy) {
+    float px = PS_P(sim, env, px), py = PS_P(sim, env, py);
+    float reach = sim->cfg.player_radius + sim->cfg.dash_shatter_reach;
+    int scan_capacity = PS_P(sim, env, enemy_count) * 2 >= sim->cfg.enemy_cap;
+    int k = 0;
+    while (k < (scan_capacity ? sim->cfg.enemy_cap : PS_P(sim, env, enemy_count))) {
+        int i = scan_capacity ? k : PS_ENEMY(sim, env, k, dense);
+        int big = (PS_ENEMY(sim, env, i, type) & (PS_ENEMY_BOSS_FLAG | PS_ENEMY_ARI_K_FLAG)) != 0;
+        if (!PS_ENEMY(sim, env, i, active) || PS_ENEMY(sim, env, i, slow) <= 0.0f || big
+                || PS_ENEMY(sim, env, i, shape) != PS_SHAPE_CIRCLE) {
+            k++;
+            continue;
+        }
+        float r = reach + PS_ENEMY(sim, env, i, radius);
+        if (ps_segment_dist2(sx, sy, px, py, PS_ENEMY(sim, env, i, x), PS_ENEMY(sim, env, i, y)) > r * r) {
+            k++;
+            continue;
+        }
+        PS_P(sim, env, damage_source) = PS_DAMAGE_DASH;
+        int killed = ps_damage_enemy(sim, env, i, fmaxf(PS_ENEMY(sim, env, i, hp), 0.001f));
+        PS_P(sim, env, damage_source) = -1;
+        if (!scan_capacity && killed) continue;
+        k++;
+    }
+}
+
 PS_SIM_FN void ps_reset_core(PSSim* sim, int env, int clear_outputs) {
     if (clear_outputs) {
         PS_REWARD(sim, env) = 0.0f;
@@ -1989,6 +2158,7 @@ PS_SIM_FN void ps_reset_core(PSSim* sim, int env, int clear_outputs) {
     PS_P(sim, env, straight_n) = 0;
     ps_clear_entities(sim, env);
     ps_spawn_obstacles(sim, env);
+    ps_spawn_mines(sim, env);
     ps_compute_observations(sim, env);
 }
 
@@ -2092,7 +2262,8 @@ PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
         if (PS_P(sim, env, invuln_timer) < sim->cfg.dash_duration + 1)
             PS_P(sim, env, invuln_timer) = sim->cfg.dash_duration + 1;
     }
-    if (PS_P(sim, env, dash_timer) > 0) {
+    int dashing = PS_P(sim, env, dash_timer) > 0;
+    if (dashing) {
         PS_P(sim, env, px) += PS_P(sim, env, pvx);
         PS_P(sim, env, py) += PS_P(sim, env, pvy);
         PS_P(sim, env, dash_timer)--;
@@ -2117,9 +2288,11 @@ PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
     float step_len = sqrtf(ps_dist2(PS_P(sim, env, px), PS_P(sim, env, py), start_x, start_y));
     ps_recycle_far_obstacles(sim, env);
     ps_update_moving_obstacles(sim, env);
+    ps_update_mines(sim, env, start_x, start_y, dashing);
 
     ps_wave_spawns(sim, env);
     ps_update_enemies(sim, env);
+    if (dashing && sim->cfg.shatter_needs_dash) ps_dash_shatter(sim, env, start_x, start_y);
     if (ps_grid_needed(sim, env)) ps_rebuild_grid(sim, env);
     ps_update_weapons(sim, env);
     ps_update_projectiles(sim, env);

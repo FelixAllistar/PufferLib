@@ -100,6 +100,10 @@ struct PSCudaSim {
     float *moving_obstacle_half_width, *moving_obstacle_half_height;
     int *moving_obstacle_ttl, *moving_obstacle_dense, *moving_obstacle_dense_pos;
 
+    // Sea mines [PS_MAX_MINES, N].
+    float *mine_x, *mine_y;
+    int *mine_fuse, *mine_respawn;
+
     // Grid [PS_GRID_CELLS, N]
     int* grid_head;
     int* grid_touched;       // [PS_MAX_ENEMIES, N]
@@ -162,6 +166,7 @@ static inline size_t ps_cuda_layout(PSCudaSim* sim) {
     const size_t NA = (size_t)PS_AREA_STORAGE_CAP * N;
     const size_t NO = (size_t)(cfg.obstacle_count > 0 ? cfg.obstacle_count : 1) * N;
     const size_t NMO = (size_t)PS_MAX_MOVING_OBSTACLES * N;
+    const size_t NMI = (size_t)PS_MAX_MINES * N;
     const size_t NG = (size_t)PS_GRID_CELLS * N;
     const size_t NGT = (size_t)cfg.enemy_cap * N;
 
@@ -257,6 +262,8 @@ static inline size_t ps_cuda_layout(PSCudaSim* sim) {
     PS_BLOB_FIELD(int, moving_obstacle_ttl, NMO);
     PS_BLOB_FIELD(int, moving_obstacle_dense, NMO);
     PS_BLOB_FIELD(int, moving_obstacle_dense_pos, NMO);
+    PS_BLOB_FIELD(float, mine_x, NMI); PS_BLOB_FIELD(float, mine_y, NMI);
+    PS_BLOB_FIELD(int, mine_fuse, NMI); PS_BLOB_FIELD(int, mine_respawn, NMI);
     return state_offset;
 }
 #undef PS_BLOB_FIELD

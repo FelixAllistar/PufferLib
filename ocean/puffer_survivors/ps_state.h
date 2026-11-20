@@ -73,6 +73,14 @@ typedef struct {
     float radius[PS_MAX_OBSTACLES];
 } PSObstaclePool;
 
+// Sea mines. A mine with respawn > 0 is absent; fuse > 0 means armed and counting down.
+typedef struct {
+    float x[PS_MAX_MINES];
+    float y[PS_MAX_MINES];
+    int fuse[PS_MAX_MINES];
+    int respawn[PS_MAX_MINES];
+} PSMinePool;
+
 typedef struct {
     uint8_t active[PS_MAX_MOVING_OBSTACLES];
     uint8_t type[PS_MAX_MOVING_OBSTACLES];
@@ -124,6 +132,7 @@ struct Env {
     PSAreaPool areas;
     PSObstaclePool obstacles;
     PSMovingObstaclePool moving_obstacles;
+    PSMinePool mines;
     int grid_head[PS_GRID_CELLS];
     int grid_touched[PS_MAX_ENEMIES];
     int grid_touched_count;

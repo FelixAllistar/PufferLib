@@ -31,7 +31,7 @@ static inline const char* ps_upgrade_description(int type) {
         case PS_UPGRADE_ORBIT: return "More pearls for\nclose defense.";
         case PS_UPGRADE_INK: return "Poison pools and\na longer trail.";
         case PS_UPGRADE_SONAR: return "Huge pulse when\nswarmed.";
-        case PS_UPGRADE_GLACIER: return "Cone of cold that\nslows enemies.";
+        case PS_UPGRADE_GLACIER: return "Freezes a cone. Dash\nthrough to shatter.";
         case PS_UPGRADE_SPIKES: return "Wider radial fans\nof sharp spikes.";
         case PS_UPGRADE_SPEED: return "Move faster out\nof danger.";
         case PS_UPGRADE_MAGNET: return "Pull XP and hearts\nfrom farther away.";
@@ -454,6 +454,7 @@ static inline Color ps_area_color(int type, unsigned char alpha) {
         case PS_WEAPON_SONAR: return (Color){143, 247, 255, alpha};
         case PS_AREA_DETONATION: return (Color){255, 170, 90, alpha};
         case PS_AREA_SHATTER: return (Color){200, 240, 255, alpha};
+        case PS_AREA_MINE: return (Color){255, 196, 120, alpha};
         default: return (Color){92, 175, 255, alpha};
     }
 }
@@ -550,6 +551,14 @@ static inline void ps_draw_area(PufferSurvivors* env, int i, float scale, int w,
         float wave = r * (1.0f - 0.75f * life);
         DrawRing(p, wave * 0.94f, wave, 0, 360, 64, (Color){165, 252, 255, (unsigned char)(220 * life)});
         DrawRing(p, r * 0.98f, r, 0, 360, 64, (Color){72, 198, 255, (unsigned char)(140 * life)});
+    } else if (type == PS_AREA_MINE) {
+        // Mine blast: a bright flash that fades as the shock ring runs out to the edge.
+        float life = ps_clampf((float)env->areas.ttl[i] / fmaxf(1.0f, (float)env->cfg.mine_blast_ttl), 0.0f, 1.0f);
+        float wave = r * (1.0f - 0.8f * life);
+        DrawCircleV(p, r * (0.35f + 0.4f * (1.0f - life)), (Color){255, 236, 190, (unsigned char)(200 * life * life)});
+        DrawCircleV(p, r, (Color){255, 150, 70, (unsigned char)(60 * life)});
+        DrawRing(p, wave * 0.88f, wave, 0, 360, 64, (Color){255, 222, 160, (unsigned char)(235 * life)});
+        DrawRing(p, r * 0.97f, r, 0, 360, 64, (Color){255, 170, 90, (unsigned char)(150 * life)});
     } else if (type == PS_WEAPON_BUBBLE) {
         float life = (float)env->areas.ttl[i] / PS_BUBBLE_POP_TTL;
         float wave = r * (1.0f - 0.3f * life);
@@ -706,6 +715,13 @@ static inline void ps_draw_enemy(PufferSurvivors* env, int i, float scale, int w
 #else
         ps_draw_sprite_ex_tinted(env, sprite, env->enemies.x[i], env->enemies.y[i], env->enemies.radius[i], visual_scale * punch, 0.0f, flip_x, base, (Color){255, 255, 255, 255});
 #endif
+        if (env->enemies.slow[i] > 0.0f) {
+            // Frozen: an ice shell, brighter on enemies a dash can break.
+            int breakable = !boss && env->cfg.shatter_needs_dash;
+            float rr = env->enemies.radius[i] * scale * (boss ? 1.6f : 1.9f);
+            DrawCircleV(p, rr, (Color){170, 225, 255, (unsigned char)(breakable ? 120 : 70)});
+            DrawCircleLines((int)p.x, (int)p.y, rr, (Color){235, 250, 255, (unsigned char)(breakable ? 230 : 140)});
+        }
     }
 
 #ifndef PS_FAST_RENDER
@@ -719,6 +735,37 @@ static inline void ps_draw_enemy(PufferSurvivors* env, int i, float scale, int w
         ps_draw_bar(p.x - bw * 0.5f, bar_y, bw, bh, pct, boss ? RED : ORANGE, (Color){13, 13, 18, 180});
     }
 #endif
+}
+
+// Sea mine: dark shell with horn spikes on a tether line. Armed mines blink red faster
+// as the fuse runs down.
+static inline void ps_draw_mine(PufferSurvivors* env, int i, float scale, int w, int h) {
+    if (env->mines.respawn[i] > 0) return;
+    Vector2 p = ps_screen(env, env->mines.x[i], env->mines.y[i], scale, w, h);
+    float r = env->cfg.mine_radius * scale;
+    if (p.x + 3.0f * r < 0.0f || p.x - 3.0f * r > (float)w || p.y + 3.0f * r < 0.0f || p.y - 3.0f * r > (float)h) return;
+    int fuse = env->mines.fuse[i];
+    float bob = sinf((float)env->tick * 0.05f + (float)i * 1.7f) * r * 0.12f;
+    p.y += bob;
+    DrawLineEx((Vector2){p.x, p.y + r}, (Vector2){p.x + r * 0.15f, p.y + r * 3.2f}, 2.0f, (Color){40, 60, 70, 160});
+    for (int s = 0; s < 8; s++) {
+        float a = (float)s * PI / 4.0f + 0.2f;
+        Vector2 tip = {p.x + cosf(a) * r * 1.45f, p.y + sinf(a) * r * 1.45f};
+        DrawLineEx(p, tip, fmaxf(2.0f, r * 0.18f), (Color){62, 70, 76, 255});
+        DrawCircleV(tip, fmaxf(1.5f, r * 0.12f), (Color){150, 160, 160, 255});
+    }
+    DrawCircleV(p, r, (Color){48, 56, 62, 255});
+    DrawCircleV((Vector2){p.x - r * 0.3f, p.y - r * 0.3f}, r * 0.3f, (Color){120, 135, 140, 150});
+    if (fuse > 0) {
+        float rate = 0.25f + 0.9f * (1.0f - ps_clampf((float)fuse / fmaxf(1.0f, (float)env->cfg.mine_fuse), 0.0f, 1.0f));
+        int on = sinf((float)env->tick * rate) > 0.0f;
+        DrawCircleV(p, r * 0.45f, on ? (Color){255, 60, 40, 255} : (Color){120, 20, 20, 255});
+        if (on) DrawCircleV(p, r * 2.2f, (Color){255, 70, 40, 50});
+        DrawCircleLines((int)p.x, (int)p.y, env->cfg.mine_blast_radius * scale, (Color){255, 120, 80, 90});
+    } else {
+        DrawCircleV(p, r * 0.25f, (Color){255, 190, 90, 220});
+    }
+    if (env->show_hitboxes) DrawCircleLines((int)p.x, (int)p.y, r, (Color){255, 222, 89, 190});
 }
 
 static inline void ps_draw_moving_obstacle(PufferSurvivors* env, int i,
@@ -1266,6 +1313,7 @@ static inline void c_render(PufferSurvivors* env) {
         int i = env->moving_obstacles.dense[k];
         ps_draw_moving_obstacle(env, i, scale, sw, sh);
     }
+    for (int i = 0; i < env->cfg.mine_count; i++) ps_draw_mine(env, i, scale, sw, sh);
 
     for (int k = 0; k < env->drop_count; k++) {
         int i = env->drops.dense[k];

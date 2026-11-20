@@ -73,9 +73,10 @@ samples the policy. Watch mode auto-resets on death.
 
 The action heads are movement `[10]` and upgrade choice `[3]`; movement action
 9 is Dash; it goes along the current velocity, and its cooldown has a floor
-(`dash_cooldown_min`) so dashes cannot chain. The fixed observation schema contains 337 floats: player and boss state, enemy and drop
-sector/ring summaries, nearest-obstacle relative `dx/dy`, weapon state, three
-one-hot upgrade cards, and four nearest moving-hazard slots. Friendly weapon
+(`dash_cooldown_min`) so dashes cannot chain. The fixed observation schema contains 377 floats: player and boss state, enemy and drop
+sector/ring summaries (the enemy bins include a count of frozen enemies), nearest-obstacle
+relative `dx/dy`, weapon state, three one-hot upgrade cards, four nearest moving-hazard
+slots and four nearest sea-mine slots (present, armed, `dx`, `dy`). Friendly weapon
 areas and derived danger summaries are intentionally omitted. All
 spatial values are translated into player-centered world axes and normalized.
 The axes are not rotated by facing direction because movement actions use the
@@ -94,6 +95,23 @@ or the observation layout changes the game and requires a fresh policy run.
 Enemy/weapon tuning and the wave tables are list-valued `[env]` config entries
 as well. The INI is required for play, CPU training, CUDA training, and WASM;
 a missing or invalid value fails fast.
+
+## Dash interactions
+
+The dash is how the player sets things off on purpose:
+
+- **Dash-shatter.** Glacier freezes enemies in a cone; a frozen enemy only shatters when
+  the player dashes through it (or a mine or another shatter kills it), and a shatter
+  that kills a frozen neighbour shatters it in turn. Bosses are only slowed and cannot be
+  broken. `shatter_needs_dash = 0` restores the old rule (every frozen kill shatters).
+- **Sea mines.** `mine_count` tethered mines sit around the player. Walking into one sets
+  it off at once and its blast hurts the player; dashing through one arms it, and it goes
+  off `mine_fuse` ticks later. A blast arms every idle mine within `mine_chain_radius`, so
+  a field of mines ripples. Enemies never set mines off. Spent mines come back after
+  `mine_respawn` ticks.
+
+Sonar no longer detonates Poison Oil by itself; `sonar_detonates_oil = 1` turns that back on.
+Kills made by a dash, a mine, a shatter or a detonation count as combo kills in the scorecard.
 
 ## Weapon coverage and visuals
 

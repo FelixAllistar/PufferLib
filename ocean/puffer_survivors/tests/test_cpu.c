@@ -129,7 +129,7 @@ int main(void) {
     env.cfg.player_health = 1000000.0f;
     c_reset(&env);
 
-    assert(PS_OBS_SIZE == 337);
+    assert(PS_OBS_SIZE == 377);
     assert_finite_observation(observations);
     ps_test_enemy_scans(&env, 0);
     ps_test_weapon_areas(&env, 0);
